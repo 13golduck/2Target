@@ -7,7 +7,7 @@ import { authConfig } from "@/lib/auth.config";
 const { auth } = NextAuth(authConfig);
 
 // /api/cron ha una sua chiave (CRON_SECRET); /api/lead riceve i moduli dei siti dei clienti (chiave per cliente)
-const PUBLIC = ["/login", "/api/auth", "/api/cron", "/api/lead"];
+const PUBLIC = ["/login", "/api/auth", "/api/cron", "/api/lead", "/api/stato"];
 
 export default auth((request) => {
   const { pathname, search } = request.nextUrl;
