@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -9,6 +9,7 @@ import * as s from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { fromRomeInput, parseMetricInput } from "@/lib/format";
 import { METRIC_BY_KEY } from "@/lib/kpi-catalog";
+import { kpiSnapshot } from "@/lib/queries";
 
 const str = (f: FormData, k: string) => {
   const v = String(f.get(k) ?? "").trim();
@@ -81,13 +82,18 @@ export async function deleteKpi(f: FormData) {
 export async function createCheckup(f: FormData) {
   await requireUser();
   const clientId = int(f, "clientId")!;
-  await db.insert(s.checkups).values({ clientId, period: str(f, "period") });
-  revalidatePath(`/clienti/${clientId}/checkup`);
+  const [prev] = await db.select({ id: s.checkups.id }).from(s.checkups).where(eq(s.checkups.clientId, clientId)).orderBy(desc(s.checkups.id)).limit(1);
+  const month = new Date().toLocaleDateString("it-IT", { month: "long", year: "numeric", timeZone: "Europe/Rome" }).replace(/^./, (c) => c.toUpperCase());
+  await db.insert(s.checkups).values({ clientId, period: str(f, "period") ?? month, previousId: prev?.id ?? null });
+  redirect(`/clienti/${clientId}/checkup`);
 }
 
 export async function saveCheckupSection(f: FormData) {
   await requireUser();
   const checkupId = int(f, "checkupId")!;
+  const [chk] = await db.select({ status: s.checkups.status }).from(s.checkups).where(eq(s.checkups.id, checkupId));
+  // Un check-up consegnato fa parte dello storico: si modifica solo dopo averlo riaperto
+  if (chk?.status === "consegnato") return;
   const sectionKey = String(f.get("sectionKey"));
   const content: Record<string, string> = {};
   for (const [k, v] of f.entries()) if (k.startsWith("field:")) content[k.slice(6)] = String(v);
@@ -101,8 +107,16 @@ export async function setCheckupStatus(f: FormData) {
   const id = int(f, "checkupId")!;
   const status = oneOf(["bozza", "in_revisione", "consegnato"] as const, str(f, "status"));
   if (!status) return;
-  const [c] = await db.select({ clientId: s.checkups.clientId }).from(s.checkups).where(eq(s.checkups.id, id));
-  await db.update(s.checkups).set({ status, deliveredAt: status === "consegnato" ? new Date() : null }).where(eq(s.checkups.id, id));
+  const [c] = await db.select({ clientId: s.checkups.clientId, kpiSnapshot: s.checkups.kpiSnapshot }).from(s.checkups).where(eq(s.checkups.id, id));
+  await db
+    .update(s.checkups)
+    .set({
+      status,
+      deliveredAt: status === "consegnato" ? new Date() : null,
+      // Alla consegna si fissa la fotografia dei KPI (se l'AI non l'ha già fatto)
+      ...(status === "consegnato" && !c.kpiSnapshot?.length && { kpiSnapshot: await kpiSnapshot(c.clientId), completedAt: new Date() }),
+    })
+    .where(eq(s.checkups.id, id));
   revalidatePath(`/clienti/${c.clientId}/checkup`);
 }
 

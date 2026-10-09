@@ -36,6 +36,13 @@
       "when": 1791577863083,
       "tag": "0004_condemned_sunset_bain",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1791578440894,
+      "tag": "0005_lame_champions",
+      "breakpoints": true
     }
   ]
 }

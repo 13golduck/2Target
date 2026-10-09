@@ -46,3 +46,9 @@ export async function getClient(id: number) {
 
 export const clientStatus = (rows: KpiRow[], clientId: number) =>
   worstStatus(rows.filter((r) => r.clientId === clientId).map((r) => r.evaluation.status));
+
+/** Fotografia dei KPI del cliente (valore attuale, target, semaforo) da salvare nello storico del check-up. */
+export async function kpiSnapshot(clientId: number) {
+  const rows = await kpisWithStatus([clientId]);
+  return rows.map((r) => ({ label: r.label, scope: r.scope, unit: r.unit, value: r.latest?.value ?? null, target: r.target, status: r.evaluation.status }));
+}

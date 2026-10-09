@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { aiRuns, checkupQuestions, checkupSections, checkups, clients } from "@/db/schema";
@@ -9,10 +9,32 @@ import { CheckupView } from "./checkup-view";
 
 export const metadata = { title: "Check-up" };
 
-export default async function CheckupPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CheckupPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ id?: string; nuovo?: string }> }) {
   const clientId = Number((await params).id);
+  const sp = await searchParams;
   const [client] = await db.select().from(clients).where(eq(clients.id, clientId));
-  const [checkup] = await db.select().from(checkups).where(eq(checkups.clientId, clientId)).orderBy(desc(checkups.id)).limit(1);
+
+  // Storico: tutti i check-up del cliente, con il costo AI di ciascuno
+  const all = await db.select().from(checkups).where(eq(checkups.clientId, clientId)).orderBy(desc(checkups.id));
+  const costs = all.length
+    ? await db
+        .select({ checkupId: aiRuns.checkupId, cost: sql<string>`sum(${aiRuns.costUsd})` })
+        .from(aiRuns)
+        .where(eq(aiRuns.clientId, clientId))
+        .groupBy(aiRuns.checkupId)
+    : [];
+  const history = all.map((c) => ({
+    id: c.id,
+    period: c.period,
+    status: c.status,
+    aiMode: c.aiMode,
+    aiState: c.aiState,
+    createdAt: c.createdAt.toISOString(),
+    completedAt: c.completedAt?.toISOString() ?? null,
+    deliveredAt: c.deliveredAt?.toISOString() ?? null,
+    costUsd: Number(costs.find((x) => x.checkupId === c.id)?.cost ?? 0),
+  }));
+  const checkup = sp.nuovo ? undefined : (all.find((c) => c.id === Number(sp.id)) ?? all[0]);
   const sections = checkup ? await db.select().from(checkupSections).where(eq(checkupSections.checkupId, checkup.id)) : [];
   const questions = checkup
     ? await db.select().from(checkupQuestions).where(eq(checkupQuestions.checkupId, checkup.id)).orderBy(asc(checkupQuestions.round), asc(checkupQuestions.position))
@@ -22,6 +44,9 @@ export default async function CheckupPage({ params }: { params: Promise<{ id: st
   return (
     <CheckupView
       aiConfigured={isAiConfigured()}
+      history={history}
+      isLatest={!checkup || checkup.id === all[0]?.id}
+      previous={all.length && !checkup ? { period: all[0].period } : null}
       client={{
         id: client.id,
         name: client.name,
@@ -50,6 +75,9 @@ export default async function CheckupPage({ params }: { params: Promise<{ id: st
               findings: checkup.findings ?? [],
               sources: checkup.sources ?? [],
               questionRound: checkup.questionRound,
+              previousId: checkup.previousId,
+              kpiSnapshot: checkup.kpiSnapshot ?? [],
+              completedAt: checkup.completedAt?.toISOString() ?? null,
             }
           : null
       }

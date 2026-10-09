@@ -89,6 +89,7 @@ export const CHECKUP_SECTIONS: CheckupSection[] = [
       { key: "best_practice", label: "Best practice del cliente", kind: "elenco" },
       { key: "consigli", label: "Consigli di crescita", kind: "elenco" },
       { key: "priorita", label: "Priorità numero uno", kind: "testo" },
+      { key: "confronto", label: "Cosa è cambiato rispetto al check-up precedente", kind: "testo" },
     ],
     guide: [],
   },

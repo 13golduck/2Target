@@ -7,6 +7,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { db } from "@/db";
 import { buyerPersonas, checkupQuestions, checkups, checkupSections, clients, competitors, objectives } from "@/db/schema";
 import { CHECKUP_SECTIONS } from "@/lib/checkup-template";
+import { kpiSnapshot } from "@/lib/queries";
 import { callClaude, modelFor, type AiMode } from "./claude";
 import { ESEMPIO_CHECKUP } from "./esempio-checkup";
 
@@ -71,6 +72,19 @@ async function clientContext(client: Client, checkup: Checkup, opts: { withAnswe
     `</dati_forniti_dal_consulente>`,
   ].filter(Boolean);
 
+  if (checkup.previousId) {
+    const [prev] = await db.select().from(checkups).where(eq(checkups.id, checkup.previousId));
+    const prevSections = prev ? await db.select().from(checkupSections).where(eq(checkupSections.checkupId, prev.id)) : [];
+    if (prev && prevSections.length) {
+      parts.push(
+        `<check_up_precedente periodo="${prev.period ?? ""}">\n` +
+          prevSections.map((s) => `[${s.sectionKey}]\n${Object.entries(s.content).map(([k, v]) => `${k}: ${v}`).join("\n")}`).join("\n\n") +
+          (prev.kpiSnapshot?.length ? `\n\nKPI a quella data:\n${prev.kpiSnapshot.map((k) => `- ${k.label}: ${k.value ?? "n.d."} (target ${k.target}, ${k.status})`).join("\n")}` : "") +
+          `\n</check_up_precedente>`,
+      );
+    }
+  }
+
   if (checkup.dossier) parts.push(`<appunti_di_ricerca>\n${checkup.dossier}\n</appunti_di_ricerca>`);
 
   if (opts.withAnswers) {
@@ -128,7 +142,8 @@ export async function runRecon(checkupId: number) {
         role: "user",
         content: `${await clientContext(client, checkup)}
 
-Fai la ricognizione iniziale di questa azienda cercando online. Parti dal sito (leggilo: pagine principali, prodotti o
+Fai la ricognizione di questa azienda cercando online (se c'è un check-up precedente, verifica soprattutto cosa è
+cambiato da allora: canali, numeri, offerta, concorrenti). Parti dal sito (leggilo: pagine principali, prodotti o
 servizi, a chi si rivolge, chiamate all'azione, area B2B, contatti) e cerca: profili social e cosa pubblicano,
 recensioni e reputazione, articoli e premi, dati pubblici dell'azienda (anno di fondazione, sede, dimensione se nota),
 3-8 probabili concorrenti diretti nella stessa area o nicchia.
@@ -280,6 +295,8 @@ Scrivi il Communication Check-Up completo di ${client.name}, allo stesso livello
 - competitors: i concorrenti analizzati con mini SWOT e best practice (website vuoto se non noto).
 - personas: 2-4 buyer persona in ordine di valore strategico (priority 1 = più importante).
 - objectives: una voce per ciascuna delle 4 fasi del funnel, con 3-6 strategie operative e 3-5 KPI misurabili.
+- Campo "confronto" (sezione best_practice): se c'è un check-up precedente, cosa è cambiato da allora (numeri dei
+  canali, KPI, raccomandazioni seguite o no, nuove priorità); altrimenti scrivi "Primo check-up".
 Dove un dato non è verificato dichiaralo. Niente frasi generiche valide per qualunque azienda.`,
       },
     ],
@@ -291,12 +308,11 @@ Dove un dato non è verificato dichiaralo. Niente frasi generiche valide per qua
   for (const [sectionKey, content] of Object.entries(doc.sections)) {
     await db.insert(checkupSections).values({ checkupId, sectionKey, content }).onDuplicateKeyUpdate({ set: { content } });
   }
-  const existing = await db.select({ name: competitors.name }).from(competitors).where(eq(competitors.clientId, client.id));
-  const known = new Set(existing.map((c) => c.name.toLowerCase()));
+  // Concorrenti, persona e obiettivi restano legati a questo check-up (storico)
   for (const c of doc.competitors) {
-    if (known.has(c.name.toLowerCase())) continue;
     await db.insert(competitors).values({
       clientId: client.id,
+      checkupId,
       name: c.name,
       location: c.location || null,
       profile: [c.profile, c.website].filter(Boolean).join("\n"),
@@ -308,14 +324,17 @@ Dove un dato non è verificato dichiaralo. Niente frasi generiche valide per qua
     });
   }
   if (doc.personas.length) {
-    await db.insert(buyerPersonas).values(doc.personas.map((p) => ({ clientId: client.id, ...p })));
+    await db.insert(buyerPersonas).values(doc.personas.map((p) => ({ clientId: client.id, checkupId, ...p })));
   }
   if (doc.objectives.length) {
     await db.insert(objectives).values(
-      doc.objectives.map((o) => ({ clientId: client.id, stage: o.stage, microObjectives: o.microObjectives, strategicGoal: o.strategicGoal, operationalStrategies: [...o.strategies, ...o.kpis.map((k) => `KPI: ${k}`)] })),
+      doc.objectives.map((o) => ({ clientId: client.id, checkupId, stage: o.stage, microObjectives: o.microObjectives, strategicGoal: o.strategicGoal, operationalStrategies: [...o.strategies, ...o.kpis.map((k) => `KPI: ${k}`)] })),
     );
   }
-  await db.update(checkups).set({ aiState: "pronto", aiError: null, status: "in_revisione" }).where(eq(checkups.id, checkupId));
+  await db
+    .update(checkups)
+    .set({ aiState: "pronto", aiError: null, status: "in_revisione", completedAt: new Date(), kpiSnapshot: await kpiSnapshot(client.id) })
+    .where(eq(checkups.id, checkupId));
   await progress(checkupId, "Check-up pronto per la revisione");
 }
 

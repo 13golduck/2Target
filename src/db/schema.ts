@@ -180,6 +180,11 @@ export const checkups = mysqlTable("checkups", {
   findings: json("findings").$type<{ fact: string; source?: string }[]>(),
   sources: json("sources").$type<{ url: string; title?: string }[]>(),
   questionRound: int("question_round").notNull().default(0),
+  /** Check-up precedente da cui parte il confronto (check-up periodici). */
+  previousId: int("previous_id"),
+  /** Fotografia dei KPI quando il check-up viene chiuso (storico). */
+  kpiSnapshot: json("kpi_snapshot").$type<{ label: string; scope: string; unit: string; value: number | null; target: number; status: string }[]>(),
+  completedAt: datetime("completed_at"),
   createdAt: created(),
   deliveredAt: datetime("delivered_at"),
 });
@@ -251,6 +256,8 @@ export const channelSnapshots = mysqlTable("channel_snapshots", {
 export const buyerPersonas = mysqlTable("buyer_personas", {
   id: int("id").autoincrement().primaryKey(),
   clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  /** Check-up che l'ha prodotto (null = inserito a mano). */
+  checkupId: int("checkup_id").references(() => checkups.id, { onDelete: "set null" }),
   name: varchar("name", { length: 160 }).notNull(),
   priority: int("priority").notNull().default(1),
   segment: mysqlEnum("segment", ["b2b", "b2c"]),
@@ -266,6 +273,8 @@ export const buyerPersonas = mysqlTable("buyer_personas", {
 export const competitors = mysqlTable("competitors", {
   id: int("id").autoincrement().primaryKey(),
   clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  /** Check-up che l'ha prodotto (null = inserito a mano). */
+  checkupId: int("checkup_id").references(() => checkups.id, { onDelete: "set null" }),
   name: varchar("name", { length: 160 }).notNull(),
   location: varchar("location", { length: 160 }),
   profile: text("profile"),
@@ -282,6 +291,8 @@ export const competitors = mysqlTable("competitors", {
 export const objectives = mysqlTable("objectives", {
   id: int("id").autoincrement().primaryKey(),
   clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  /** Check-up che l'ha prodotto (null = inserito a mano). */
+  checkupId: int("checkup_id").references(() => checkups.id, { onDelete: "set null" }),
   stage: mysqlEnum("stage", FUNNEL).notNull(),
   microObjectives: text("micro_objectives"),
   strategicGoal: text("strategic_goal").notNull(),

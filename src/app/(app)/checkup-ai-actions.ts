@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
@@ -47,10 +47,12 @@ export async function startAiCheckup(f: FormData) {
     })
     .where(eq(clients.id, clientId));
 
-  const [r] = await db.insert(checkups).values({ clientId, period: monthLabel(), aiMode: mode, aiState: "ricognizione", aiLog: [] });
+  // Check-up periodico: si parte dal precedente (confronto e storico)
+  const [prev] = await db.select({ id: checkups.id }).from(checkups).where(eq(checkups.clientId, clientId)).orderBy(desc(checkups.id)).limit(1);
+  const [r] = await db.insert(checkups).values({ clientId, period: monthLabel(), aiMode: mode, aiState: "ricognizione", aiLog: [], previousId: prev?.id ?? null });
   startJob(r.insertId, "ricognizione", () => runRecon(r.insertId));
   revalidatePath(path(clientId));
-  return { ok: true };
+  return { ok: true, checkupId: r.insertId };
 }
 
 export async function saveAnswers(f: FormData) {

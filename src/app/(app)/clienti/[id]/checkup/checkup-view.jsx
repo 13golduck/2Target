@@ -30,12 +30,14 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 
 import { useRouter } from 'src/routes/hooks';
+import { RouterLink } from 'src/routes/components';
 import { fmtDate } from 'src/lib/format';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { toast } from 'src/components/snackbar';
 import { Scrollbar } from 'src/components/scrollbar';
+import { StatusBadge } from 'src/components/status-badge';
 
 import { createCheckup, setCheckupStatus, saveCheckupSection } from '../../../actions';
 import { saveAnswers, reviseSection, startAiCheckup, resumeAiCheckup, continueAiCheckup } from '../../../checkup-ai-actions';
@@ -56,7 +58,7 @@ const STEPS = ['Dati del cliente', 'Ricognizione online', 'Domande al consulente
 const STEP_OF = { ricognizione: 1, domande: 2, ricerca: 3, scrittura: 4, pronto: 5 };
 const WORKING = ['ricognizione', 'ricerca', 'scrittura'];
 
-export function CheckupView({ aiConfigured, client, checkup, questions, runs, template, content }) {
+export function CheckupView({ aiConfigured, history, isLatest, previous, client, checkup, questions, runs, template, content }) {
   const router = useRouter();
   const ai = checkup && checkup.aiMode;
   const working = ai && WORKING.includes(checkup.aiState);
@@ -68,11 +70,40 @@ export function CheckupView({ aiConfigured, client, checkup, questions, runs, te
     return () => clearInterval(t);
   }, [working, router]);
 
-  if (!checkup) return <StartWizard aiConfigured={aiConfigured} client={client} />;
-  if (!ai) return <SectionsEditor checkup={checkup} template={template} content={content} />; // check-up compilato a mano
+  const bar = <HistoryBar history={history} currentId={checkup?.id} isNew={!checkup} />;
+
+  if (!checkup) {
+    return (
+      <Stack spacing={3}>
+        {history.length > 0 && bar}
+        <StartWizard aiConfigured={aiConfigured} client={client} previous={previous} />
+      </Stack>
+    );
+  }
+
+  const readOnly = checkup.status === 'consegnato';
+  const banner = !isLatest && (
+    <Alert severity="info" icon={<Iconify icon="solar:clock-circle-bold" />}>
+      Stai guardando un check-up dello storico ({checkup.period}). I dati sono quelli di allora.
+    </Alert>
+  );
+
+  if (!ai) {
+    // check-up compilato a mano
+    return (
+      <Stack spacing={3}>
+        {bar}
+        {banner}
+        <SectionsEditor checkup={checkup} template={template} content={content} readOnly={readOnly} />
+        {checkup.kpiSnapshot.length > 0 && <KpiSnapshotCard checkup={checkup} />}
+      </Stack>
+    );
+  }
 
   return (
     <Stack spacing={3}>
+      {bar}
+      {banner}
       <Card sx={{ p: 3 }}>
         <Stepper activeStep={checkup.aiState === 'errore' ? -1 : STEP_OF[checkup.aiState] ?? 1} alternativeLabel>
           {STEPS.map((s) => (
@@ -86,7 +117,8 @@ export function CheckupView({ aiConfigured, client, checkup, questions, runs, te
       {checkup.aiState === 'domande' && <QuestionsPanel checkup={checkup} questions={questions} />}
       {checkup.aiState === 'pronto' && (
         <>
-          <SectionsEditor checkup={checkup} template={template} content={content} withAi />
+          <SectionsEditor checkup={checkup} template={template} content={content} withAi={!readOnly} readOnly={readOnly} />
+          {checkup.kpiSnapshot.length > 0 && <KpiSnapshotCard checkup={checkup} />}
           <Grid container spacing={3}>
             <Grid size={{ xs: 12, lg: 7 }}><UsageCard runs={runs} mode={checkup.aiMode} /></Grid>
             <Grid size={{ xs: 12, lg: 5 }}><SourcesCard sources={checkup.sources} findings={checkup.findings} questions={questions} /></Grid>
@@ -100,7 +132,7 @@ export function CheckupView({ aiConfigured, client, checkup, questions, runs, te
 
 // ----------------------------------------------------------------------
 
-function StartWizard({ aiConfigured, client }) {
+function StartWizard({ aiConfigured, client, previous }) {
   const [mode, setMode] = useState('opus');
   const [pending, start] = useTransition();
 
@@ -109,9 +141,15 @@ function StartWizard({ aiConfigured, client }) {
       <Grid size={{ xs: 12, lg: 8 }}>
         <Card>
           <CardHeader
-            title="Check-up iniziale con l'AI"
+            title={previous ? 'Nuovo check-up periodico con l’AI' : 'Check-up iniziale con l’AI'}
             subheader="Inserisci quello che sai: l'AI cerca online, ti fa domande su ciò che non trova e scrive il check-up. Tu rivedi e approvi."
           />
+          {previous && (
+            <Alert severity="info" sx={{ mx: 3 }}>
+              Si parte dal check-up di <b>{previous.period}</b>: l&apos;AI lo legge, verifica cosa è cambiato e lo scrive nel campo
+              «Cosa è cambiato rispetto al check-up precedente». Il check-up precedente resta nello storico così com&apos;è.
+            </Alert>
+          )}
           <Box
             component="form"
             action={(fd) =>
@@ -375,7 +413,7 @@ function QuestionsPanel({ checkup, questions }) {
 
 // ----------------------------------------------------------------------
 
-function SectionsEditor({ checkup, template, content, withAi }) {
+function SectionsEditor({ checkup, template, content, withAi, readOnly }) {
   const filledOf = (sec) => sec.fields.filter((f) => content[sec.key]?.[f.key]?.trim()).length;
   const total = template.reduce((t, s) => t + s.fields.length, 0);
   const filled = template.reduce((t, s) => t + filledOf(s), 0);
@@ -389,10 +427,12 @@ function SectionsEditor({ checkup, template, content, withAi }) {
               <Typography variant="h6">{checkup.title} · {checkup.period}</Typography>
               <Label color={STATUS[checkup.status].color}>{STATUS[checkup.status].label}</Label>
               {withAi && <Label color="primary" startIcon={<Iconify icon="solar:atom-bold-duotone" />}>Bozza AI da rivedere</Label>}
+              {readOnly && <Label color="default" startIcon={<Iconify icon="solar:lock-password-outline" />}>Sola lettura</Label>}
             </Stack>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
               {filled} campi compilati su {total}
               {checkup.deliveredAt && ` · consegnato il ${fmtDate(checkup.deliveredAt)}`}
+              {readOnly && ' · per modificarlo riportalo «In revisione»'}
             </Typography>
             <LinearProgress variant="determinate" value={(filled / total) * 100} sx={{ height: 8, borderRadius: 1, maxWidth: 420 }} />
           </Box>
@@ -407,14 +447,14 @@ function SectionsEditor({ checkup, template, content, withAi }) {
       </Card>
       <Box>
         {template.map((sec, i) => (
-          <Section key={sec.key} index={i} section={sec} checkupId={checkup.id} values={content[sec.key] ?? {}} filled={filledOf(sec)} withAi={withAi} />
+          <Section key={sec.key} index={i} section={sec} checkupId={checkup.id} values={content[sec.key] ?? {}} filled={filledOf(sec)} withAi={withAi} readOnly={readOnly} />
         ))}
       </Box>
     </Stack>
   );
 }
 
-function Section({ index, section, checkupId, values, filled, withAi }) {
+function Section({ index, section, checkupId, values, filled, withAi, readOnly }) {
   const [pending, start] = useTransition();
   const [revising, startRevise] = useTransition();
   const [open, setOpen] = useState(index === 0);
@@ -483,15 +523,15 @@ function Section({ index, section, checkupId, values, filled, withAi }) {
         >
           <input type="hidden" name="checkupId" value={checkupId} />
           <input type="hidden" name="sectionKey" value={section.key} />
-          {section.guide.length > 0 && !withAi && (
+          {section.guide.length > 0 && !withAi && !readOnly && (
             <Alert severity="info" icon={<Iconify icon="solar:info-circle-bold" />}>
               {section.guide.map((g) => <div key={g}>{g}</div>)}
             </Alert>
           )}
           {section.fields.map((f) => (
-            <TextField key={f.key} name={`field:${f.key}`} label={f.label} defaultValue={values[f.key] ?? ''} helperText={f.kind === 'elenco' ? 'Una voce per riga' : ' '} multiline minRows={f.kind === 'testo' ? 3 : 4} fullWidth />
+            <TextField key={f.key} name={`field:${f.key}`} label={f.label} defaultValue={values[f.key] ?? ''} helperText={f.kind === 'elenco' ? 'Una voce per riga' : ' '} multiline minRows={f.kind === 'testo' ? 3 : 4} fullWidth slotProps={{ input: { readOnly } }} />
           ))}
-          <Box><Button type="submit" variant="contained" color="inherit" loading={pending}>Salva sezione</Button></Box>
+          {!readOnly && <Box><Button type="submit" variant="contained" color="inherit" loading={pending}>Salva sezione</Button></Box>}
         </Stack>
       </AccordionDetails>
     </Accordion>
@@ -499,6 +539,90 @@ function Section({ index, section, checkupId, values, filled, withAi }) {
 }
 
 // ----------------------------------------------------------------------
+
+const MODE_SHORT = { opus: 'Opus', sonnet: 'Sonnet', misto: 'Misto' };
+
+function HistoryBar({ history, currentId, isNew }) {
+  return (
+    <Card sx={{ p: 2 }}>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ alignItems: { md: 'center' } }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexShrink: 0 }}>
+          <Iconify icon="solar:clock-circle-bold" sx={{ color: 'text.secondary' }} />
+          <Typography variant="subtitle2">Storico check-up</Typography>
+        </Stack>
+        <Stack direction="row" spacing={1} sx={{ flex: 1, overflowX: 'auto', py: 0.5 }}>
+          {history.map((h, i) => (
+            <Chip
+              key={h.id}
+              component={RouterLink}
+              href={`?id=${h.id}`}
+              clickable
+              color={h.id === currentId ? 'primary' : 'default'}
+              variant={h.id === currentId ? 'filled' : 'outlined'}
+              label={
+                <span>
+                  {h.period ?? fmtDate(h.createdAt)}
+                  {i === 0 && ' · ultimo'}
+                  {' · '}
+                  {STATUS[h.status].label.toLowerCase()}
+                  {h.aiMode && ` · ${MODE_SHORT[h.aiMode]}`}
+                  {h.costUsd > 0 && ` · ${h.costUsd.toFixed(2)} $`}
+                </span>
+              }
+            />
+          ))}
+        </Stack>
+        <Button
+          component={RouterLink}
+          href="?nuovo=1"
+          variant={isNew ? 'contained' : 'outlined'}
+          startIcon={<Iconify icon="mingcute:add-line" />}
+          sx={{ flexShrink: 0 }}
+          disabled={history[0] && WORKING.includes(history[0].aiState)}
+        >
+          Nuovo check-up
+        </Button>
+      </Stack>
+    </Card>
+  );
+}
+
+function KpiSnapshotCard({ checkup }) {
+  const fmt = (v, unit) => (v == null ? '—' : unit === '%' ? `${(v * 100).toLocaleString('it-IT', { maximumFractionDigits: 1 })}%` : unit === '€' ? `${v.toLocaleString('it-IT', { maximumFractionDigits: 2 })} €` : v.toLocaleString('it-IT', { maximumFractionDigits: 2 }));
+  return (
+    <Card>
+      <CardHeader
+        avatar={<Iconify icon="solar:chart-square-outline" width={24} />}
+        title="KPI al momento del check-up"
+        subheader={checkup.completedAt ? `Fotografia del ${fmtDate(checkup.completedAt)}: resta nello storico per i confronti` : 'Fotografia salvata alla chiusura'}
+      />
+      <Scrollbar>
+        <Table size="small" sx={{ minWidth: 560 }}>
+          <TableHead>
+            <TableRow>
+              <TableCell>KPI</TableCell>
+              <TableCell>Area</TableCell>
+              <TableCell align="right">Valore</TableCell>
+              <TableCell align="right">Target</TableCell>
+              <TableCell align="right">Stato</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {checkup.kpiSnapshot.map((k) => (
+              <TableRow key={k.label}>
+                <TableCell>{k.label}</TableCell>
+                <TableCell>{k.scope}</TableCell>
+                <TableCell align="right">{fmt(k.value, k.unit)}</TableCell>
+                <TableCell align="right">{fmt(k.target, k.unit)}</TableCell>
+                <TableCell align="right"><StatusBadge status={k.status} /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Scrollbar>
+    </Card>
+  );
+}
 
 const MODEL_LABEL = { 'claude-opus-5-5': 'Opus 5.5', 'claude-sonnet-5-5': 'Sonnet 5.5' };
 const k = (n) => (n >= 1000 ? `${(n / 1000).toLocaleString('it-IT', { maximumFractionDigits: 1 })}k` : String(n));
