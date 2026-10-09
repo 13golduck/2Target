@@ -50,7 +50,7 @@ jobs:
           # Il .env non c'è: le variabili si impostano nell'app Node.js di Plesk
           rm -f dist/.env*
           cat > dist/README.md <<'MD'
-          # golduck-marketing · build di produzione
+          # 2Target · build di produzione
           Generato da GitHub Actions dal branch `main` (commit ${{ github.sha }}).
           Non modificare: ogni push su `main` sovrascrive questo branch.
           Avvio: `node server.js` (in Plesk: file di avvio `server.js`).

@@ -36,9 +36,9 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
       <input type="hidden" name="id" value={item.id} />
 
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0 flex-1">
           <Link href={back} className="text-sm text-muted hover:text-foreground">← Piano editoriale · {client?.name}</Link>
-          <input name="title" defaultValue={item.title} className="mt-1 w-full bg-transparent text-2xl font-bold outline-none focus:underline decoration-gold" />
+          <textarea name="title" defaultValue={item.title} rows={1} className="mt-1 w-full resize-none bg-transparent text-2xl font-bold outline-none [field-sizing:content] focus:underline decoration-gold" />
         </div>
         <div className="flex items-center gap-2">
           <select name="status" defaultValue={item.status} className="field w-40">

@@ -8,7 +8,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <main className="flex min-h-screen items-center justify-center p-4">
       <div className="card w-full max-w-sm p-8">
         <p className="text-xl font-black tracking-tight">
-          GOLDUCK <span className="font-light text-gold">marketing</span>
+          2Target <span className="text-sm font-light text-gold">by Golduck</span>
         </p>
         <p className="mt-1 mb-6 text-sm text-muted">Accesso riservato al team</p>
         <LoginForm returnTo={returnTo} />

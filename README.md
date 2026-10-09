@@ -1,4 +1,4 @@
-# Golduck Marketing
+# 2Target
 
 Piattaforma interna del team Golduck per il servizio marketing di ogni cliente:
 check-up → strategia e KPI → brainstorming → piano editoriale → (poi) pubblicazione e sponsorizzate.

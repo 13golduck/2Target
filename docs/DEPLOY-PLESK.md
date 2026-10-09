@@ -10,10 +10,10 @@ push su main → GitHub Actions (test + build) → branch `production` → Plesk
 
 1. **Database** — Plesk → Database → Aggiungi database
    - nome `golduck_marketing`, utente dedicato (es. `gm`) con password robusta.
-2. **Dominio** — un sottodominio, es. `marketing.golduck.it` (record DNS A verso l'IP della VPS),
+2. **Dominio** — un sottodominio, es. `2target.golduck.it` (record DNS A verso l'IP della VPS),
    certificato Let's Encrypt.
 3. **Git** — nel sottodominio: Git → aggiungi repository
-   - URL `https://github.com/13golduck/golduck-marketing.git` (repository privato: serve un token o una deploy key)
+   - URL `https://github.com/13golduck/2Target.git` (repository privato: serve un token o una deploy key)
    - branch **`production`**, cartella di destinazione `httpdocs`, nessuna azione di deploy.
 4. **Node.js** — nel sottodominio: Node.js → abilita
    - Node 22 o superiore, cartella applicazione `/httpdocs`, file di avvio `server.js`, modalità produzione

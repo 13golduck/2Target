@@ -5,7 +5,7 @@ import "./globals.css";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Golduck Marketing",
+  title: "2Target",
   description: "Check-up, strategia, piano editoriale e KPI dei clienti Golduck",
   robots: { index: false, follow: false },
 };

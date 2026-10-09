@@ -11,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <header className="sticky top-0 z-10 border-b border-line bg-surface/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link href="/" className="text-lg font-black tracking-tight">
-            GOLDUCK <span className="font-light text-gold">marketing</span>
+            2Target <span className="text-sm font-light text-gold">by Golduck</span>
           </Link>
           <div className="flex items-center gap-3 text-sm text-muted">
             <span className="hidden sm:inline">{user.name}</span>
