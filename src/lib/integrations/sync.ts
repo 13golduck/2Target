@@ -2,7 +2,8 @@ import "server-only";
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { channelDaily, connections, kpiMeasurements, kpis, seoSnapshots, socialAccounts, socialPosts } from "@/db/schema";
+import { channelDaily, connections, kpiMeasurements, kpis, leadEvents, leads, marketingCosts, seoSnapshots, socialAccounts, socialPosts } from "@/db/schema";
+import { funnelStats } from "@/lib/leads";
 import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import { ApiError } from "./http";
 import * as google from "./google";
@@ -120,10 +121,52 @@ const AUTO_METRICS = new Set([
   "seo_clicks", "seo_impressions", "seo_ctr", "seo_position", "organic_sessions", "key_events",
 ]);
 
+// Metriche calcolate dal raccoglitore lead (KPI senza canale)
+const LEAD_METRICS: Record<string, (s: ReturnType<typeof funnelStats>) => number | null> = {
+  leads_total: (s) => s.leads,
+  qualified_leads: (s) => s.reached.qualificato,
+  new_customers: (s) => s.customers,
+  first_order_value: (s) => s.avgDeal,
+  days_to_first_order: (s) => s.avgDaysToClose,
+  lead_cpl: (s) => s.cpl,
+  cac: (s) => s.cac,
+  lead_to_customer: (s) => s.leadToCustomer,
+  marketing_roi: (s) => s.roi,
+};
+
 export async function updateKpisFromData(clientId: number, now = new Date()) {
   const start = `${now.toISOString().slice(0, 8)}01`;
   const end = now.toISOString().slice(0, 10);
-  const list = (await db.select().from(kpis).where(eq(kpis.clientId, clientId))).filter((k) => k.active && AUTO_METRICS.has(k.metricKey));
+  const all = (await db.select().from(kpis).where(eq(kpis.clientId, clientId))).filter((k) => k.active);
+  const write = async (kpiId: number, value: number) => {
+    await db.delete(kpiMeasurements).where(and(eq(kpiMeasurements.kpiId, kpiId), eq(kpiMeasurements.periodStart, start), eq(kpiMeasurements.source, "api")));
+    await db.insert(kpiMeasurements).values({ kpiId, periodStart: start, periodEnd: end, value, source: "api" });
+  };
+
+  const leadKpis = all.filter((k) => !k.platform && LEAD_METRICS[k.metricKey]);
+  if (leadKpis.length) {
+    const rows = await db.select().from(leads).where(eq(leads.clientId, clientId));
+    if (rows.length) {
+      const events = await db
+        .select({ leadId: leadEvents.leadId, toStage: leadEvents.toStage })
+        .from(leadEvents)
+        .where(sql`${leadEvents.leadId} in (select id from leads where client_id = ${clientId})`);
+      const costs = await db.select().from(marketingCosts).where(eq(marketingCosts.clientId, clientId));
+      const stats = funnelStats(
+        rows.map((l) => ({ id: l.id, source: l.source, stage: l.stage, receivedAt: l.receivedAt, wonAt: l.wonAt, wonValue: l.wonValue, estimatedValue: l.estimatedValue, lostReason: l.lostReason })),
+        events,
+        costs.map((c) => ({ month: c.month, source: c.source, kind: c.kind, amount: c.amount })),
+        new Date(`${start}T00:00:00Z`),
+        new Date(`${end}T23:59:59Z`),
+      );
+      for (const k of leadKpis) {
+        const v = LEAD_METRICS[k.metricKey](stats);
+        if (v != null) await write(k.id, v);
+      }
+    }
+  }
+
+  const list = all.filter((k) => AUTO_METRICS.has(k.metricKey));
   if (!list.length) return;
   const channels = await db.select().from(socialAccounts).where(eq(socialAccounts.clientId, clientId));
 
@@ -134,8 +177,7 @@ export async function updateKpisFromData(clientId: number, now = new Date()) {
     if (!ch) continue;
     const value = await computeMetric(k.metricKey, ch.id, start, end);
     if (value == null) continue;
-    await db.delete(kpiMeasurements).where(and(eq(kpiMeasurements.kpiId, k.id), eq(kpiMeasurements.periodStart, start), eq(kpiMeasurements.source, "api")));
-    await db.insert(kpiMeasurements).values({ kpiId: k.id, periodStart: start, periodEnd: end, value, source: "api" });
+    await write(k.id, value);
   }
 }
 

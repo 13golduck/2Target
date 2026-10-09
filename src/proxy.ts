@@ -6,8 +6,8 @@ import { authConfig } from "@/lib/auth.config";
 // Tutta l'app è riservata al team: senza sessione si va al login.
 const { auth } = NextAuth(authConfig);
 
-// /api/cron ha una sua chiave (CRON_SECRET), non la sessione
-const PUBLIC = ["/login", "/api/auth", "/api/cron"];
+// /api/cron ha una sua chiave (CRON_SECRET); /api/lead riceve i moduli dei siti dei clienti (chiave per cliente)
+const PUBLIC = ["/login", "/api/auth", "/api/cron", "/api/lead"];
 
 export default auth((request) => {
   const { pathname, search } = request.nextUrl;

@@ -53,3 +53,6 @@ export function parseMetricInput(raw: FormDataEntryValue | null, unit: string) {
 
 /** Data (AAAA-MM-GG, UTC) di n giorni fa: per i filtri sui dati giornalieri. */
 export const isoDaysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+
+/** Adesso (helper per i componenti server: la regola di purezza del linter non accetta new Date() nel render). */
+export const nowDate = () => new Date();

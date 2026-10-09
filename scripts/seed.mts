@@ -189,5 +189,48 @@ await db.insert(s.editorialItems).values([
   },
 ]);
 
+// Lead e costi di esempio (Lesioli): richieste di ristrutturazione
+const now = new Date();
+const ago = (days: number) => new Date(now.getTime() - days * 86_400_000);
+const monthStart = (back: number) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - back, 1)).toISOString().slice(0, 10);
+await db.update(s.clients).set({ leadToken: "esempio-lesioli-" + Math.random().toString(36).slice(2, 10) }).where(eq(s.clients.id, lesioli));
+type Stage = (typeof s.LEAD_STAGES)[number];
+const sampleLeads: { name: string; source: (typeof s.LEAD_SOURCES)[number]; days: number; path: Stage[]; est?: number; won?: number; lost?: string }[] = [
+  { name: "Marco Bianchi", source: "meta_ads", days: 3, path: ["nuovo"], est: 28000 },
+  { name: "Giulia Rossi", source: "meta_ads", days: 6, path: ["nuovo", "contattato"], est: 45000 },
+  { name: "Paolo Verdi", source: "instagram", days: 8, path: ["nuovo", "contattato", "qualificato"], est: 60000 },
+  { name: "Sara Neri", source: "meta_ads", days: 12, path: ["nuovo", "contattato", "qualificato", "preventivo"], est: 38000 },
+  { name: "Luca Gallo", source: "sito", days: 15, path: ["nuovo", "contattato", "qualificato", "preventivo", "vinto"], won: 42000 },
+  { name: "Elena Fontana", source: "passaparola", days: 20, path: ["nuovo", "contattato", "qualificato", "preventivo", "vinto"], won: 65000 },
+  { name: "Andrea Costa", source: "meta_ads", days: 9, path: ["nuovo", "contattato", "perso"], lost: "Budget troppo basso" },
+  { name: "Chiara Ricci", source: "meta_ads", days: 25, path: ["nuovo", "perso"], lost: "Non risponde" },
+  { name: "Davide Moretti", source: "seo", days: 40, path: ["nuovo", "contattato", "qualificato", "preventivo", "vinto"], won: 51000 },
+  { name: "Francesca Greco", source: "meta_ads", days: 45, path: ["nuovo", "contattato", "qualificato", "perso"], lost: "Prezzo" },
+  { name: "Matteo Conti", source: "instagram", days: 50, path: ["nuovo", "contattato"], est: 20000 },
+  { name: "Valentina Bruno", source: "meta_ads", days: 70, path: ["nuovo", "contattato", "qualificato", "preventivo", "vinto"], won: 36000 },
+];
+for (const l of sampleLeads) {
+  const received = ago(l.days);
+  const stage = l.path[l.path.length - 1];
+  const [r] = await db.insert(s.leads).values({
+    clientId: lesioli, receivedAt: received, name: l.name, email: l.name.toLowerCase().replace(" ", ".") + "@esempio.it", source: l.source,
+    stage, stageChangedAt: ago(Math.max(0, l.days - l.path.length * 2)), estimatedValue: l.est ?? null, wonValue: l.won ?? null,
+    wonAt: stage === "vinto" ? ago(Math.max(0, l.days - 10)) : null, lostReason: l.lost ?? null,
+    message: "Richiesta di informazioni per ristrutturazione (dato di esempio)",
+  });
+  await db.insert(s.leadEvents).values(l.path.map((st, i) => ({ leadId: r.insertId, fromStage: i ? l.path[i - 1] : null, toStage: st, at: ago(Math.max(0, l.days - i * 2)) })));
+}
+await db.insert(s.marketingCosts).values([
+  { clientId: lesioli, month: monthStart(0), source: "meta_ads", kind: "inserzioni", amount: 320, notes: "Campagna chiamate (esempio)" },
+  { clientId: lesioli, month: monthStart(0), source: "instagram", kind: "produzione", amount: 400, notes: "Riprese reel (esempio)" },
+  { clientId: lesioli, month: monthStart(1), source: "meta_ads", kind: "inserzioni", amount: 280 },
+  { clientId: lesioli, month: monthStart(1), source: "sito", kind: "consulenza", amount: 250 },
+  { clientId: lesioli, month: monthStart(2), source: "meta_ads", kind: "inserzioni", amount: 300 },
+]);
+await db.insert(s.kpis).values([
+  { clientId: lesioli, metricKey: "lead_cpl", label: "Costo per lead", scope: "business", direction: "lower", target: 80 },
+  { clientId: lesioli, metricKey: "cac", label: "Costo di acquisizione cliente", scope: "business", direction: "lower", target: 600 },
+]);
+
 console.log("Dati di esempio caricati: Piantiny e Lesioli.");
 await pool.end();

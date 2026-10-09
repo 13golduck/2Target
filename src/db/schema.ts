@@ -54,6 +54,8 @@ export const clients = mysqlTable("clients", {
   notes: text("notes"),
   ownerId: int("owner_id").references(() => users.id, { onDelete: "set null" }),
   status: mysqlEnum("status", ["onboarding", "attivo", "in_pausa", "chiuso"]).notNull().default("onboarding"),
+  /** Chiave pubblica per ricevere i lead dai moduli del sito del cliente (POST /api/lead/<chiave>). */
+  leadToken: varchar("lead_token", { length: 64 }).unique(),
   createdAt: created(),
 });
 
@@ -447,3 +449,71 @@ export const postMetrics = mysqlTable("post_metrics", {
   revenue: money("revenue"),
   source: mysqlEnum("source", ["manuale", "api", "import"]).notNull().default("manuale"),
 });
+
+// ── 6. Lead e funnel di vendita ──────────────────────────────────────
+export const LEAD_STAGES = ["nuovo", "contattato", "qualificato", "preventivo", "vinto", "perso"] as const;
+export const LEAD_SOURCES = [
+  "meta_ads", "instagram", "facebook", "tiktok", "linkedin", "google_ads", "seo",
+  "sito", "whatsapp", "telefono", "email", "passaparola", "evento", "altro",
+] as const;
+export const COST_KINDS = ["inserzioni", "produzione", "consulenza", "strumenti", "eventi", "altro"] as const;
+
+export const leads = mysqlTable(
+  "leads",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+    receivedAt: datetime("received_at").notNull(),
+    name: varchar("name", { length: 200 }),
+    company: varchar("company", { length: 200 }),
+    email: varchar("email", { length: 200 }),
+    phone: varchar("phone", { length: 60 }),
+    message: text("message"),
+    source: mysqlEnum("source", LEAD_SOURCES).notNull().default("altro"),
+    campaignId: int("campaign_id").references(() => campaigns.id, { onDelete: "set null" }),
+    editorialItemId: int("editorial_item_id").references(() => editorialItems.id, { onDelete: "set null" }),
+    utmSource: varchar("utm_source", { length: 120 }),
+    utmMedium: varchar("utm_medium", { length: 120 }),
+    utmCampaign: varchar("utm_campaign", { length: 200 }),
+    landingUrl: varchar("landing_url", { length: 500 }),
+    stage: mysqlEnum("stage", LEAD_STAGES).notNull().default("nuovo"),
+    stageChangedAt: datetime("stage_changed_at"),
+    lostReason: varchar("lost_reason", { length: 255 }),
+    estimatedValue: money("estimated_value"),
+    wonValue: money("won_value"),
+    wonAt: datetime("won_at"),
+    assignedTo: int("assigned_to").references(() => users.id, { onDelete: "set null" }),
+    notes: text("notes"),
+    externalId: varchar("external_id", { length: 120 }),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (t) => [index("leads_client").on(t.clientId, t.receivedAt), uniqueIndex("leads_external").on(t.clientId, t.externalId)],
+);
+
+/** Storico dei passaggi di fase: serve per i tempi medi del funnel. */
+export const leadEvents = mysqlTable("lead_events", {
+  id: int("id").autoincrement().primaryKey(),
+  leadId: int("lead_id").notNull().references(() => leads.id, { onDelete: "cascade" }),
+  fromStage: mysqlEnum("from_stage", LEAD_STAGES),
+  toStage: mysqlEnum("to_stage", LEAD_STAGES).notNull(),
+  at: datetime("at").notNull(),
+  userId: int("user_id").references(() => users.id, { onDelete: "set null" }),
+});
+
+/** Costi di marketing per mese e fonte (inserzioni, produzione contenuti, consulenza…). */
+export const marketingCosts = mysqlTable(
+  "marketing_costs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+    month: date("month", { mode: "string" }).notNull(), // primo giorno del mese
+    source: mysqlEnum("source", LEAD_SOURCES).notNull(),
+    kind: mysqlEnum("kind", COST_KINDS).notNull().default("inserzioni"),
+    amount: money("amount").notNull(),
+    campaignId: int("campaign_id").references(() => campaigns.id, { onDelete: "set null" }),
+    notes: varchar("notes", { length: 255 }),
+    createdAt: created(),
+  },
+  (t) => [index("marketing_costs_client").on(t.clientId, t.month)],
+);
