@@ -48,11 +48,16 @@ Plesk → dominio → **Node.js → Abilita**:
 | `CRON_SECRET` | stringa casuale (`openssl rand -base64 33`) |
 | `BOOTSTRAP_ADMIN_EMAIL` | `a.infantino@golduck.it` (solo per il primo avvio) |
 | `BOOTSTRAP_ADMIN_NAME` | `Antonio Infantino` (solo per il primo avvio) |
-| `SMTP_HOST` | server di posta in uscita (es. `smtp.office365.com` per Microsoft 365) |
+| `SMTP_HOST` | `smtp.gmail.com` (casella Google Workspace) |
 | `SMTP_PORT` | `587` (STARTTLS) oppure `465` (TLS) |
-| `SMTP_USER` | casella che invia i codici di accesso (es. `noreply@golduck.it`) |
-| `SMTP_PASS` | password della casella (o password per app) |
-| `MAIL_FROM` | mittente visualizzato, es. `2Target <noreply@golduck.it>` |
+| `SMTP_USER` | `developer@golduck.eu` (casella che invia i codici di accesso) |
+| `SMTP_PASS` | **password per app** di Google della casella (16 lettere), non la password normale |
+| `MAIL_FROM` | `2Target <developer@golduck.eu>` |
+
+**Password per app Google:** accedi come developer@golduck.eu → <https://myaccount.google.com/security> →
+attiva la **Verifica in due passaggi** → poi <https://myaccount.google.com/apppasswords> → nome `2Target` → **Crea**.
+Copia le 16 lettere in `SMTP_PASS` (gli spazi non contano). Se la pagina dice che non è disponibile,
+l'amministratore di Google Workspace deve consentire la verifica in due passaggi per l'utente.
 
 **Accesso senza password**: si inserisce l'email e si riceve un codice di 6 cifre valido 10 minuti.
 Senza SMTP configurato nessuno può entrare: provalo subito dopo il primo avvio.

@@ -13,7 +13,8 @@ function smtp() {
     host: process.env.SMTP_HOST,
     port,
     secure: port === 465, // 465 = TLS diretto; 587 = STARTTLS
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    // Le password per app di Google si copiano a gruppi di 4 lettere separati da spazi
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS?.replace(/\s+/g, "") },
   });
   return transport;
 }
