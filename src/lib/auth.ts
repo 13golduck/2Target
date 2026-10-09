@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { authConfig } from "./auth.config";
+import { firstAccessAllowed } from "./first-access";
 import { consumeLoginCode } from "./login-codes";
 
 // Accesso senza password: email + codice di 6 cifre ricevuto via email (vedi ./login-codes).
@@ -17,9 +18,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
-      credentials: { email: {}, code: {}, remember: {} },
+      credentials: { email: {}, code: {}, remember: {}, firstAccess: {} },
       async authorize(credentials) {
-        const user = await consumeLoginCode(String(credentials?.email ?? ""), String(credentials?.code ?? ""));
+        const email = String(credentials?.email ?? "");
+        const user =
+          credentials?.firstAccess === "true"
+            ? await firstAccessUser(email)
+            : await consumeLoginCode(email, String(credentials?.code ?? ""));
         if (!user) return null;
         await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
         const remember = ["on", "true", "1"].includes(String(credentials?.remember ?? ""));
@@ -28,6 +33,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
 });
+
+/** Primo accesso senza codice (vedi ./first-access): solo l'amministratore iniziale, una volta. */
+async function firstAccessUser(email: string) {
+  if (!(await firstAccessAllowed(email))) return null;
+  const [user] = await db.select().from(users).where(eq(users.email, email.trim().toLowerCase())).limit(1);
+  return user?.active && user.role === "admin" ? user : null;
+}
 
 /** Per pagine e azioni: utente loggato e ancora attivo nel DB, altrimenti al login. */
 export async function requireUser() {

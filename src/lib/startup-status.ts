@@ -32,3 +32,8 @@ export function explainDbError(code: string) {
   };
   return map[code] ?? `errore ${code}`;
 }
+
+/** Momento dell'avvio del processo (per finestre temporali come il primo accesso). */
+const gs = globalThis as unknown as { __startedAt?: number };
+gs.__startedAt ??= Date.now();
+export const getStartedAt = () => gs.__startedAt ?? Date.now();

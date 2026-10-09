@@ -17,7 +17,12 @@ export default async function AppLayout({ children }) {
       items: [
         { title: "Clienti", path: "/", icon: <NavIcon name="ic-dashboard" /> },
         { title: "Consumi AI", path: "/consumi-ai", icon: <NavIcon name="ic-analytics" /> },
-        ...(user.role === "admin" ? [{ title: "Utenti", path: "/utenti", icon: <NavIcon name="ic-user" /> }] : []),
+        ...(user.role === "admin"
+          ? [
+              { title: "Utenti", path: "/utenti", icon: <NavIcon name="ic-user" /> },
+              { title: "Impostazioni", path: "/impostazioni", icon: <NavIcon name="ic-params" /> },
+            ]
+          : []),
       ],
     },
     {

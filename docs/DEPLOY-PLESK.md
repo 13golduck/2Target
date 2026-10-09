@@ -48,19 +48,9 @@ Plesk → dominio → **Node.js → Abilita**:
 | `CRON_SECRET` | stringa casuale (`openssl rand -base64 33`) |
 | `BOOTSTRAP_ADMIN_EMAIL` | `a.infantino@golduck.it` (solo per il primo avvio) |
 | `BOOTSTRAP_ADMIN_NAME` | `Antonio Infantino` (solo per il primo avvio) |
-| `SMTP_HOST` | `smtp.gmail.com` (casella Google Workspace) |
-| `SMTP_PORT` | `587` (STARTTLS) oppure `465` (TLS) |
-| `SMTP_USER` | `developer@golduck.eu` (casella che invia i codici di accesso) |
-| `SMTP_PASS` | **password per app** di Google della casella (16 lettere), non la password normale |
-| `MAIL_FROM` | `2Target <developer@golduck.eu>` |
 
-**Password per app Google:** accedi come developer@golduck.eu → <https://myaccount.google.com/security> →
-attiva la **Verifica in due passaggi** → poi <https://myaccount.google.com/apppasswords> → nome `2Target` → **Crea**.
-Copia le 16 lettere in `SMTP_PASS` (gli spazi non contano). Se la pagina dice che non è disponibile,
-l'amministratore di Google Workspace deve consentire la verifica in due passaggi per l'utente.
-
-**Accesso senza password**: si inserisce l'email e si riceve un codice di 6 cifre valido 10 minuti.
-Senza SMTP configurato nessuno può entrare: provalo subito dopo il primo avvio.
+**Invio email (codici di accesso)**: non serve nessuna variabile. Si configura dentro 2Target al primo accesso,
+da **Impostazioni** (Microsoft 365 consigliato): vedi [EMAIL-MICROSOFT365.md](EMAIL-MICROSOFT365.md).
 
 Più avanti, per i canali: `META_APP_ID`, `META_APP_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
 `GOOGLE_PAGESPEED_KEY` (vedi COLLEGAMENTI-API.md).
@@ -73,7 +63,8 @@ Attenzione: la pagina Node.js di Plesk **mostra le variabili in chiaro**. Non fa
 ### 5. Primo avvio
 1. **NPM install non serve** (le dipendenze sono già nel pacchetto): premi solo **Riavvia app**.
 2. All'avvio l'app crea le tabelle e, se la tabella utenti è vuota, l'amministratore `BOOTSTRAP_ADMIN_*`.
-3. Apri il sito, scrivi la tua email, inserisci il codice ricevuto.
+3. Entro 60 minuti apri il sito e scrivi la tua email: la prima volta entri senza codice e arrivi in
+   **Impostazioni** per configurare l'invio email. Salva e invia la prova.
 4. **Togli le variabili `BOOTSTRAP_ADMIN_*`** e riavvia l'app. I colleghi si aggiungono da **Utenti**.
 5. In **Consumi AI** controlla i limiti di spesa.
 
