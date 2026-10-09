@@ -18,6 +18,8 @@ const TABS = [
   { href: '/checkup', label: 'Check-up', icon: 'solar:notes-bold-duotone' },
   { href: '/idee', label: 'Idee', icon: 'solar:atom-bold-duotone' },
   { href: '/piano', label: 'Piano editoriale', icon: 'solar:calendar-date-bold' },
+  { href: '/seo', label: 'SEO', icon: 'eva:search-fill' },
+  { href: '/canali', label: 'Canali', icon: 'eva:link-2-fill' },
 ];
 
 export function ClientHeader({ client, children }) {

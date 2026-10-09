@@ -57,18 +57,101 @@ export const clients = mysqlTable("clients", {
   createdAt: created(),
 });
 
+// ── Collegamenti alle piattaforme e canali ────────────────────────────
+export const PROVIDERS = ["meta", "google", "tiktok", "linkedin"] as const;
+export const CHANNEL_KINDS = [
+  "instagram", "facebook", "tiktok", "linkedin", "youtube",
+  "search_console", "ga4", "business_profile", "website",
+] as const;
+
+/** Accesso concesso da un utente su una piattaforma (token cifrati). Uno per account collegato. */
+export const connections = mysqlTable(
+  "connections",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+    provider: mysqlEnum("provider", PROVIDERS).notNull(),
+    externalUserId: varchar("external_user_id", { length: 120 }).notNull(),
+    accountName: varchar("account_name", { length: 200 }),
+    accessTokenEnc: text("access_token_enc").notNull(),
+    refreshTokenEnc: text("refresh_token_enc"),
+    expiresAt: datetime("expires_at"),
+    scopes: text("scopes"),
+    status: mysqlEnum("status", ["attivo", "scaduto", "errore"]).notNull().default("attivo"),
+    lastError: text("last_error"),
+    connectedBy: int("connected_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (t) => [uniqueIndex("connections_unique").on(t.clientId, t.provider, t.externalUserId)],
+);
+
+/** Canale del cliente: profilo social, proprietà Search Console / GA4, sito. */
 export const socialAccounts = mysqlTable(
   "social_accounts",
   {
     id: int("id").autoincrement().primaryKey(),
     clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
-    platform: mysqlEnum("platform", PLATFORMS).notNull(),
-    handle: varchar("handle", { length: 120 }).notNull(),
-    externalId: varchar("external_id", { length: 120 }),
+    connectionId: int("connection_id").references(() => connections.id, { onDelete: "set null" }),
+    platform: mysqlEnum("platform", CHANNEL_KINDS).notNull(),
+    handle: varchar("handle", { length: 255 }).notNull(),
+    name: varchar("name", { length: 255 }),
+    pictureUrl: text("picture_url"),
+    externalId: varchar("external_id", { length: 255 }),
+    /** Token di pagina Facebook cifrato (serve per leggere insight e pubblicare sulla pagina). */
+    assetTokenEnc: text("asset_token_enc"),
     connected: boolean("connected").notNull().default(false),
+    lastSyncAt: datetime("last_sync_at"),
+    lastSyncError: text("last_sync_error"),
     createdAt: created(),
   },
   (t) => [uniqueIndex("social_accounts_unique").on(t.clientId, t.platform, t.handle)],
+);
+
+/** Valori giornalieri per canale (follower, reach, clic SEO, sessioni…). */
+export const channelDaily = mysqlTable(
+  "channel_daily",
+  {
+    socialAccountId: int("social_account_id").notNull().references(() => socialAccounts.id, { onDelete: "cascade" }),
+    day: date("day", { mode: "string" }).notNull(),
+    metric: varchar("metric", { length: 60 }).notNull(),
+    value: num("value").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.socialAccountId, t.day, t.metric] })],
+);
+
+/** Post letti dalle piattaforme, con le metriche più recenti; collegabili a una scheda del piano. */
+export const socialPosts = mysqlTable(
+  "social_posts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    socialAccountId: int("social_account_id").notNull().references(() => socialAccounts.id, { onDelete: "cascade" }),
+    externalId: varchar("external_id", { length: 120 }).notNull(),
+    editorialItemId: int("editorial_item_id").references(() => editorialItems.id, { onDelete: "set null" }),
+    mediaType: varchar("media_type", { length: 40 }),
+    permalink: varchar("permalink", { length: 500 }),
+    caption: text("caption"),
+    thumbnailUrl: text("thumbnail_url"),
+    publishedAt: datetime("published_at"),
+    metrics: json("metrics").$type<Record<string, number>>(),
+    syncedAt: datetime("synced_at"),
+  },
+  (t) => [uniqueIndex("social_posts_unique").on(t.socialAccountId, t.externalId), index("social_posts_date").on(t.socialAccountId, t.publishedAt)],
+);
+
+/** Classifiche SEO del periodo (query e pagine da Search Console, punteggi PageSpeed). */
+export const seoSnapshots = mysqlTable(
+  "seo_snapshots",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    socialAccountId: int("social_account_id").notNull().references(() => socialAccounts.id, { onDelete: "cascade" }),
+    kind: mysqlEnum("kind", ["queries", "pages", "pagespeed"]).notNull(),
+    periodStart: date("period_start", { mode: "string" }).notNull(),
+    periodEnd: date("period_end", { mode: "string" }).notNull(),
+    rows: json("rows").$type<Record<string, unknown>[]>().notNull(),
+    createdAt: created(),
+  },
+  (t) => [index("seo_snapshots_lookup").on(t.socialAccountId, t.kind, t.periodEnd)],
 );
 
 // ── 1. Check-up ──────────────────────────────────────────────────────
@@ -159,7 +242,7 @@ export const kpis = mysqlTable(
     objectiveId: int("objective_id").references(() => objectives.id, { onDelete: "set null" }),
     metricKey: varchar("metric_key", { length: 60 }).notNull(),
     label: varchar("label", { length: 160 }).notNull(),
-    scope: mysqlEnum("scope", ["organico", "sponsorizzato", "business"]).notNull(),
+    scope: mysqlEnum("scope", ["organico", "sponsorizzato", "seo", "business"]).notNull(),
     platform: varchar("platform", { length: 30 }),
     direction: mysqlEnum("direction", ["higher", "lower"]).notNull().default("higher"),
     baseline: num("baseline"),

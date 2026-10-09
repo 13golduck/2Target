@@ -76,6 +76,39 @@ await db.insert(s.kpiMeasurements).values([
   { kpiId: k3, periodStart: "2026-09-01", periodEnd: "2026-09-30", value: 7600 },
 ]);
 
+// Search Console con dati FINTI, solo per vedere la pagina SEO e i KPI automatici in locale
+const gsc = id(await db.insert(s.socialAccounts).values({ clientId: piantiny, platform: "search_console", handle: "piantiny.it", name: "piantiny.it (dati di esempio)" }));
+const gscRows: { socialAccountId: number; day: string; metric: string; value: number }[] = [];
+for (let d = 92; d >= 2; d--) {
+  const day = new Date(Date.now() - d * 86_400_000).toISOString().slice(0, 10);
+  const trend = 1 + (92 - d) / 120;
+  const impressions = Math.round((180 + 60 * Math.sin(d / 5)) * trend);
+  const clicks = Math.round(impressions * (0.035 + 0.01 * Math.cos(d / 7)));
+  gscRows.push(
+    { socialAccountId: gsc, day, metric: "seo_impressions", value: impressions },
+    { socialAccountId: gsc, day, metric: "seo_clicks", value: clicks },
+    { socialAccountId: gsc, day, metric: "seo_position", value: Number((14 - (92 - d) / 30 + Math.sin(d) * 0.8).toFixed(2)) },
+  );
+}
+await db.insert(s.channelDaily).values(gscRows);
+const end = new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10);
+const start = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+await db.insert(s.seoSnapshots).values([
+  { socialAccountId: gsc, kind: "queries", periodStart: start, periodEnd: end, rows: [
+    { key: "microgreens brescia", clicks: 64, impressions: 820, ctr: 0.078, position: 3.2 },
+    { key: "fiori eduli", clicks: 41, impressions: 2650, ctr: 0.015, position: 9.4 },
+    { key: "micro ortaggi per ristoranti", clicks: 22, impressions: 310, ctr: 0.071, position: 4.1 },
+    { key: "piantiny", clicks: 19, impressions: 40, ctr: 0.475, position: 1.0 },
+    { key: "fiori commestibili dove comprarli", clicks: 8, impressions: 1210, ctr: 0.0066, position: 14.8 },
+  ] },
+  { socialAccountId: gsc, kind: "pages", periodStart: start, periodEnd: end, rows: [
+    { key: "https://piantiny.it/", clicks: 88, impressions: 1900, ctr: 0.046, position: 6.1 },
+    { key: "https://piantiny.it/fiori-eduli/", clicks: 47, impressions: 2900, ctr: 0.016, position: 10.2 },
+    { key: "https://piantiny.it/ristorazione/", clicks: 19, impressions: 280, ctr: 0.068, position: 4.4 },
+  ] },
+]);
+await db.insert(s.kpis).values({ clientId: piantiny, metricKey: "seo_clicks", label: "Clic da Google (mese)", scope: "seo", platform: "search_console", target: 300 });
+
 // ── Lesioli ──────────────────────────────────────────────────────────
 const lesioli = id(await db.insert(s.clients).values({ name: "Lesioli", sector: "Studio di architettura", status: "attivo" }));
 await db.insert(s.competitors).values([

@@ -23,7 +23,9 @@ export interface MetricTotals {
 export interface MetricDef {
   key: string;
   label: string;
-  scope: "organico" | "sponsorizzato" | "business";
+  scope: "organico" | "sponsorizzato" | "seo" | "business";
+  /** Calcolato da solo dai canali collegati (Instagram, Search Console, GA4). */
+  auto?: boolean;
   direction: "higher" | "lower";
   unit: "%" | "€" | "n" | "x";
   stages: FunnelStage[];
@@ -36,22 +38,22 @@ const interactions = (t: MetricTotals) => t.likes + t.comments + t.shares + t.sa
 
 export const METRICS: MetricDef[] = [
   // Organico
-  { key: "reach", label: "Reach", scope: "organico", direction: "higher", unit: "n", stages: ["awareness"],
+  { key: "reach", auto: true, label: "Reach", scope: "organico", direction: "higher", unit: "n", stages: ["awareness"],
     hint: "Persone uniche raggiunte", compute: (t) => t.reach },
-  { key: "er_reach", label: "Engagement rate (su reach)", scope: "organico", direction: "higher", unit: "%",
+  { key: "er_reach", auto: true, label: "Engagement rate (su reach)", scope: "organico", direction: "higher", unit: "%",
     stages: ["awareness", "consideration"], hint: "Interazioni / reach",
     compute: (t) => ratio(interactions(t), t.reach) },
-  { key: "saves_rate", label: "Tasso di salvataggio", scope: "organico", direction: "higher", unit: "%",
+  { key: "saves_rate", auto: true, label: "Tasso di salvataggio", scope: "organico", direction: "higher", unit: "%",
     stages: ["consideration"], hint: "Salvataggi / reach: segnale di contenuto utile",
     compute: (t) => ratio(t.saves, t.reach) },
-  { key: "shares_rate", label: "Tasso di condivisione", scope: "organico", direction: "higher", unit: "%",
+  { key: "shares_rate", auto: true, label: "Tasso di condivisione", scope: "organico", direction: "higher", unit: "%",
     stages: ["awareness"], hint: "Condivisioni / reach: passaparola digitale",
     compute: (t) => ratio(t.shares, t.reach) },
   { key: "profile_visits", label: "Visite al profilo", scope: "organico", direction: "higher", unit: "n",
     stages: ["consideration"], hint: "Interesse verso il brand", compute: (t) => t.profileVisits },
   { key: "link_clicks", label: "Clic sul link", scope: "organico", direction: "higher", unit: "n",
     stages: ["consideration"], hint: "Traffico verso sito / sezione B2B", compute: (t) => t.linkClicks },
-  { key: "follower_growth", label: "Crescita follower", scope: "organico", direction: "higher", unit: "%",
+  { key: "follower_growth", auto: true, label: "Crescita follower", scope: "organico", direction: "higher", unit: "%",
     stages: ["awareness"], hint: "Variazione follower nel periodo",
     compute: (t) =>
       t.followersStart && t.followersEnd != null ? (t.followersEnd - t.followersStart) / t.followersStart : null },
@@ -75,6 +77,14 @@ export const METRICS: MetricDef[] = [
     stages: ["conversion"], hint: "Spesa / acquisti", compute: (t) => ratio(t.spend, t.purchases) },
   { key: "roas", label: "ROAS", scope: "sponsorizzato", direction: "higher", unit: "x", stages: ["conversion"],
     hint: "Ricavi / spesa", compute: (t) => ratio(t.revenue, t.spend) },
+
+  // SEO (Search Console e Analytics 4, aggiornati dai canali collegati)
+  { key: "seo_clicks", label: "Clic da Google", scope: "seo", direction: "higher", unit: "n", stages: ["awareness", "consideration"], hint: "Search Console", auto: true },
+  { key: "seo_impressions", label: "Impressioni su Google", scope: "seo", direction: "higher", unit: "n", stages: ["awareness"], hint: "Search Console", auto: true },
+  { key: "seo_ctr", label: "CTR organico", scope: "seo", direction: "higher", unit: "%", stages: ["consideration"], hint: "Clic / impressioni", auto: true },
+  { key: "seo_position", label: "Posizione media", scope: "seo", direction: "lower", unit: "n", stages: ["awareness"], hint: "Più bassa è meglio", auto: true },
+  { key: "organic_sessions", label: "Visite da ricerca organica", scope: "seo", direction: "higher", unit: "n", stages: ["consideration"], hint: "Analytics 4", auto: true },
+  { key: "key_events", label: "Conversioni sul sito", scope: "seo", direction: "higher", unit: "n", stages: ["conversion"], hint: "Eventi chiave di Analytics 4", auto: true },
 
   // Business (inserite a mano, come nel check-up Piantiny)
   { key: "qualified_leads", label: "Contatti qualificati", scope: "business", direction: "higher", unit: "n",

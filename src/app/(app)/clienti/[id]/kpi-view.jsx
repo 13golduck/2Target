@@ -33,6 +33,7 @@ import { addKpi, deleteKpi, addMeasurement } from '../../actions';
 const SCOPES = [
   { key: 'organico', label: 'Organico', icon: 'socials:instagram' },
   { key: 'sponsorizzato', label: 'Sponsorizzato', icon: 'solar:wad-of-money-bold' },
+  { key: 'seo', label: 'SEO', icon: 'socials:google' },
   { key: 'business', label: 'Business', icon: 'solar:users-group-rounded-bold' },
 ];
 
@@ -209,8 +210,21 @@ function NewKpiDialog({ open, onClose, clientId, metrics }) {
             <Grid size={{ xs: 12, sm: 4 }}>
               <TextField select name="platform" label="Canale" defaultValue="" fullWidth>
                 <MenuItem value="">Tutti</MenuItem>
-                {['instagram', 'facebook', 'tiktok', 'linkedin'].map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}
+                {[
+                  ['instagram', 'Instagram'],
+                  ['facebook', 'Facebook'],
+                  ['tiktok', 'TikTok'],
+                  ['linkedin', 'LinkedIn'],
+                  ['search_console', 'Search Console'],
+                  ['ga4', 'Analytics 4'],
+                ].map(([v, l]) => <MenuItem key={v} value={v}>{l}</MenuItem>)}
               </TextField>
+            </Grid>
+            <Grid size={12}>
+              <Alert severity="success" variant="outlined" icon={<Iconify icon="solar:restart-bold" />}>
+                Reach, engagement, salvataggi, condivisioni, crescita follower e tutte le metriche SEO si aggiornano da sole se il canale
+                indicato è collegato. Le altre si inseriscono a mano.
+              </Alert>
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
               <TextField name="target" label="Target" required placeholder="es. 3% o 10" fullWidth />

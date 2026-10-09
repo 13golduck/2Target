@@ -50,3 +50,6 @@ export function parseMetricInput(raw: FormDataEntryValue | null, unit: string) {
   if (!Number.isFinite(n)) return null;
   return unit === "%" && (String(raw).includes("%") || n > 1) ? n / 100 : n;
 }
+
+/** Data (AAAA-MM-GG, UTC) di n giorni fa: per i filtri sui dati giornalieri. */
+export const isoDaysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);

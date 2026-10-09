@@ -1,0 +1,1 @@
+ALTER TABLE `kpis` MODIFY COLUMN `scope` enum('organico','sponsorizzato','seo','business') NOT NULL;
