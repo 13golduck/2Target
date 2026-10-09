@@ -8,7 +8,8 @@ import { db } from "@/db";
 import { buyerPersonas, checkupQuestions, checkups, checkupSections, clients, competitors, objectives } from "@/db/schema";
 import { CHECKUP_SECTIONS } from "@/lib/checkup-template";
 import { kpiSnapshot } from "@/lib/queries";
-import { callClaude, modelFor, type AiMode } from "./claude";
+import { assertBudget, PHASE_ESTIMATE_USD } from "./budget";
+import { callClaude, MODELS, modelFor, type AiMode, type Task } from "./claude";
 import { ESEMPIO_CHECKUP } from "./esempio-checkup";
 
 // Check-up a quattro mani: l'AI cerca online, fa domande al consulente su ciò che non trova,
@@ -52,7 +53,8 @@ Esempio di check-up reale consegnato da Golduck (riferimento di struttura, profo
 <esempio>
 ${ESEMPIO_CHECKUP}
 </esempio>`,
-    cache_control: { type: "ephemeral" },
+    // Un'ora: tra le domande al consulente e la ricerca passa spesso più di 5 minuti
+    cache_control: { type: "ephemeral", ttl: "1h" },
   },
 ];
 
@@ -114,6 +116,12 @@ const mergeSources = (a: Checkup["sources"], b: { url: string; title?: string }[
   return [...map].map(([url, title]) => ({ url, title })).slice(0, 200);
 };
 
+/** Prima di ogni fase: la si fa solo se la stima del suo costo sta nei limiti. */
+async function guard(phase: keyof typeof PHASE_ESTIMATE_USD, task: Task, mode: AiMode, clientId: number, checkupId: number) {
+  const tier = modelFor(mode, task) === MODELS.opus ? "opus" : "sonnet";
+  await assertBudget({ clientId, checkupId, estimateUsd: PHASE_ESTIMATE_USD[phase][tier] });
+}
+
 async function load(checkupId: number) {
   const [checkup] = await db.select().from(checkups).where(eq(checkups.id, checkupId));
   if (!checkup) throw new Error("Check-up non trovato");
@@ -130,6 +138,7 @@ const QuestionsSchema = z.object({
 
 export async function runRecon(checkupId: number) {
   const { checkup, client, mode } = await load(checkupId);
+  await guard("ricognizione", "ricerca", mode, client.id, checkupId);
   await progress(checkupId, "Ricognizione online avviata");
 
   const research = await callClaude({
@@ -171,6 +180,7 @@ Metti la fonte (URL) accanto a ogni dato.`,
 
 export async function askQuestions(checkupId: number, round: number) {
   const { checkup, client, mode } = await load(checkupId);
+  await guard("domande", "domande", mode, client.id, checkupId);
   const first = round === 1;
   const r = await callClaude({
     model: modelFor(mode, "domande"),
@@ -225,6 +235,7 @@ restituisci "questions" vuota. "findings": solo eventuali nuovi fatti emersi (pu
 
 export async function runDeepResearch(checkupId: number) {
   const { checkup, client, mode } = await load(checkupId);
+  await guard("ricerca", "ricerca", mode, client.id, checkupId);
   await progress(checkupId, "Ricerca approfondita avviata");
   const r = await callClaude({
     model: modelFor(mode, "ricerca"),
@@ -276,6 +287,7 @@ const DocumentSchema = z.object({
 
 export async function runWriting(checkupId: number) {
   const { checkup, client, mode } = await load(checkupId);
+  await guard("scrittura", "scrittura", mode, client.id, checkupId);
   await progress(checkupId, "Scrivo il check-up");
   const r = await callClaude({
     model: modelFor(mode, "scrittura"),
@@ -344,6 +356,7 @@ export async function rewriteSection(checkupId: number, sectionKey: string, inst
   const { checkup, client, mode } = await load(checkupId);
   const sec = CHECKUP_SECTIONS.find((s) => s.key === sectionKey);
   if (!sec) throw new Error("Sezione sconosciuta");
+  await guard("revisione", "scrittura", mode, client.id, checkupId);
   const all = await db.select().from(checkupSections).where(eq(checkupSections.checkupId, checkupId));
   const content = all.find((s) => s.sectionKey === sectionKey)?.content ?? {};
   const schema = sectionSchema(sectionKey);

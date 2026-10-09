@@ -14,7 +14,10 @@ export default async function AppLayout({ children }) {
   const navData = [
     {
       subheader: "Panoramica",
-      items: [{ title: "Clienti", path: "/", icon: <NavIcon name="ic-dashboard" /> }],
+      items: [
+        { title: "Clienti", path: "/", icon: <NavIcon name="ic-dashboard" /> },
+        { title: "Consumi AI", path: "/consumi-ai", icon: <NavIcon name="ic-analytics" /> },
+      ],
     },
     {
       subheader: "Clienti",

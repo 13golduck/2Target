@@ -11,6 +11,7 @@ import { AI_STATES, checkups } from "@/db/schema";
 const running = new Set<number>();
 
 export const isRunning = (checkupId: number) => running.has(checkupId);
+export const runningCount = () => running.size;
 
 export function startJob(checkupId: number, state: (typeof AI_STATES)[number], job: () => Promise<void>) {
   if (running.has(checkupId)) return false;

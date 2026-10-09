@@ -581,3 +581,11 @@ export const marketingCosts = mysqlTable(
   },
   (t) => [index("marketing_costs_client").on(t.clientId, t.month)],
 );
+
+// ── Impostazioni dell'app (limiti di spesa AI, interruttori) ─────────
+export const appSettings = mysqlTable("app_settings", {
+  key: varchar("key", { length: 80 }).primaryKey(),
+  value: json("value").notNull(),
+  updatedBy: int("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: updated(),
+});

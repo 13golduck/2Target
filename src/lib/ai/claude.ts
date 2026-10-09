@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 import { db } from "@/db";
 import { aiRuns } from "@/db/schema";
+import { assertBudget } from "./budget";
 
 // Chiamate a Claude per il check-up: modelli per modalità, streaming, ripresa dei turni in pausa,
 // registro di token e costo stimato (contatore mostrato a fine lavoro).
@@ -23,9 +24,10 @@ export function modelFor(mode: AiMode, task: Task) {
 }
 
 // Listino in dollari per milione di token (prezzi Anthropic, ottobre 2026) e per ricerca web.
-const PRICES: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
-  [MODELS.opus]: { input: 4, output: 20, cacheRead: 0.2, cacheWrite: 5 },
-  [MODELS.sonnet]: { input: 2, output: 10, cacheRead: 0.2, cacheWrite: 2.5 },
+// Scrittura in cache: 1,25× l'ingresso per 5 minuti, 2× per un'ora.
+const PRICES: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number; cacheWrite1h: number }> = {
+  [MODELS.opus]: { input: 4, output: 20, cacheRead: 0.2, cacheWrite: 5, cacheWrite1h: 8 },
+  [MODELS.sonnet]: { input: 2, output: 10, cacheRead: 0.2, cacheWrite: 2.5, cacheWrite1h: 4 },
 };
 const WEB_SEARCH_USD = 10 / 1000;
 
@@ -33,7 +35,8 @@ export interface Usage {
   input: number;
   output: number;
   cacheRead: number;
-  cacheWrite: number;
+  cacheWrite: number; // scritture in cache da 5 minuti
+  cacheWrite1h?: number; // scritture in cache da un'ora
   searches: number;
 }
 
@@ -41,7 +44,10 @@ export interface Usage {
 export function estimateCostUsd(model: string, u: Usage) {
   const p = PRICES[model];
   if (!p) return 0;
-  return (u.input * p.input + u.output * p.output + u.cacheRead * p.cacheRead + u.cacheWrite * p.cacheWrite) / 1_000_000 + u.searches * WEB_SEARCH_USD;
+  return (
+    (u.input * p.input + u.output * p.output + u.cacheRead * p.cacheRead + u.cacheWrite * p.cacheWrite + (u.cacheWrite1h ?? 0) * p.cacheWrite1h) / 1_000_000 +
+    u.searches * WEB_SEARCH_USD
+  );
 }
 
 export const isAiConfigured = () => !!process.env.ANTHROPIC_API_KEY;
@@ -82,16 +88,19 @@ export async function callClaude(o: CallOptions): Promise<CallResult> {
   const tools: Anthropic.Beta.BetaToolUnion[] = o.web
     ? [
         { type: "web_search_20260209", name: "web_search", max_uses: o.web.searches, user_location: { type: "approximate", country: "IT", timezone: "Europe/Rome" } },
-        { type: "web_fetch_20260209", name: "web_fetch", max_uses: o.web.fetches ?? o.web.searches, max_content_tokens: 30_000 },
+        // Pagine lette al massimo 20k token ciascuna: il filtro dinamico tiene solo le parti utili
+        { type: "web_fetch_20260209", name: "web_fetch", max_uses: o.web.fetches ?? o.web.searches, max_content_tokens: 20_000 },
       ]
     : [];
 
   let final: Anthropic.Beta.BetaMessage | null = null;
-  const usage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, searches: 0, fetches: 0 };
+  const usage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cacheWrite1h: 0, searches: 0, fetches: 0 };
   const texts: string[] = [];
   const sources = new Map<string, string | undefined>();
 
   for (let round = 0; round < 6; round++) {
+    // Controllo di spesa prima di ogni richiesta (anche alla ripresa di un turno in pausa)
+    await assertBudget({ clientId: o.log.clientId, checkupId: o.log.checkupId });
     const stream = anthropic().beta.messages.stream({
       model: o.model,
       max_tokens: o.maxTokens ?? 32_000,
@@ -119,7 +128,13 @@ export async function callClaude(o: CallOptions): Promise<CallResult> {
     usage.input += msg.usage.input_tokens;
     usage.output += msg.usage.output_tokens;
     usage.cacheRead += msg.usage.cache_read_input_tokens ?? 0;
-    usage.cacheWrite += msg.usage.cache_creation_input_tokens ?? 0;
+    const cc = msg.usage.cache_creation;
+    if (cc) {
+      usage.cacheWrite += cc.ephemeral_5m_input_tokens ?? 0;
+      usage.cacheWrite1h += cc.ephemeral_1h_input_tokens ?? 0;
+    } else {
+      usage.cacheWrite += msg.usage.cache_creation_input_tokens ?? 0;
+    }
     usage.searches += msg.usage.server_tool_use?.web_search_requests ?? 0;
     usage.fetches += msg.usage.server_tool_use?.web_fetch_requests ?? 0;
 
@@ -153,7 +168,7 @@ export async function callClaude(o: CallOptions): Promise<CallResult> {
     inputTokens: usage.input,
     outputTokens: usage.output,
     cacheReadTokens: usage.cacheRead,
-    cacheWriteTokens: usage.cacheWrite,
+    cacheWriteTokens: usage.cacheWrite + usage.cacheWrite1h,
     webSearches: usage.searches,
     webFetches: usage.fetches,
     costUsd,

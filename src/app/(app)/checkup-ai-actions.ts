@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
@@ -8,13 +8,27 @@ import { AI_MODES, checkupQuestions, checkups, clients } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { isAiConfigured } from "@/lib/ai/claude";
 import { askQuestions, rewriteSection, runDeepResearch, runRecon, runWriting } from "@/lib/ai/checkup-agent";
-import { isRunning, startJob } from "@/lib/ai/jobs";
+import { isRunning, runningCount, startJob } from "@/lib/ai/jobs";
+import { assertBudget, getLimits, BudgetError } from "@/lib/ai/budget";
 
 const str = (f: FormData, k: string) => {
   const v = String(f.get(k) ?? "").trim();
   return v === "" ? null : v;
 };
 const path = (clientId: number) => `/clienti/${clientId}/checkup`;
+
+/** Controlli prima di avviare un lavoro AI: limiti di spesa, lavori contemporanei. */
+async function preflight(clientId: number, checkupId?: number) {
+  try {
+    await assertBudget({ clientId, checkupId, estimateUsd: 0.5 });
+  } catch (e) {
+    if (e instanceof BudgetError) return e.message;
+    throw e;
+  }
+  const limits = await getLimits();
+  if (runningCount() >= limits.maxConcurrent) return `Ci sono già ${runningCount()} lavori AI in corso (massimo ${limits.maxConcurrent}): riprova tra qualche minuto.`;
+  return null;
+}
 const monthLabel = () => new Date().toLocaleDateString("it-IT", { month: "long", year: "numeric", timeZone: "Europe/Rome" }).replace(/^./, (c) => c.toUpperCase());
 
 async function checkupOf(id: number) {
@@ -30,6 +44,12 @@ export async function startAiCheckup(f: FormData) {
   const clientId = Number(f.get("clientId"));
   const mode = String(f.get("mode")) as (typeof AI_MODES)[number];
   if (!AI_MODES.includes(mode)) return { error: "Scegli il modello" };
+  const blocked = await preflight(clientId);
+  if (blocked) return { error: blocked };
+  const today = new Date(new Date().toISOString().slice(0, 10) + "T00:00:00Z");
+  const todayCount = (await db.select({ id: checkups.id }).from(checkups).where(and(isNotNull(checkups.aiMode), gte(checkups.createdAt, today)))).length;
+  const { maxCheckupsPerDay } = await getLimits();
+  if (todayCount >= maxCheckupsPerDay) return { error: `Raggiunto il limite di ${maxCheckupsPerDay} check-up AI al giorno (Consumi AI).` };
   let website = str(f, "website");
   if (website && !/^https?:\/\//i.test(website)) website = `https://${website}`;
 
@@ -82,6 +102,8 @@ export async function continueAiCheckup(f: FormData) {
   const next = String(f.get("next"));
   const c = await checkupOf(checkupId);
   if (isRunning(checkupId)) return { error: "L'AI sta già lavorando su questo check-up" };
+  const blocked = await preflight(c.clientId, checkupId);
+  if (blocked) return { error: blocked };
 
   if (next === "domande") {
     if (c.questionRound >= 3) return { error: "Bastano tre giri di domande: avvia la ricerca approfondita" };
@@ -109,6 +131,8 @@ export async function resumeAiCheckup(f: FormData) {
   const checkupId = Number(f.get("checkupId"));
   const c = await checkupOf(checkupId);
   if (isRunning(checkupId)) return { error: "L'AI sta già lavorando su questo check-up" };
+  const blocked = await preflight(c.clientId, checkupId);
+  if (blocked) return { error: blocked };
   const open = await db.select({ id: checkupQuestions.id }).from(checkupQuestions).where(eq(checkupQuestions.checkupId, checkupId));
 
   if (!c.dossier) startJob(checkupId, "ricognizione", () => runRecon(checkupId));

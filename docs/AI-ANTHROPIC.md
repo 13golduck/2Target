@@ -34,7 +34,42 @@ poi riavvia `npm run dev`.
 
 Su Plesk: sito 2target → Node.js → variabili d'ambiente → `ANTHROPIC_API_KEY` → **Riavvia app**.
 
-## 4. Controllo dei costi
+## 4. Controlli e blocchi di spesa
+
+Ci sono due livelli, da impostare entrambi:
+
+| Livello | Dove | Cosa fa |
+|---|---|---|
+| Anthropic | platform.claude.com → Settings → Limits (organizzazione) e Workspaces → 2Target → Limits | **Blocco definitivo**: oltre il limite le API rispondono con errore. Avvisi email alle soglie. |
+| 2Target | menu **Consumi AI** (solo amministratori) | Si ferma **prima** con un messaggio chiaro. |
+
+Limiti di 2Target (valori iniziali, modificabili):
+- **Budget mensile dell'app** 50 $: raggiunto il budget, nessun nuovo lavoro AI fino al mese dopo;
+- **Avviso** all'80%: banner in Consumi AI;
+- **Tetto per check-up** 8 $: comprese ricerche e revisioni;
+- **Tetto mensile per cliente** 15 $;
+- **Lavori AI contemporanei** 2 e **check-up AI al giorno** 10;
+- **interruttore generale** per spegnere l'AI.
+
+Come funzionano: prima di ogni fase (ricognizione, domande, ricerca, scrittura, revisione) l'app stima il costo
+e non la avvia se sforerebbe un tetto; prima di ogni singola chiamata ricontrolla i tetti già raggiunti. Le ricerche
+web hanno un numero massimo per fase (14 nella ricognizione, 30 nella ricerca approfondita) e ogni risposta ha un
+massimo di token: una singola fase non può "scappare".
+
+Consiglio: limite Anthropic sul workspace 2Target un po' sopra il budget di 2Target (es. 60 $ contro 50 $).
+
+## 5. Ottimizzazioni già attive
+
+- **Cache delle istruzioni (1 ora)**: istruzioni ed esempio Piantiny (circa 11.000 token) vengono scritti una volta
+  e poi riletti a un ventesimo del prezzo per un'ora, anche tra le domande e la ricerca. In Consumi AI vedi la
+  percentuale di token letti dalla cache.
+- **Filtro dinamico delle ricerche**: Claude filtra i risultati web prima di leggerli; ogni pagina letta è limitata
+  a 20.000 token.
+- **Modello per fase**: in modalità Misto, Sonnet (metà prezzo) fa ricerca e domande, Opus scrive.
+- **Ragionamento dosato**: impegno medio per domande e revisioni, alto per ricerca e scrittura.
+- **Fasi separate**: le domande si fanno senza ricerche web; la scrittura senza web, sui soli appunti già raccolti.
+
+## 6. Controllo dei costi
 
 - Ogni check-up mostra a fine lavoro il **contatore**: token in ingresso e uscita, ricerche web, costo stimato
   per fase. È una stima a listino; il dato ufficiale è su platform.claude.com → Usage / Cost.
@@ -44,9 +79,9 @@ Su Plesk: sito 2target → Node.js → variabili d'ambiente → `ANTHROPIC_API_K
   - **Misto**: Sonnet per ricerca e domande, Opus per scrivere il documento.
 - Le ricerche web costano 10 $ ogni 1.000 (un check-up ne usa circa 30-45).
 - L'esempio di check-up Golduck incluso nelle istruzioni viene messo in cache: dalla seconda chiamata in poi
-  costa un decimo.
+  costa un ventesimo (0,20 $ invece di 4 $ per milione di token con Opus).
 
-## 5. Sicurezza
+## 7. Sicurezza
 
 - Se una chiave finisce dove non deve (chat, screenshot, repository), revocala subito da Settings → API keys
   e creane una nuova.
