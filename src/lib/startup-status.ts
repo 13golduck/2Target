@@ -37,3 +37,29 @@ export function explainDbError(code: string) {
 const gs = globalThis as unknown as { __startedAt?: number };
 gs.__startedAt ??= Date.now();
 export const getStartedAt = () => gs.__startedAt ?? Date.now();
+
+/** Descrive DATABASE_URL senza mai mostrare la password (per /api/stato). */
+export function describeDatabaseUrl(raw = process.env.DATABASE_URL ?? "") {
+  const problems: string[] = [];
+  if (!raw) return { mascherato: null, problemi: ["DATABASE_URL vuota"] };
+  if (raw !== raw.trim()) problems.push("spazi o a capo all'inizio o alla fine");
+  if (/["'`]/.test(raw)) problems.push("contiene virgolette");
+  if (/\s/.test(raw.trim())) problems.push("contiene spazi in mezzo");
+  if (!/^mysql:\/\//.test(raw.trim())) problems.push("non inizia con mysql://");
+  const at = (raw.match(/@/g) ?? []).length;
+  if (at !== 1) problems.push(`contiene ${at} caratteri @ (deve essercene uno solo)`);
+  let mascherato: string | null = null;
+  // Se il formato non è quello atteso non si mostra nulla: la password potrebbe finire nel testo
+  if (problems.length) return { mascherato: null, problemi: problems };
+  try {
+    const u = new URL(raw.trim());
+    const pass = decodeURIComponent(u.password);
+    mascherato = `${u.protocol}//${u.username}:${pass ? `***(${pass.length} caratteri)` : "(password vuota)"}@${u.hostname}:${u.port || "?"}${u.pathname}`;
+    if (!u.port) problems.push("manca la porta (:3306)");
+    if (u.pathname.length < 2) problems.push("manca il nome del database");
+    if (/[^A-Za-z0-9]/.test(pass)) problems.push("la password contiene caratteri non alfanumerici");
+  } catch {
+    problems.push("non è un indirizzo leggibile");
+  }
+  return { mascherato, problemi: problems };
+}

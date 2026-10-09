@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 
-import { errorCode, explainDbError, getStartupError } from "@/lib/startup-status";
+import { describeDatabaseUrl, errorCode, explainDbError, getStartupError } from "@/lib/startup-status";
 
 // Diagnosi pubblica dell'installazione: dice solo cosa è configurato, mai i valori.
 export const dynamic = "force-dynamic";
@@ -20,6 +20,7 @@ export async function GET() {
   const body = {
     database,
     migrazioni: startup ? explainDbError(startup) : "ok",
+    databaseUrl: database === "ok" ? undefined : describeDatabaseUrl(),
     variabili: {
       DATABASE_URL: set("DATABASE_URL"),
       AUTH_SECRET: set("AUTH_SECRET"),
