@@ -43,6 +43,7 @@
     "apexcharts": "^8.0.0",
     "autosuggest-highlight": "^3.3.4",
     "dayjs": "^1.11.23",
+    "docx": "^9.9.0",
     "drizzle-orm": "^0.45.4",
     "es-toolkit": "^1.52.0",
     "framer-motion": "^14.0.0",

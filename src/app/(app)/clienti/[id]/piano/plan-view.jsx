@@ -79,6 +79,19 @@ export function PlanView({ clientId, plans, plan, items, issues, formats, platfo
         <Button component={RouterLink} href="?nuovo=1" startIcon={<Iconify icon="mingcute:add-line" />}>
           Nuovo piano
         </Button>
+        {plan && (
+          <Button
+            component="a"
+            href={`/api/piano/${plan.id}/word`}
+            download
+            variant="outlined"
+            color="inherit"
+            startIcon={<Iconify icon="solar:download-bold" />}
+            sx={{ ml: { sm: 'auto' } }}
+          >
+            Scarica Word
+          </Button>
+        )}
       </Stack>
 
       {!plan ? (
