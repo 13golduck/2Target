@@ -1,51 +1,42 @@
-import Link from "next/link";
-import { asc } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { clients } from "@/db/schema";
-import { StatusBadge } from "@/components/status-badge";
+import { clients, editorialItems, ideas } from "@/db/schema";
 import { clientStatus, kpisWithStatus } from "@/lib/queries";
-import { createClient } from "./actions";
+import { ClientsView } from "./clients-view";
+
+export const metadata = { title: "Clienti" };
 
 export default async function ClientsPage() {
   const list = await db.select().from(clients).orderBy(asc(clients.name));
   const rows = await kpisWithStatus(list.map((c) => c.id));
+  const items = await db
+    .select({ clientId: editorialItems.clientId, n: sql<number>`count(*)` })
+    .from(editorialItems)
+    .groupBy(editorialItems.clientId);
+  const openIdeas = await db
+    .select({ clientId: ideas.clientId, n: sql<number>`count(*)` })
+    .from(ideas)
+    .where(eq(ideas.status, "idea"))
+    .groupBy(ideas.clientId);
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Clienti</h1>
-          <p className="text-sm text-muted">Lo stato è quello del KPI peggiore nell&apos;ultimo periodo misurato.</p>
-        </div>
-        <form action={createClient} className="flex flex-wrap gap-2">
-          <input name="name" placeholder="Nuovo cliente" required className="field w-48" />
-          <input name="sector" placeholder="Settore" className="field w-48" />
-          <button className="btn">Aggiungi</button>
-        </form>
-      </div>
+  const data = list.map((c) => {
+    const mine = rows.filter((r) => r.clientId === c.id);
+    return {
+      id: c.id,
+      name: c.name,
+      sector: c.sector,
+      status: clientStatus(rows, c.id),
+      kpi: {
+        total: mine.length,
+        bene: mine.filter((r) => r.evaluation.status === "bene").length,
+        male: mine.filter((r) => r.evaluation.status === "male").length,
+        troppo_male: mine.filter((r) => r.evaluation.status === "troppo_male").length,
+      },
+      items: Number(items.find((i) => i.clientId === c.id)?.n ?? 0),
+      ideas: Number(openIdeas.find((i) => i.clientId === c.id)?.n ?? 0),
+    };
+  });
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {list.map((c) => {
-          const mine = rows.filter((r) => r.clientId === c.id);
-          const count = (st: string) => mine.filter((r) => r.evaluation.status === st).length;
-          return (
-            <Link key={c.id} href={`/clienti/${c.id}`} className="card block p-5 transition hover:border-gold">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold">{c.name}</p>
-                  <p className="text-sm text-muted">{c.sector ?? "—"}</p>
-                </div>
-                <StatusBadge status={clientStatus(rows, c.id)} />
-              </div>
-              <p className="mt-4 text-xs text-muted">
-                {mine.length} KPI · {count("bene")} bene · {count("male")} male · {count("troppo_male")} troppo male
-              </p>
-            </Link>
-          );
-        })}
-        {list.length === 0 && <p className="text-sm text-muted">Nessun cliente: aggiungine uno.</p>}
-      </div>
-    </div>
-  );
+  return <ClientsView clients={data} />;
 }

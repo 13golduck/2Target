@@ -18,7 +18,7 @@ const pool = mysql.createPool({ uri: process.env.DATABASE_URL });
 const db = drizzle(pool, { schema: s, mode: "default" });
 const id = (r: [{ insertId: number }, unknown]) => r[0].insertId;
 
-// Utente demo locale (password in .env.local → DEV_DEMO_PASSWORD)
+// Utente di prova locale (DEV_DEMO_EMAIL / DEV_DEMO_PASSWORD in .env.local, es. admin / admin)
 if (process.env.DEV_DEMO_EMAIL && process.env.DEV_DEMO_PASSWORD) {
   const passwordHash = await hashPassword(process.env.DEV_DEMO_PASSWORD);
   await db

@@ -131,6 +131,28 @@ export async function setIdeaStatus(f: FormData) {
   revalidatePath(`/clienti/${idea.clientId}/idee`);
 }
 
+/** Trascinamento nella bacheca: cambia colonna a un'idea. */
+export async function moveIdea(ideaId: number, status: string) {
+  await requireUser();
+  const next = oneOf(s.IDEA_STATUSES, status);
+  if (!next || next === "pianificata") return;
+  const [idea] = await db.select({ clientId: s.ideas.clientId }).from(s.ideas).where(eq(s.ideas.id, ideaId));
+  if (!idea) return;
+  await db.update(s.ideas).set({ status: next }).where(eq(s.ideas.id, ideaId));
+  revalidatePath(`/clienti/${idea.clientId}/idee`);
+}
+
+/** Trascinamento nel calendario: nuova data e ora della pubblicazione. */
+export async function rescheduleItem(itemId: number, iso: string) {
+  await requireUser();
+  const when = new Date(iso);
+  if (Number.isNaN(when.getTime())) return;
+  const [item] = await db.select({ clientId: s.editorialItems.clientId, planId: s.editorialItems.planId }).from(s.editorialItems).where(eq(s.editorialItems.id, itemId));
+  if (!item) return;
+  await db.update(s.editorialItems).set({ scheduledAt: when }).where(eq(s.editorialItems.id, itemId));
+  revalidatePath(`/clienti/${item.clientId}/piano`);
+}
+
 export async function voteIdea(f: FormData) {
   const user = await requireUser();
   const ideaId = int(f, "ideaId")!;

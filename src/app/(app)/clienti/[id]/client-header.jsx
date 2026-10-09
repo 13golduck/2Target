@@ -1,0 +1,56 @@
+'use client';
+
+import Tab from '@mui/material/Tab';
+import Card from '@mui/material/Card';
+import Tabs from '@mui/material/Tabs';
+
+import { usePathname } from 'src/routes/hooks';
+import { RouterLink } from 'src/routes/components';
+import { DashboardContent } from 'src/layouts/dashboard';
+
+import { Iconify } from 'src/components/iconify';
+import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
+
+// ----------------------------------------------------------------------
+
+const TABS = [
+  { href: '', label: 'KPI', icon: 'solar:chart-square-outline' },
+  { href: '/checkup', label: 'Check-up', icon: 'solar:notes-bold-duotone' },
+  { href: '/idee', label: 'Idee', icon: 'solar:atom-bold-duotone' },
+  { href: '/piano', label: 'Piano editoriale', icon: 'solar:calendar-date-bold' },
+];
+
+export function ClientHeader({ client, children }) {
+  const pathname = usePathname();
+  const base = `/clienti/${client.id}`;
+  const current =
+    TABS.slice()
+      .reverse()
+      .find((t) => (t.href === '' ? pathname === base : pathname.startsWith(base + t.href)))?.href ?? '';
+
+  return (
+    <DashboardContent maxWidth="xl">
+      <CustomBreadcrumbs
+        heading={client.name}
+        links={[{ name: 'Clienti', href: '/' }, { name: client.name }]}
+        sx={{ mb: 3 }}
+      />
+      <Card sx={{ mb: 3, px: 2 }}>
+        <Tabs value={current} variant="scrollable">
+          {TABS.map((t) => (
+            <Tab
+              key={t.href}
+              value={t.href}
+              label={t.label}
+              icon={<Iconify icon={t.icon} />}
+              iconPosition="start"
+              component={RouterLink}
+              href={base + t.href}
+            />
+          ))}
+        </Tabs>
+      </Card>
+      {children}
+    </DashboardContent>
+  );
+}

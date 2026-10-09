@@ -1,61 +1,66 @@
-@import "tailwindcss";
+/** **************************************
+* Fonts: app
+*************************************** */
+@import '@fontsource-variable/public-sans';
 
-/* Palette Golduck: oro + nero su bianco/avorio. Il semaforo usa verde, arancio e rosso solo per gli stati. */
-:root {
-  --background: #faf8f3;
-  --surface: #ffffff;
-  --foreground: #161616;
-  --muted: #6b665c;
-  --line: #e7e1d3;
-  --gold: #cda434;
-  --gold-soft: #f4ecd4;
-  --ok: #2f7d4a;
-  --ok-soft: #e3f1e7;
-  --warn: #b86a00;
-  --warn-soft: #fbecd6;
-  --bad: #b3261e;
-  --bad-soft: #f9e0de;
+@import '@fontsource/barlow/400.css';
+@import '@fontsource/barlow/500.css';
+@import '@fontsource/barlow/600.css';
+@import '@fontsource/barlow/700.css';
+@import '@fontsource/barlow/800.css';
+
+/** **************************************
+* Fonts: options
+*************************************** */
+@import '@fontsource-variable/dm-sans';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/nunito-sans';
+
+/** **************************************
+* Plugins
+*************************************** */
+/* scrollbar */
+@import '../components/scrollbar/styles.css';
+
+/* chart */
+@import '../components/chart/styles.css';
+
+/** **************************************
+* Baseline
+*************************************** */
+html {
+  height: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+body,
+#root,
+#root__layout {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 100%;
+  flex-direction: column;
+}
+img {
+  max-width: 100%;
+  vertical-align: middle;
+}
+ul {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: none;
+}
+input[type='number']::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+input[type='number']::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-surface: var(--surface);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-line: var(--line);
-  --color-gold: var(--gold);
-  --color-gold-soft: var(--gold-soft);
-  --color-ok: var(--ok);
-  --color-ok-soft: var(--ok-soft);
-  --color-warn: var(--warn);
-  --color-warn-soft: var(--warn-soft);
-  --color-bad: var(--bad);
-  --color-bad-soft: var(--bad-soft);
-  --font-sans: var(--font-geist-sans);
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-}
-
-@layer components {
-  .card {
-    @apply rounded-xl border border-line bg-surface;
-  }
-  .btn {
-    @apply inline-flex items-center gap-1.5 rounded-lg bg-foreground px-3.5 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-50;
-  }
-  .btn-ghost {
-    @apply inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm hover:border-gold;
-  }
-  .field {
-    @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-gold focus:ring-2 focus:ring-gold-soft;
-  }
-  .label {
-    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-muted;
-  }
-  .h-section {
-    @apply text-sm font-semibold uppercase tracking-wider text-muted;
-  }
-}
+/* FullCalendar: piano editoriale */
+.fc { --fc-border-color: var(--palette-divider); --fc-today-bg-color: rgba(205, 164, 52, 0.08); }
