@@ -26,8 +26,11 @@ export async function createClient(f: FormData) {
   await requireUser();
   const name = str(f, "name");
   if (!name) return;
-  const [r] = await db.insert(s.clients).values({ name, sector: str(f, "sector"), status: "onboarding" });
-  redirect(`/clienti/${r.insertId}`);
+  let website = str(f, "website");
+  if (website && !/^https?:\/\//i.test(website)) website = `https://${website}`;
+  const [r] = await db.insert(s.clients).values({ name, sector: str(f, "sector"), website, vatNumber: str(f, "vatNumber"), city: str(f, "city"), status: "onboarding" });
+  // Il lavoro con un nuovo cliente parte dal check-up
+  redirect(`/clienti/${r.insertId}/checkup`);
 }
 
 // ── KPI ──────────────────────────────────────────────────────────────

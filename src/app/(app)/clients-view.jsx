@@ -110,14 +110,22 @@ export function ClientsView({ clients }) {
           <DialogTitle>Nuovo cliente</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
-              <TextField name="name" label="Nome" required autoFocus fullWidth />
+              <TextField name="name" label="Ragione sociale o nome" required autoFocus fullWidth />
               <TextField name="sector" label="Settore" fullWidth />
+              <TextField name="website" label="Sito web" placeholder="www.esempio.it" fullWidth />
+              <Stack direction="row" spacing={2}>
+                <TextField name="vatNumber" label="Partita IVA" fullWidth />
+                <TextField name="city" label="Città / zona" fullWidth />
+              </Stack>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                Dopo la creazione si apre il check-up: con l&apos;AI si parte da questi dati.
+              </Typography>
             </Stack>
           </DialogContent>
           <DialogActions>
             <Button onClick={dialog.onFalse}>Annulla</Button>
             <Button type="submit" variant="contained">
-              Crea
+              Crea e inizia il check-up
             </Button>
           </DialogActions>
         </Box>

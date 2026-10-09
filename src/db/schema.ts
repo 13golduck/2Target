@@ -51,7 +51,11 @@ export const clients = mysqlTable("clients", {
   name: varchar("name", { length: 160 }).notNull(),
   sector: varchar("sector", { length: 200 }),
   website: varchar("website", { length: 255 }),
-  notes: text("notes"),
+  vatNumber: varchar("vat_number", { length: 32 }),
+  city: varchar("city", { length: 120 }),
+  contactName: varchar("contact_name", { length: 160 }),
+  socialLinks: text("social_links"), // un profilo per riga
+  notes: text("notes"), // appunti dell'incontro iniziale
   ownerId: int("owner_id").references(() => users.id, { onDelete: "set null" }),
   status: mysqlEnum("status", ["onboarding", "attivo", "in_pausa", "chiuso"]).notNull().default("onboarding"),
   /** Chiave pubblica per ricevere i lead dai moduli del sito del cliente (POST /api/lead/<chiave>). */
@@ -157,15 +161,64 @@ export const seoSnapshots = mysqlTable(
 );
 
 // ── 1. Check-up ──────────────────────────────────────────────────────
+export const AI_MODES = ["opus", "sonnet", "misto"] as const;
+export const AI_STATES = ["da_avviare", "ricognizione", "domande", "ricerca", "scrittura", "pronto", "errore"] as const;
+
 export const checkups = mysqlTable("checkups", {
   id: int("id").autoincrement().primaryKey(),
   clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
   title: varchar("title", { length: 200 }).notNull().default("Communication Check-Up"),
   period: varchar("period", { length: 60 }),
   status: mysqlEnum("status", ["bozza", "in_revisione", "consegnato"]).notNull().default("bozza"),
+  // Analisi a quattro mani con l'AI
+  aiMode: mysqlEnum("ai_mode", AI_MODES),
+  aiState: mysqlEnum("ai_state", AI_STATES).notNull().default("da_avviare"),
+  aiProgress: text("ai_progress"), // ultimo messaggio di avanzamento
+  aiLog: json("ai_log").$type<{ at: string; text: string }[]>(),
+  aiError: text("ai_error"),
+  dossier: text("dossier"), // appunti di ricerca con le fonti (testo)
+  findings: json("findings").$type<{ fact: string; source?: string }[]>(),
+  sources: json("sources").$type<{ url: string; title?: string }[]>(),
+  questionRound: int("question_round").notNull().default(0),
   createdAt: created(),
   deliveredAt: datetime("delivered_at"),
 });
+
+/** Domande dell'AI al consulente e risposte, per giro. */
+export const checkupQuestions = mysqlTable("checkup_questions", {
+  id: int("id").autoincrement().primaryKey(),
+  checkupId: int("checkup_id").notNull().references(() => checkups.id, { onDelete: "cascade" }),
+  round: int("round").notNull(),
+  position: int("position").notNull(),
+  topic: varchar("topic", { length: 80 }),
+  question: text("question").notNull(),
+  why: text("why"),
+  options: json("options").$type<string[]>(),
+  answer: text("answer"),
+  answeredAt: datetime("answered_at"),
+});
+
+/** Ogni chiamata all'AI con token e costo stimato (contatore). */
+export const aiRuns = mysqlTable(
+  "ai_runs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    clientId: int("client_id").references(() => clients.id, { onDelete: "cascade" }),
+    checkupId: int("checkup_id").references(() => checkups.id, { onDelete: "cascade" }),
+    step: varchar("step", { length: 60 }).notNull(),
+    model: varchar("model", { length: 60 }).notNull(),
+    inputTokens: int("input_tokens").notNull().default(0),
+    outputTokens: int("output_tokens").notNull().default(0),
+    cacheReadTokens: int("cache_read_tokens").notNull().default(0),
+    cacheWriteTokens: int("cache_write_tokens").notNull().default(0),
+    webSearches: int("web_searches").notNull().default(0),
+    webFetches: int("web_fetches").notNull().default(0),
+    costUsd: decimal("cost_usd", { precision: 10, scale: 4, mode: "number" }).notNull().default(0),
+    durationMs: int("duration_ms"),
+    createdAt: created(),
+  },
+  (t) => [index("ai_runs_checkup").on(t.checkupId)],
+);
 
 /** Contenuto di una sezione: { [chiave campo]: testo }; gli elenchi sono righe separate da a capo. */
 export const checkupSections = mysqlTable(

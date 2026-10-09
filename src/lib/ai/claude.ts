@@ -1,0 +1,167 @@
+import "server-only";
+import Anthropic from "@anthropic-ai/sdk";
+
+import { db } from "@/db";
+import { aiRuns } from "@/db/schema";
+
+// Chiamate a Claude per il check-up: modelli per modalità, streaming, ripresa dei turni in pausa,
+// registro di token e costo stimato (contatore mostrato a fine lavoro).
+
+export type AiMode = "opus" | "sonnet" | "misto";
+export type Task = "ricerca" | "domande" | "scrittura";
+
+export const MODELS = {
+  opus: "claude-opus-5-5",
+  sonnet: "claude-sonnet-5-5",
+} as const;
+
+/** Misto: Sonnet raccoglie e fa le domande, Opus scrive il documento. */
+export function modelFor(mode: AiMode, task: Task) {
+  if (mode === "opus") return MODELS.opus;
+  if (mode === "sonnet") return MODELS.sonnet;
+  return task === "scrittura" ? MODELS.opus : MODELS.sonnet;
+}
+
+// Listino in dollari per milione di token (prezzi Anthropic, ottobre 2026) e per ricerca web.
+const PRICES: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
+  [MODELS.opus]: { input: 4, output: 20, cacheRead: 0.2, cacheWrite: 5 },
+  [MODELS.sonnet]: { input: 2, output: 10, cacheRead: 0.2, cacheWrite: 2.5 },
+};
+const WEB_SEARCH_USD = 10 / 1000;
+
+export interface Usage {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+  searches: number;
+}
+
+/** Costo stimato a listino in dollari (token in ingresso, uscita, cache e ricerche web). */
+export function estimateCostUsd(model: string, u: Usage) {
+  const p = PRICES[model];
+  if (!p) return 0;
+  return (u.input * p.input + u.output * p.output + u.cacheRead * p.cacheRead + u.cacheWrite * p.cacheWrite) / 1_000_000 + u.searches * WEB_SEARCH_USD;
+}
+
+export const isAiConfigured = () => !!process.env.ANTHROPIC_API_KEY;
+
+let client: Anthropic | null = null;
+function anthropic() {
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY non impostata: vedi docs/AI-ANTHROPIC.md");
+  client ??= new Anthropic({ maxRetries: 3, timeout: 15 * 60_000 });
+  return client;
+}
+
+export interface CallOptions {
+  model: string;
+  system: Anthropic.Beta.BetaTextBlockParam[];
+  messages: Anthropic.Beta.BetaMessageParam[];
+  web?: { searches: number; fetches?: number };
+  effort?: "low" | "medium" | "high" | "xhigh";
+  maxTokens?: number;
+  outputFormat?: Anthropic.Beta.BetaJSONOutputFormat;
+  /** Avanzamento leggibile: query di ricerca e pagine lette. */
+  onProgress?: (text: string) => void | Promise<void>;
+  log: { step: string; clientId?: number; checkupId?: number };
+}
+
+export interface CallResult {
+  text: string;
+  sources: { url: string; title?: string }[];
+  message: Anthropic.Beta.BetaMessage;
+}
+
+/**
+ * Una "chiamata" logica: streaming, ripresa automatica di pause_turn (ricerche lunghe),
+ * fallback lato server se il modello rifiuta, registro dei consumi.
+ */
+export async function callClaude(o: CallOptions): Promise<CallResult> {
+  const started = Date.now();
+  const messages = [...o.messages];
+  const tools: Anthropic.Beta.BetaToolUnion[] = o.web
+    ? [
+        { type: "web_search_20260209", name: "web_search", max_uses: o.web.searches, user_location: { type: "approximate", country: "IT", timezone: "Europe/Rome" } },
+        { type: "web_fetch_20260209", name: "web_fetch", max_uses: o.web.fetches ?? o.web.searches, max_content_tokens: 30_000 },
+      ]
+    : [];
+
+  let final: Anthropic.Beta.BetaMessage | null = null;
+  const usage = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, searches: 0, fetches: 0 };
+  const texts: string[] = [];
+  const sources = new Map<string, string | undefined>();
+
+  for (let round = 0; round < 6; round++) {
+    const stream = anthropic().beta.messages.stream({
+      model: o.model,
+      max_tokens: o.maxTokens ?? 32_000,
+      system: o.system,
+      messages,
+      ...(tools.length && { tools }),
+      thinking: { type: "adaptive" },
+      output_config: { effort: o.effort ?? "high", ...(o.outputFormat && { format: o.outputFormat }) },
+      // Se il modello rifiuta per una regola di sicurezza, l'API riprova con il modello più adatto
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+    });
+
+    stream.on("contentBlock", (block) => {
+      if (!o.onProgress) return;
+      if (block.type === "server_tool_use") {
+        const input = block.input as { query?: string; url?: string };
+        if (block.name === "web_search" && input.query) void o.onProgress(`Cerco: ${input.query}`);
+        if (block.name === "web_fetch" && input.url) void o.onProgress(`Leggo: ${input.url}`);
+      }
+    });
+
+    const msg = await stream.finalMessage();
+    final = msg;
+    usage.input += msg.usage.input_tokens;
+    usage.output += msg.usage.output_tokens;
+    usage.cacheRead += msg.usage.cache_read_input_tokens ?? 0;
+    usage.cacheWrite += msg.usage.cache_creation_input_tokens ?? 0;
+    usage.searches += msg.usage.server_tool_use?.web_search_requests ?? 0;
+    usage.fetches += msg.usage.server_tool_use?.web_fetch_requests ?? 0;
+
+    for (const block of msg.content) {
+      if (block.type === "text") {
+        texts.push(block.text);
+        for (const c of block.citations ?? []) {
+          if ("url" in c && c.url) sources.set(c.url, "title" in c ? (c.title ?? undefined) : undefined);
+        }
+      }
+      if (block.type === "web_search_tool_result" && Array.isArray(block.content)) {
+        for (const r of block.content) if (r.type === "web_search_result") sources.set(r.url, r.title);
+      }
+    }
+
+    if (msg.stop_reason === "pause_turn") {
+      // Ricerca lunga: si rimanda il turno così com'è e il server riprende da dove era rimasto
+      messages.push({ role: "assistant", content: msg.content });
+      continue;
+    }
+    break;
+  }
+
+  const costUsd = estimateCostUsd(PRICES[final?.model ?? ""] ? final!.model : o.model, usage);
+
+  await db.insert(aiRuns).values({
+    clientId: o.log.clientId,
+    checkupId: o.log.checkupId,
+    step: o.log.step,
+    model: final?.model ?? o.model,
+    inputTokens: usage.input,
+    outputTokens: usage.output,
+    cacheReadTokens: usage.cacheRead,
+    cacheWriteTokens: usage.cacheWrite,
+    webSearches: usage.searches,
+    webFetches: usage.fetches,
+    costUsd,
+    durationMs: Date.now() - started,
+  });
+
+  if (!final) throw new Error("Nessuna risposta dall'AI");
+  if (final.stop_reason === "refusal") throw new Error("L'AI ha rifiutato questa richiesta: riformula le informazioni e riprova.");
+  if (final.stop_reason === "max_tokens") throw new Error("Risposta troppo lunga e interrotta: riprova.");
+  return { text: texts.join(""), sources: [...sources].map(([url, title]) => ({ url, title })), message: final };
+}
