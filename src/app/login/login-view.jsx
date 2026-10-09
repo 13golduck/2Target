@@ -7,7 +7,9 @@ import Card from '@mui/material/Card';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
+import Checkbox from '@mui/material/Checkbox';
 import TextField from '@mui/material/TextField';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -70,6 +72,18 @@ export function LoginView({ returnTo }) {
                 ),
               },
             }}
+          />
+          <FormControlLabel
+            control={<Checkbox name="remember" />}
+            label={
+              <Typography variant="body2">
+                Ricordami su questo dispositivo
+                <Typography component="span" variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
+                  Resti collegato 30 giorni. Non usarlo su computer condivisi.
+                </Typography>
+              </Typography>
+            }
+            sx={{ alignItems: 'flex-start', mt: -1, '& .MuiCheckbox-root': { pt: 0.5 } }}
           />
           {error && <Alert severity="error">{error}</Alert>}
           <Button type="submit" size="large" variant="contained" color="inherit" loading={pending} fullWidth>

@@ -9,6 +9,7 @@ export async function login(_prev: string | null, formData: FormData) {
     await signIn("credentials", {
       email: formData.get("email"),
       password: formData.get("password"),
+      remember: formData.get("remember") === "on" ? "true" : "false",
       redirectTo: returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/",
     });
     return null;

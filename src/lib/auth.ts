@@ -29,7 +29,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
-      credentials: { email: {}, password: {} },
+      credentials: { email: {}, password: {}, remember: {} },
       async authorize(credentials) {
         const email = String(credentials?.email ?? "").trim().toLowerCase();
         const password = String(credentials?.password ?? "");
@@ -46,7 +46,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
         failures.delete(email);
         await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
-        return { id: String(user.id), email: user.email, name: user.name, role: user.role };
+        const remember = ["on", "true", "1"].includes(String(credentials?.remember ?? ""));
+        return { id: String(user.id), email: user.email, name: user.name, role: user.role, remember };
       },
     }),
   ],
