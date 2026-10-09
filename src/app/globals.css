@@ -1,26 +1,61 @@
 @import "tailwindcss";
 
+/* Palette Golduck: oro + nero su bianco/avorio. Il semaforo usa verde, arancio e rosso solo per gli stati. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf8f3;
+  --surface: #ffffff;
+  --foreground: #161616;
+  --muted: #6b665c;
+  --line: #e7e1d3;
+  --gold: #cda434;
+  --gold-soft: #f4ecd4;
+  --ok: #2f7d4a;
+  --ok-soft: #e3f1e7;
+  --warn: #b86a00;
+  --warn-soft: #fbecd6;
+  --bad: #b3261e;
+  --bad-soft: #f9e0de;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-line bg-surface;
+  }
+  .btn {
+    @apply inline-flex items-center gap-1.5 rounded-lg bg-foreground px-3.5 py-2 text-sm font-medium text-white hover:bg-black disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm hover:border-gold;
+  }
+  .field {
+    @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-gold focus:ring-2 focus:ring-gold-soft;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-muted;
+  }
+  .h-section {
+    @apply text-sm font-semibold uppercase tracking-wider text-muted;
+  }
 }

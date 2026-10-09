@@ -1,0 +1,23 @@
+# MariaDB locale per lo sviluppo (stessa versione di Plesk). Avvio: npm run db:up
+services:
+  db:
+    image: mariadb:10.11
+    container_name: golduck-marketing-db
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${DB_PORT:-3308}:3306"
+    environment:
+      MARIADB_DATABASE: ${DB_NAME}
+      MARIADB_USER: ${DB_USER}
+      MARIADB_PASSWORD: ${DB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 20
+
+volumes:
+  db-data:

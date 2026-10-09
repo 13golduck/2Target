@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Golduck Marketing
 
-## Getting Started
+Piattaforma interna del team Golduck per il servizio marketing di ogni cliente:
+check-up → strategia e KPI → brainstorming → piano editoriale → (poi) pubblicazione e sponsorizzate.
 
-First, run the development server:
+Stack: Next.js 16 · MariaDB 10.11 · Drizzle · Auth.js. Accesso solo per gli utenti del team.
+
+## Avvio in locale
+
+Serve Docker Desktop aperto. La prima volta:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # poi compila AUTH_SECRET e DEV_DEMO_PASSWORD
+npm run db:up                # MariaDB in Docker sulla porta 3308
+npm run db:migrate           # crea le tabelle
+npm run db:seed              # dati di esempio Piantiny e Lesioli + utente demo
+npm run dev                  # http://localhost:3070
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Le volte successive bastano `npm run db:up` e `npm run dev`.
+Per creare un utente vero: `npm run user:create -- email@golduck.it "Nome Cognome" admin`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Cosa c'è
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Sezione | Contenuto |
+|---|---|
+| Clienti | elenco con semaforo complessivo (vince il KPI peggiore) |
+| KPI | organico, sponsorizzato, business; target, punto di partenza, misure per periodo |
+| Check-up | le 8 sezioni del modello Piantiny con domande guida |
+| Idee | bacheca idea → in sviluppo → approvata → nel piano, con voti; "Pianifica" crea la scheda |
+| Piano editoriale | brief, quote per formato, cadenza settimanale, budget ads, controlli automatici |
+| Scheda pubblicazione | hook, layout, script, clip da girare, caption, hashtag, CTA e destinazione, produzione, sponsorizzata |
 
-## Learn More
+Semaforo: **Bene** ≥ 90% del target · **Male** 60-90% · **Troppo male** < 60% (per i costi il rapporto si inverte).
 
-To learn more about Next.js, take a look at the following resources:
+## Struttura
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `src/db/schema.ts` — tabelle; `drizzle/` — migrazioni (`npm run db:generate` dopo ogni modifica allo schema)
+- `src/lib/kpi.ts`, `kpi-catalog.ts` — semaforo e metriche
+- `src/lib/editorial-plan.ts` — controlli del piano (quote, cadenza, budget, schede incomplete)
+- `src/lib/checkup-template.ts` — sezioni del check-up
+- `src/app/(app)/` — pagine; `actions.ts` — salvataggi
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Pubblicazione
 
-## Deploy on Vercel
+Vedi [docs/DEPLOY-PLESK.md](docs/DEPLOY-PLESK.md): push su `main` → GitHub Actions → branch `production` → Plesk.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Prossimi passi
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Export Word del piano editoriale e PDF del check-up
+2. Persona, competitor e obiettivi modificabili dall'interfaccia
+3. Bozze AI (idee, script, caption)
+4. Lettura dati Meta/TikTok e pubblicazione (richiede app review)
