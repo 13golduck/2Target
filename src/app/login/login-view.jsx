@@ -1,30 +1,29 @@
 'use client';
 
-import { useState, useActionState } from 'react';
+import { useActionState } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Link from '@mui/material/Link';
 import Alert from '@mui/material/Alert';
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import InputAdornment from '@mui/material/InputAdornment';
+import FormControlLabel from '@mui/material/FormControlLabel';
 
 import { Mark2T } from 'src/components/logo';
-import { Iconify } from 'src/components/iconify';
 import { PoweredBy } from 'src/layouts/components/powered-by';
 
-import { login } from './actions';
+import { loginStep } from './actions';
 
 // ----------------------------------------------------------------------
+// Accesso senza password: 1) email  2) codice di 6 cifre ricevuto via email.
 
 export function LoginView({ returnTo }) {
-  const [error, action, pending] = useActionState(login, null);
-  const [show, setShow] = useState(false);
+  const [state, action, pending] = useActionState(loginStep, { step: 'email' });
+  const codeStep = state.step === 'code';
 
   return (
     <Box
@@ -47,48 +46,67 @@ export function LoginView({ returnTo }) {
             2Target
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Check-up, strategia, piano editoriale e KPI dei clienti
+            {codeStep ? 'Inserisci il codice che ti abbiamo inviato' : 'Accedi con la tua email: ti mandiamo un codice'}
           </Typography>
         </Stack>
 
         <Stack component="form" action={action} spacing={2.5}>
           <input type="hidden" name="returnTo" value={returnTo} />
-          <TextField name="email" label="Email o utente" autoComplete="username" required fullWidth />
           <TextField
-            name="password"
-            type={show ? 'text' : 'password'}
-            label="Password"
-            autoComplete="current-password"
+            name="email"
+            type="email"
+            label="Email"
+            autoComplete="username"
+            defaultValue={state.email ?? ''}
             required
             fullWidth
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShow((v) => !v)} edge="end" aria-label="Mostra password">
-                      <Iconify icon={show ? 'solar:eye-bold' : 'solar:eye-closed-bold'} />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              },
-            }}
+            autoFocus={!codeStep}
+            slotProps={{ input: { readOnly: codeStep } }}
           />
-          <FormControlLabel
-            control={<Checkbox name="remember" />}
-            label={
-              <Typography variant="body2">
-                Ricordami su questo dispositivo
-                <Typography component="span" variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
-                  Resti collegato 30 giorni. Non usarlo su computer condivisi.
-                </Typography>
-              </Typography>
-            }
-            sx={{ alignItems: 'flex-start', mt: -1, '& .MuiCheckbox-root': { pt: 0.5 } }}
-          />
-          {error && <Alert severity="error">{error}</Alert>}
+
+          {codeStep && (
+            <>
+              {state.info && !state.error && <Alert severity="info">{state.info}</Alert>}
+              <TextField
+                name="code"
+                label="Codice di 6 cifre"
+                autoComplete="one-time-code"
+                required
+                fullWidth
+                autoFocus
+                slotProps={{ htmlInput: { inputMode: 'numeric', maxLength: 7, style: { letterSpacing: 6, fontSize: 22, textAlign: 'center' } } }}
+              />
+              <FormControlLabel
+                control={<Checkbox name="remember" />}
+                label={
+                  <Typography variant="body2">
+                    Ricordami su questo dispositivo
+                    <Typography component="span" variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
+                      Non ti chiediamo il codice per 30 giorni. Non usarlo su computer condivisi.
+                    </Typography>
+                  </Typography>
+                }
+                sx={{ alignItems: 'flex-start', mt: -1, '& .MuiCheckbox-root': { pt: 0.5 } }}
+              />
+            </>
+          )}
+
+          {state.error && <Alert severity="error">{state.error}</Alert>}
+
           <Button type="submit" size="large" variant="contained" color="inherit" loading={pending} fullWidth>
-            Entra
+            {codeStep ? 'Entra' : 'Inviami il codice'}
           </Button>
+
+          {codeStep && (
+            <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+              <Button type="submit" name="action" value="codice" size="small" disabled={pending} formNoValidate>
+                Inviami un nuovo codice
+              </Button>
+              <Link href="/login" variant="body2" sx={{ alignSelf: 'center' }}>
+                Cambia email
+              </Link>
+            </Stack>
+          )}
         </Stack>
       </Card>
 

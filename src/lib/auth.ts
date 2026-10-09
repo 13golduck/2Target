@@ -7,44 +7,20 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { authConfig } from "./auth.config";
-import { verifyPassword } from "./password";
+import { consumeLoginCode } from "./login-codes";
 
-// Blocco dopo troppi tentativi falliti (in memoria: basta per un solo processo Node su Plesk)
-const MAX_FAILURES = 5;
-const LOCK_MS = 15 * 60_000;
-const failures = new Map<string, { count: number; first: number }>();
-const DUMMY_HASH = `scrypt$${Buffer.alloc(16).toString("base64")}$${Buffer.alloc(64).toString("base64")}`;
-
-function isLocked(email: string) {
-  const e = failures.get(email);
-  if (!e) return false;
-  if (Date.now() - e.first > LOCK_MS) {
-    failures.delete(email);
-    return false;
-  }
-  return e.count >= MAX_FAILURES;
-}
+// Accesso senza password: email + codice di 6 cifre ricevuto via email (vedi ./login-codes).
+// I limiti (scadenza, tentativi, richieste) stanno nella tabella login_codes, quindi valgono
+// anche dopo un riavvio dell'app.
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
-      credentials: { email: {}, password: {}, remember: {} },
+      credentials: { email: {}, code: {}, remember: {} },
       async authorize(credentials) {
-        const email = String(credentials?.email ?? "").trim().toLowerCase();
-        const password = String(credentials?.password ?? "");
-        if (!email || !password || isLocked(email)) return null;
-
-        const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-        // Verifica anche se l'utente non esiste, per non rivelarlo dai tempi di risposta
-        const ok = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
-        if (!user?.active || !ok) {
-          const e = failures.get(email);
-          if (e) e.count += 1;
-          else failures.set(email, { count: 1, first: Date.now() });
-          return null;
-        }
-        failures.delete(email);
+        const user = await consumeLoginCode(String(credentials?.email ?? ""), String(credentials?.code ?? ""));
+        if (!user) return null;
         await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
         const remember = ["on", "true", "1"].includes(String(credentials?.remember ?? ""));
         return { id: String(user.id), email: user.email, name: user.name, role: user.role, remember };

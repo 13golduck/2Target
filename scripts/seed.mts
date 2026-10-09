@@ -6,7 +6,6 @@ import { eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 
 import * as s from "../src/db/schema";
-import { hashPassword } from "../src/lib/password";
 
 process.loadEnvFile(".env.local");
 if (process.env.NODE_ENV === "production" || !/127\.0\.0\.1|localhost/.test(process.env.DATABASE_URL ?? "")) {
@@ -18,13 +17,13 @@ const pool = mysql.createPool({ uri: process.env.DATABASE_URL });
 const db = drizzle(pool, { schema: s, mode: "default" });
 const id = (r: [{ insertId: number }, unknown]) => r[0].insertId;
 
-// Utente di prova locale (DEV_DEMO_EMAIL / DEV_DEMO_PASSWORD in .env.local, es. admin / admin)
-if (process.env.DEV_DEMO_EMAIL && process.env.DEV_DEMO_PASSWORD) {
-  const passwordHash = await hashPassword(process.env.DEV_DEMO_PASSWORD);
+// Utente di prova locale (DEV_DEMO_EMAIL in .env.local). Accesso con codice: in locale, senza SMTP,
+// il codice compare nel terminale di `npm run dev`.
+if (process.env.DEV_DEMO_EMAIL) {
   await db
     .insert(s.users)
-    .values({ email: process.env.DEV_DEMO_EMAIL, name: "Demo Golduck", passwordHash, role: "admin" })
-    .onDuplicateKeyUpdate({ set: { passwordHash, active: true } });
+    .values({ email: process.env.DEV_DEMO_EMAIL, name: "Demo Golduck", role: "admin" })
+    .onDuplicateKeyUpdate({ set: { active: true } });
 }
 
 const old = await db.select({ id: s.clients.id }).from(s.clients).where(inArray(s.clients.name, ["Piantiny", "Lesioli"]));

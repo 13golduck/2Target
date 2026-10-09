@@ -8,7 +8,7 @@ Mai nel repository, mai in chat.
 
 | Variabile | Dove si trova |
 |---|---|
-| `APP_URL` | indirizzo dell'app: `http://localhost:3070` in locale, `https://2target.golduck.it` online |
+| `APP_URL` | indirizzo dell'app: `http://localhost:3070` in locale, `https://2target.it` online |
 | `META_APP_ID`, `META_APP_SECRET` | Meta for Developers → la tua app → Impostazioni app → Di base |
 | `META_GRAPH_VERSION` | facoltativa, predefinita `v23.0`; si aggiorna quando Meta ritira la versione |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google Cloud → API e servizi → Credenziali |
@@ -35,7 +35,7 @@ Dopo aver cambiato le variabili: in locale riavvia `npm run dev`, su Plesk **Ria
    (se proposto: "API Instagram con Facebook Login").
 4. **Facebook Login for Business → Impostazioni → URI di reindirizzamento OAuth validi**, aggiungi:
    - `http://localhost:3070/api/connect/meta/callback`
-   - `https://2target.golduck.it/api/connect/meta/callback` (quando l'app è online)
+   - `https://2target.it/api/connect/meta/callback` (quando l'app è online)
 5. **Impostazioni app → Di base**: copia **ID app** e **Chiave segreta** in `META_APP_ID` e `META_APP_SECRET`.
    Compila anche URL dell'informativa privacy e dominio dell'app (servono per la modalità Live).
 6. **Ruoli dell'app → Ruoli**: aggiungi come amministratori o sviluppatori le persone del team che
@@ -73,7 +73,7 @@ basta premere di nuovo **Collega Meta** con lo stesso account.
 4. **Credenziali → Crea credenziali → ID client OAuth** → tipo **Applicazione web**:
    - URI di reindirizzamento autorizzati:
      - `http://localhost:3070/api/connect/google/callback`
-     - `https://2target.golduck.it/api/connect/google/callback`
+     - `https://2target.it/api/connect/google/callback`
    - copia ID client e segreto in `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET`.
 5. **Credenziali → Crea credenziali → Chiave API**, limitala alla sola *PageSpeed Insights API*,
    copiala in `GOOGLE_PAGESPEED_KEY`. Senza chiave Google usa una quota condivisa che spesso è esaurita.
@@ -91,7 +91,7 @@ Ogni notte 2Target scarica i dati di tutti i clienti e aggiorna i KPI.
 1. Imposta `CRON_SECRET` nelle variabili dell'app Node.js e riavvia l'app.
 2. Plesk → **Operazioni pianificate** → Aggiungi operazione → *Recupera un URL* o *Esegui un comando*:
    ```
-   curl -fsS -m 600 -H "Authorization: Bearer IL_TUO_CRON_SECRET" https://2target.golduck.it/api/cron/sync
+   curl -fsS -m 600 -H "Authorization: Bearer IL_TUO_CRON_SECRET" https://2target.it/api/cron/sync
    ```
    Ogni giorno alle 05:30.
 

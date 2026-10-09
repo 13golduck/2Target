@@ -3,6 +3,8 @@
 Piattaforma interna del team Golduck per il servizio marketing di ogni cliente:
 check-up → strategia e KPI → brainstorming → piano editoriale → (poi) pubblicazione e sponsorizzate.
 
+Accesso senza password: email + codice di 6 cifre (in locale il codice compare nel terminale di `npm run dev`).
+
 Stack: Next.js 16 · MariaDB 10.11 · Drizzle · Auth.js · interfaccia Minimal (MUI 7, FullCalendar, ApexCharts).
 Accesso solo per gli utenti del team.
 
@@ -15,7 +17,7 @@ npm install
 cp .env.example .env.local   # poi compila AUTH_SECRET
 npm run db:up                # MariaDB in Docker sulla porta 3308
 npm run db:migrate           # crea le tabelle
-npm run db:seed              # dati di esempio Piantiny e Lesioli + utente di prova admin / admin
+npm run db:seed              # dati di esempio Piantiny e Lesioli + utente di prova admin@2target.test
 npm run dev                  # http://localhost:3070
 ```
 

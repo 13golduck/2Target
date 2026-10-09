@@ -38,12 +38,29 @@ export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
   email: varchar("email", { length: 190 }).notNull().unique(),
   name: varchar("name", { length: 120 }).notNull(),
-  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  // Facoltativa: l'accesso normale è con codice via email
+  passwordHash: varchar("password_hash", { length: 255 }),
   role: mysqlEnum("role", ["admin", "consulente"]).notNull().default("consulente"),
   active: boolean("active").notNull().default(true),
   lastLoginAt: datetime("last_login_at"),
   createdAt: created(),
 });
+
+/** Codici di accesso monouso inviati via email (si salva solo l'impronta HMAC). */
+export const loginCodes = mysqlTable(
+  "login_codes",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    codeHash: varchar("code_hash", { length: 128 }).notNull(),
+    expiresAt: datetime("expires_at").notNull(),
+    attempts: int("attempts").notNull().default(0),
+    usedAt: datetime("used_at"),
+    requestIp: varchar("request_ip", { length: 64 }),
+    createdAt: created(),
+  },
+  (t) => [index("login_codes_user").on(t.userId, t.createdAt)],
+);
 
 // ── Clienti ──────────────────────────────────────────────────────────
 export const clients = mysqlTable("clients", {
