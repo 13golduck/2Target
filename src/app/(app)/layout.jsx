@@ -30,7 +30,7 @@ export default async function AppLayout({ children }) {
         ...(isAdminRole(user.role)
           ? [
               { title: "Utenti", path: "/utenti", icon: <NavIcon name="ic-user" /> },
-              { title: "Impostazioni", path: "/impostazioni", icon: <NavIcon name="ic-params" /> },
+              { title: "Impostazioni", path: "/impostazioni", icon: <NavIcon name="ic-settings" /> },
             ]
           : []),
       ],
