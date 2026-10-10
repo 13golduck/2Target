@@ -57,7 +57,7 @@ export function describeDatabaseUrl(raw = process.env.DATABASE_URL ?? "") {
     mascherato = `${u.protocol}//${u.username}:${pass ? `***(${pass.length} caratteri)` : "(password vuota)"}@${u.hostname}:${u.port || "?"}${u.pathname}`;
     if (!u.port) problems.push("manca la porta (:3306)");
     if (u.pathname.length < 2) problems.push("manca il nome del database");
-    if (/[^A-Za-z0-9]/.test(pass)) problems.push("la password contiene caratteri non alfanumerici");
+    if (/[^A-Za-z0-9_-]/.test(pass)) problems.push("la password contiene caratteri diversi da lettere, numeri, - e _");
   } catch {
     problems.push("non è un indirizzo leggibile");
   }

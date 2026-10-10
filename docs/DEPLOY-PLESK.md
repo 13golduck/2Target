@@ -55,7 +55,7 @@ da **Impostazioni** (Microsoft 365 consigliato): vedi [EMAIL-MICROSOFT365.md](EM
 Più avanti, per i canali: `META_APP_ID`, `META_APP_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
 `GOOGLE_PAGESPEED_KEY` (vedi COLLEGAMENTI-API.md).
 
-**Password del database solo lettere e numeri** (`openssl rand -hex 16`): caratteri come `# @ / ? :` rompono
+**Password del database solo lettere, numeri, `-` e `_`** (`openssl rand -base64 24 | tr '+/' '-_' | tr -d =`; Plesk rifiuta password troppo semplici): caratteri come `# @ / ? :` rompono
 `DATABASE_URL` e l'app risponde con errore 500.
 
 Attenzione: la pagina Node.js di Plesk **mostra le variabili in chiaro**. Non fare screenshot di quella pagina.
