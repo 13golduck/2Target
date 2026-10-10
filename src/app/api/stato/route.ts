@@ -14,6 +14,10 @@ export async function GET() {
   } catch (e) {
     console.error("[stato] database non raggiungibile:", errorCode(e), (e as Error)?.constructor?.name);
     database = explainDbError(errorCode(e));
+    // "Access denied for user 'x'@'host'": utente e host non sono segreti e dicono quale account MariaDB ha rifiutato
+    const msg = String((e as { cause?: { message?: string } })?.cause?.message ?? (e as Error)?.message ?? "");
+    const who = msg.match(/for user '([^']*)'@'([^']*)'/);
+    if (who) database += ` (MariaDB ha rifiutato ${who[1]}@${who[2]}${/using password: NO/.test(msg) ? ", senza password" : ""})`;
   }
   const startup = getStartupError();
   const set = (k: string) => Boolean(process.env[k]?.trim());
