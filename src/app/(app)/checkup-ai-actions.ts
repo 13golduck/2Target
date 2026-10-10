@@ -1,6 +1,6 @@
 "use server";
 
-import { REGISTERS } from "@/lib/checkup-report";
+import { REASONING, REGISTERS } from "@/lib/checkup-report";
 import { getMethodology } from "@/lib/ai/metodologia";
 
 import { and, desc, eq, gte, isNotNull, isNull } from "drizzle-orm";
@@ -73,10 +73,11 @@ export async function startAiCheckup(f: FormData) {
   // Check-up periodico: si parte dal precedente (confronto e storico)
   const [prev] = await db.select({ id: checkups.id }).from(checkups).where(eq(checkups.clientId, clientId)).orderBy(desc(checkups.id)).limit(1);
   const register = REGISTERS.find((x) => x === f.get("register")) ?? "auto";
+  const reasoning = REASONING.find((x) => x === f.get("reasoning")) ?? "avanzato";
   const { version: methodVersion } = await getMethodology();
   const [r] = await db
     .insert(checkups)
-    .values({ clientId, period: monthLabel(), aiMode: mode, aiState: "ricognizione", aiLog: [], previousId: prev?.id ?? null, register, methodVersion });
+    .values({ clientId, period: monthLabel(), aiMode: mode, aiState: "ricognizione", aiLog: [], previousId: prev?.id ?? null, register, reasoning, methodVersion });
   startJob(r.insertId, "ricognizione", () => runRecon(r.insertId));
   revalidatePath(path(clientId));
   return { ok: true, checkupId: r.insertId };

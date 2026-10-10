@@ -20,6 +20,7 @@ const TABS = [
   { href: '/piano', label: 'Piano editoriale', icon: 'solar:calendar-date-bold' },
   { href: '/lead', label: 'Lead', icon: 'solar:users-group-rounded-bold' },
   { href: '/seo', label: 'SEO', icon: 'eva:search-fill' },
+  { href: '/brand', label: 'Brand', icon: 'solar:pallete-2-bold' },
   { href: '/canali', label: 'Canali', icon: 'eva:link-2-fill' },
 ];
 

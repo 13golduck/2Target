@@ -1,6 +1,6 @@
 import { requireWriter } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import * as s from "@/db/schema";
@@ -8,6 +8,7 @@ import { AD_BUTTONS_BY_DESTINATION, itemIssues } from "@/lib/editorial-plan";
 import { toRomeInput } from "@/lib/format";
 import { FUNNEL_STAGES } from "@/lib/funnel";
 import { toPlanItem } from "@/lib/plan-adapter";
+import { isAiConfigured } from "@/lib/ai/claude";
 import { ItemView } from "./item-view";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -24,6 +25,8 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
   const [client] = await db.select({ id: s.clients.id, name: s.clients.name }).from(s.clients).where(eq(s.clients.id, item.clientId));
   const series = await db.select({ id: s.contentSeries.id, name: s.contentSeries.name }).from(s.contentSeries).where(eq(s.contentSeries.clientId, item.clientId));
   const personas = await db.select({ id: s.buyerPersonas.id, name: s.buyerPersonas.name }).from(s.buyerPersonas).where(eq(s.buyerPersonas.clientId, item.clientId));
+  const [kit] = await db.select({ clientId: s.brandKits.clientId }).from(s.brandKits).where(eq(s.brandKits.clientId, item.clientId));
+  const reviews = await db.select().from(s.designReviews).where(eq(s.designReviews.itemId, id)).orderBy(desc(s.designReviews.id)).limit(10);
   const issues = itemIssues(toPlanItem(item)).map((i) => ({ level: i.level, message: i.message.replace(`"${item.title}": `, "") }));
 
   return (
@@ -39,6 +42,11 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
         crossPost: item.crossPost ?? [],
       }}
       issues={issues}
+      design={{
+        aiConfigured: isAiConfigured(),
+        hasBrandKit: !!kit,
+        reviews: reviews.map((r) => ({ id: r.id, fileName: r.fileName, thumb: r.thumb, result: r.result, createdAt: r.createdAt.toISOString() })),
+      }}
       series={series}
       personas={personas}
       options={{

@@ -113,6 +113,14 @@ async function clientContext(client: Client, checkup: Checkup, opts: { withAnswe
   return parts.join("\n");
 }
 
+// ── Livello di ragionamento ──────────────────────────────────────────
+
+/** Veloce: un gradino di ragionamento in meno in ogni fase (più rapido ed economico). */
+function effortFor(checkup: Checkup, base: "medium" | "high"): "low" | "medium" | "high" {
+  if (checkup.reasoning !== "veloce") return base;
+  return base === "high" ? "medium" : "low";
+}
+
 // ── Avanzamento ──────────────────────────────────────────────────────
 
 async function progress(checkupId: number, text: string) {
@@ -156,7 +164,7 @@ export async function runRecon(checkupId: number) {
     model: modelFor(mode, "ricerca"),
     system: await systemFor(checkup),
     web: { searches: 14, fetches: 14 },
-    effort: "high",
+    effort: effortFor(checkup, "high"),
     messages: [
       {
         role: "user",
@@ -196,7 +204,7 @@ export async function askQuestions(checkupId: number, round: number) {
   const r = await callClaude({
     model: modelFor(mode, "domande"),
     system: await systemFor(checkup),
-    effort: "medium",
+    effort: effortFor(checkup, "medium"),
     maxTokens: 16_000,
     outputFormat: betaZodOutputFormat(QuestionsSchema),
     messages: [
@@ -252,7 +260,7 @@ export async function runDeepResearch(checkupId: number) {
     model: modelFor(mode, "ricerca"),
     system: await systemFor(checkup),
     web: { searches: 30, fetches: 25 },
-    effort: "high",
+    effort: effortFor(checkup, "high"),
     messages: [
       {
         role: "user",
@@ -301,7 +309,7 @@ export async function runWriting(checkupId: number) {
   const r = await callClaude({
     model: modelFor(mode, "scrittura"),
     system: await systemFor(checkup),
-    effort: "high",
+    effort: effortFor(checkup, "high"),
     maxTokens: 64_000,
     outputFormat: betaZodOutputFormat(DocumentSchema),
     messages: [
@@ -384,7 +392,7 @@ export async function rewriteSection(checkupId: number, sectionKey: string, inst
   const r = await callClaude({
     model: modelFor(mode, "scrittura"),
     system: await systemFor(checkup),
-    effort: "medium",
+    effort: effortFor(checkup, "medium"),
     maxTokens: 16_000,
     outputFormat: betaZodOutputFormat(schema),
     messages: [

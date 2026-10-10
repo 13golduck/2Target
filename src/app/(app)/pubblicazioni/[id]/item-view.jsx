@@ -26,6 +26,8 @@ import { Iconify } from 'src/components/iconify';
 import { toast } from 'src/components/snackbar';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
+import { BriefPanel } from './brief-panel';
+import { DesignReviewPanel } from '../../design-review-panel';
 import { saveItem, deleteItem } from '../../actions';
 
 // ----------------------------------------------------------------------
@@ -39,7 +41,7 @@ const L = {
 };
 const STATUS_COLOR = { bozza: 'default', da_approvare: 'warning', approvato: 'info', pubblicato: 'success', annullato: 'error' };
 
-export function ItemView({ saved, client, item, issues, series, personas, options }) {
+export function ItemView({ saved, client, item, issues, series, personas, options, design }) {
   const [isPaid, setIsPaid] = useState(item.isPaid);
   const [destination, setDestination] = useState(item.ctaDestination ?? '');
   const [caption, setCaption] = useState(item.caption ?? '');
@@ -265,6 +267,16 @@ export function ItemView({ saved, client, item, issues, series, personas, option
           </Grid>
         </Grid>
       </Box>
+
+      {/* Studio grafico: fuori dal modulo della scheda (ha i suoi pulsanti) */}
+      <Grid container spacing={3} sx={{ mt: 0.5 }}>
+        <Grid size={{ xs: 12, md: 8 }}>
+          <BriefPanel itemId={item.id} clientId={client.id} brief={item.creativeBrief ?? null} aiConfigured={design.aiConfigured} hasBrandKit={design.hasBrandKit} />
+        </Grid>
+        <Grid size={{ xs: 12, md: 4 }}>
+          <DesignReviewPanel clientId={client.id} itemId={item.id} reviews={design.reviews} aiConfigured={design.aiConfigured} />
+        </Grid>
+      </Grid>
     </DashboardContent>
   );
 }

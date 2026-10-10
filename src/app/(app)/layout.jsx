@@ -54,6 +54,7 @@ export default async function AppLayout({ children }) {
               { title: "Piano editoriale", path: `/clienti/${c.id}/piano` },
               { title: "Lead", path: `/clienti/${c.id}/lead` },
               { title: "SEO", path: `/clienti/${c.id}/seo` },
+              { title: "Brand", path: `/clienti/${c.id}/brand` },
               { title: "Canali", path: `/clienti/${c.id}/canali` },
             ],
       })),

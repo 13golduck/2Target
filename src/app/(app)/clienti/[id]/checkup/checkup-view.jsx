@@ -154,8 +154,14 @@ const REGISTER_OPTIONS = [
   { key: 'commerciale', title: 'Commerciale', text: 'Dinamico: startup, aziende di prodotto' },
 ];
 
+const REASONING_OPTIONS = [
+  { key: 'avanzato', title: 'Avanzato', text: 'Ragiona più a fondo in ogni fase: analisi più ricca, qualche minuto in più', icon: 'solar:atom-bold-duotone' },
+  { key: 'veloce', title: 'Veloce', text: 'Ragionamento più breve: più rapido e circa un terzo più economico', icon: 'solar:bolt-bold' },
+];
+
 function StartWizard({ aiConfigured, client, previous }) {
   const [mode, setMode] = useState('opus');
+  const [reasoning, setReasoning] = useState('avanzato');
   const [register, setRegister] = useState('auto');
   const [pending, start] = useTransition();
 
@@ -186,6 +192,7 @@ function StartWizard({ aiConfigured, client, previous }) {
             <input type="hidden" name="clientId" value={client.id} />
             <input type="hidden" name="mode" value={mode} />
             <input type="hidden" name="register" value={register} />
+            <input type="hidden" name="reasoning" value={reasoning} />
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}><TextField name="name" label="Ragione sociale" defaultValue={client.name} required fullWidth /></Grid>
               <Grid size={{ xs: 12, sm: 6 }}><TextField name="sector" label="Settore" defaultValue={client.sector ?? ''} fullWidth /></Grid>
@@ -225,6 +232,26 @@ function StartWizard({ aiConfigured, client, previous }) {
                     </Stack>
                     <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>{m.text}</Typography>
                     <Label color="default">{m.cost} a check-up (stima)</Label>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+
+            <Typography variant="subtitle1" sx={{ mt: 3, mb: 1.5 }}>Livello di ragionamento dell’AI</Typography>
+            <Grid container spacing={2}>
+              {REASONING_OPTIONS.map((r) => (
+                <Grid key={r.key} size={{ xs: 12, md: 6 }}>
+                  <Card
+                    variant="outlined"
+                    onClick={() => setReasoning(r.key)}
+                    sx={{ p: 2, height: 1, cursor: 'pointer', borderWidth: 2, borderColor: reasoning === r.key ? 'primary.main' : 'divider', bgcolor: reasoning === r.key ? 'primary.lighter' : 'transparent' }}
+                  >
+                    <Stack direction="row" sx={{ alignItems: 'center' }}>
+                      <Radio checked={reasoning === r.key} size="small" sx={{ ml: -1 }} />
+                      <Iconify icon={r.icon} width={18} sx={{ mr: 0.75, color: 'primary.main' }} />
+                      <Typography variant="subtitle2" sx={{ flex: 1 }}>{r.title}</Typography>
+                    </Stack>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>{r.text}</Typography>
                   </Card>
                 </Grid>
               ))}

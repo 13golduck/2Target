@@ -77,3 +77,7 @@ export const REGISTER_LABELS: Record<Register, string> = {
   istituzionale: "Istituzionale e formale (enti, associazioni)",
   commerciale: "Dinamico e commerciale (startup, aziende di prodotto)",
 };
+
+/** Livello di ragionamento dell'AI scelto all'avvio del check-up. */
+export const REASONING = ["veloce", "avanzato"] as const;
+export type Reasoning = (typeof REASONING)[number];

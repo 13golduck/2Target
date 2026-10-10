@@ -2,8 +2,10 @@
 // e l'app le applica da sola all'avvio (src/instrumentation.ts).
 
 import type { CheckupReport } from "../lib/checkup-report";
-import { REGISTERS } from "../lib/checkup-report";
+import type { BrandKitData, CreativeBrief, DesignReview } from "../lib/design-types";
+import { REASONING, REGISTERS } from "../lib/checkup-report";
 import {
+  mediumtext,
   boolean,
   date,
   datetime,
@@ -214,6 +216,8 @@ export const checkups = mysqlTable("checkups", {
   previousId: int("previous_id"),
   /** Registro del report: lo sceglie il consulente all'avvio (auto = lo decide l'AI). */
   register: mysqlEnum("register", REGISTERS).notNull().default("auto"),
+  /** Ragionamento dell'AI: veloce (meno costoso) o avanzato (più approfondito). */
+  reasoning: mysqlEnum("reasoning", REASONING).notNull().default("avanzato"),
   /** Versione della metodologia Golduck usata (Impostazioni → Metodologia). */
   methodVersion: int("method_version"),
   /** Dati strutturati per il report web e il PDF (grafici, tabelle, matrici). */
@@ -480,6 +484,8 @@ export const editorialItems = mysqlTable(
     ctaDestination: mysqlEnum("cta_destination", CTA_DESTINATIONS),
     ctaUrl: varchar("cta_url", { length: 500 }),
     referencesUrls: text("references_urls"),
+    /** Brief grafico del Senior Graphic Designer AI (concept, layout, slide, palette, Canva/Adobe). */
+    creativeBrief: json("creative_brief").$type<CreativeBrief>(),
 
     // Produzione
     needsClientMaterial: boolean("needs_client_material").notNull().default(false),
@@ -625,3 +631,30 @@ export const appSettings = mysqlTable("app_settings", {
   updatedBy: int("updated_by").references(() => users.id, { onDelete: "set null" }),
   updatedAt: updated(),
 });
+
+// ── Studio grafico ───────────────────────────────────────────────────
+/** Brand kit del cliente: la base di ogni brief e di ogni revisione grafica. */
+export const brandKits = mysqlTable("brand_kits", {
+  clientId: int("client_id").primaryKey().references(() => clients.id, { onDelete: "cascade" }),
+  data: json("data").$type<BrandKitData>().notNull(),
+  /** Logo come data URL (PNG/SVG/JPG, massimo ~300 KB). */
+  logo: mediumtext("logo"),
+  updatedBy: int("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: updated(),
+});
+
+/** Revisioni delle grafiche fatte dall'AI (l'immagine non si conserva, solo una miniatura). */
+export const designReviews = mysqlTable(
+  "design_reviews",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+    itemId: int("item_id").references(() => editorialItems.id, { onDelete: "set null" }),
+    fileName: varchar("file_name", { length: 200 }),
+    thumb: mediumtext("thumb"),
+    result: json("result").$type<DesignReview>().notNull(),
+    createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: created(),
+  },
+  (t) => [index("design_reviews_client").on(t.clientId, t.createdAt)],
+);

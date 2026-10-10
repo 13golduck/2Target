@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   // Pacchetto autonomo (server.js + dipendenze minime) da caricare su Plesk: niente build sul server
   output: "standalone",
   poweredByHeader: false,
+  // Revisione grafica: le immagini (massimo 5 MB) arrivano via Server Action
+  experimental: { serverActions: { bodySizeLimit: "6mb" } },
   async headers() {
     if (process.env.NODE_ENV !== "production") return [];
     return [
