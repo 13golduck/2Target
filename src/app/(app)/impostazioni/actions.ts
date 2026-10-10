@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth";
-import { EMPTY_MAIL, explainMailError, type MailPreset, saveMailSettings, sendMail } from "@/lib/mail";
+import { EMPTY_MAIL, explainMailError, type MailPreset, saveMailSettings, saveMailTest, sendMail } from "@/lib/mail";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -36,7 +36,7 @@ export async function saveMail(f: FormData) {
     me.id,
   );
   revalidatePath("/impostazioni");
-  return { ok: true };
+  return { ok: true, savedAt: new Date().toISOString() };
 }
 
 /** Invia un'email di prova all'utente collegato. */
@@ -51,8 +51,13 @@ export async function testMail() {
       `Ciao ${u.name}, l'invio delle email di 2Target funziona. Da ora l'accesso avviene con il codice via email.`,
       `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:24px"><p style="font-size:16px">Ciao ${u.name.replace(/[<>&]/g, "")},</p><p style="font-size:16px">l'invio delle email di <b>2Target</b> funziona. Da ora l'accesso avviene con il codice via email.</p><p style="color:#919EAB;font-size:12px">2Target · powered by Golduck</p></div>`,
     );
+    await saveMailTest({ ok: true, at: new Date().toISOString(), to: u.email }, me.id);
+    revalidatePath("/impostazioni");
     return { ok: true, to: u.email };
   } catch (e) {
-    return { error: explainMailError(e) };
+    const error = explainMailError(e);
+    await saveMailTest({ ok: false, at: new Date().toISOString(), error }, me.id);
+    revalidatePath("/impostazioni");
+    return { error };
   }
 }

@@ -14,6 +14,7 @@ import TextField from '@mui/material/TextField';
 import CardHeader from '@mui/material/CardHeader';
 import Typography from '@mui/material/Typography';
 
+import { fmtDateTime } from 'src/lib/format';
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import { Label } from 'src/components/label';
@@ -52,7 +53,7 @@ const HELP = {
   smtp: <>Server, porta, utente e password li trovi nelle istruzioni del tuo provider di posta (porta 587 con STARTTLS oppure 465 con TLS).</>,
 };
 
-export function SettingsView({ mail, firstAccess }) {
+export function SettingsView({ mail, lastTest, firstAccess }) {
   const [preset, setPreset] = useState(mail.preset ?? (mail.provider === 'smtp' ? 'smtp' : 'microsoft'));
   const [host, setHost] = useState(mail.host);
   const [port, setPort] = useState(mail.port);
@@ -68,6 +69,20 @@ export function SettingsView({ mail, firstAccess }) {
   const [pending, start] = useTransition();
   const [testing, startTest] = useTransition();
   const [result, setResult] = useState(null);
+  const [savedNow, setSavedNow] = useState(null);
+
+  const when = (iso) => fmtDateTime(new Date(iso));
+  // La prova conta solo se è successiva all'ultimo salvataggio
+  const testValid = lastTest && (!mail.savedAt || new Date(lastTest.at) >= new Date(mail.savedAt));
+  const status = !mail.configured
+    ? mail.fromEnv
+      ? <Label color="info">Da variabili Plesk</Label>
+      : <Label color="error">Da configurare</Label>
+    : testValid && lastTest.ok
+      ? <Label color="success">Funzionante</Label>
+      : testValid
+        ? <Label color="error">Ultima prova non riuscita</Label>
+        : <Label color="warning">Salvato, da provare</Label>;
 
   const secretHelp = (has) => (has ? 'Già salvata: lascia vuoto per non cambiarla' : 'Si salva cifrata e non viene più mostrata');
 
@@ -86,7 +101,7 @@ export function SettingsView({ mail, firstAccess }) {
         <CardHeader
           title="Invio email"
           subheader="Serve per i codici di accesso. Le password e i segreti si salvano cifrati."
-          action={mail.configured ? <Label color="success">Configurato</Label> : mail.fromEnv ? <Label color="info">Da variabili Plesk</Label> : <Label color="error">Da configurare</Label>}
+          action={status}
         />
         <Box
           component="form"
@@ -94,7 +109,11 @@ export function SettingsView({ mail, firstAccess }) {
             start(async () => {
               const r = await saveMail(fd);
               if (r?.error) toast.error(r.error);
-              else toast.success('Impostazioni salvate: ora invia una prova');
+              else {
+                setSavedNow(r.savedAt);
+                setResult(null);
+                toast.success('Impostazioni salvate');
+              }
             })
           }
           sx={{ p: 3 }}
@@ -198,10 +217,24 @@ export function SettingsView({ mail, firstAccess }) {
               </Button>
             </Stack>
 
-            {result && (
-              <Alert severity={result.error ? 'error' : 'success'}>
-                {result.error ?? `Inviata a ${result.to}: controlla la posta (anche lo spam).`}
+            {savedNow && !result && (
+              <Alert severity="info">
+                Impostazioni salvate alle {when(savedNow)}. Ora premi <b>Invia email di prova</b> per verificare che l&apos;invio funzioni.
               </Alert>
+            )}
+
+            {result ? (
+              <Alert severity={result.error ? 'error' : 'success'}>
+                {result.error ?? `Email di prova inviata a ${result.to}: l'invio funziona. Controlla la posta (anche lo spam).`}
+              </Alert>
+            ) : (
+              !savedNow &&
+              testValid && (
+                <Alert severity={lastTest.ok ? 'success' : 'error'}>
+                  Ultima prova del {when(lastTest.at)}:{' '}
+                  {lastTest.ok ? `riuscita, inviata a ${lastTest.to}.` : `non riuscita. ${lastTest.error}`}
+                </Alert>
+              )
             )}
           </Stack>
         </Box>

@@ -80,6 +80,18 @@ export async function isMailConfigured() {
   return isComplete(await storedSettings(), true) || Boolean(envSettings());
 }
 
+/** Esito dell'ultima email di prova (per mostrare se l'invio funziona davvero). */
+export type MailTest = { ok: boolean; at: string; to?: string; error?: string; savedAt?: string };
+
+export async function getMailTest(): Promise<MailTest | null> {
+  const [row] = await db.select().from(appSettings).where(eq(appSettings.key, "mail_test")).limit(1);
+  return (row?.value as MailTest) ?? null;
+}
+
+export async function saveMailTest(value: MailTest, userId: number) {
+  await db.insert(appSettings).values({ key: "mail_test", value, updatedBy: userId }).onDuplicateKeyUpdate({ set: { value, updatedBy: userId } });
+}
+
 /** Per la pagina Impostazioni: mai i segreti, solo se sono già presenti. */
 export async function getMailSettingsForForm() {
   const s = await storedSettings();
@@ -91,6 +103,7 @@ export async function getMailSettingsForForm() {
     hasClientSecret: Boolean(s?.clientSecret),
     hasPass: Boolean(s?.pass),
     configured: isComplete(s, true),
+    savedAt: s ? (await db.select().from(appSettings).where(eq(appSettings.key, KEY)).limit(1))[0]?.updatedAt?.toISOString() ?? null : null,
     fromEnv: !s && Boolean(envSettings()),
   };
 }
