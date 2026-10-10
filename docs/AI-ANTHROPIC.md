@@ -87,3 +87,14 @@ Consiglio: limite Anthropic sul workspace 2Target un po' sopra il budget di 2Tar
   e creane una nuova.
 - I dati inviati all'AI sono quelli del cliente e le risposte del consulente: evita di inserire negli appunti
   dati personali non necessari (es. dati sanitari, credenziali, IBAN).
+
+## Metodologia e report del check-up
+
+- **Metodologia Golduck**: Impostazioni → *Metodologia del check-up*. È il testo che l'AI segue in ogni fase
+  (struttura con Executive Summary + 8 punti, stile, SOSTAC, See-Think-Do-Care, StoryBrand, benchmark con mini-SWOT,
+  regole sui dati). Ogni salvataggio crea una versione; il check-up registra quella con cui è partito.
+- **Registro**: all'avvio del check-up si sceglie automatico, istituzionale o commerciale.
+- **Report**: a check-up pronto, *Apri il report* → pagina web dedicata (`/report/<id>`) con indice, grafici e
+  tabelle; *Scarica PDF* la stampa in A4. I Viewer del cliente la vedono solo quando il check-up è consegnato.
+- L'AI non può consultare SimilarWeb, Semrush o Phlanx: i numeri sono solo verificati online (con fonte), forniti
+  dal consulente o dichiarati come stima. Esempio di PDF: `docs/esempi/report-checkup-piantiny-esempio.pdf`.

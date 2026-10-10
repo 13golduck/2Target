@@ -82,6 +82,20 @@ export function CheckupView({ aiConfigured, history, isLatest, previous, client,
   }
 
   const readOnly = checkup.status === 'consegnato';
+  const reportLink = Object.keys(content ?? {}).length > 0 && (!ai || checkup.aiState === 'pronto') && (
+    <Card sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2, bgcolor: 'primary.lighter' }}>
+      <Iconify icon="solar:document-text-bold" width={32} sx={{ color: 'primary.darker' }} />
+      <Box sx={{ flex: 1 }}>
+        <Typography variant="subtitle1">Report per il cliente</Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          Pagina web con grafici, da mostrare in call e scaricare in PDF. {checkup.status === 'consegnato' ? 'Visibile anche ai Viewer del cliente.' : 'I Viewer la vedranno quando il check-up sarà consegnato.'}
+        </Typography>
+      </Box>
+      <Button href={`/report/${checkup.id}`} target="_blank" rel="noopener" variant="contained" color="inherit" endIcon={<Iconify icon="eva:external-link-fill" />}>
+        Apri il report
+      </Button>
+    </Card>
+  );
   const banner = !isLatest && (
     <Alert severity="info" icon={<Iconify icon="solar:clock-circle-bold" />}>
       Stai guardando un check-up dello storico ({checkup.period}). I dati sono quelli di allora.
@@ -94,6 +108,7 @@ export function CheckupView({ aiConfigured, history, isLatest, previous, client,
       <Stack spacing={3}>
         {bar}
         {banner}
+        {reportLink}
         <SectionsEditor checkup={checkup} template={template} content={content} readOnly={readOnly} />
         {checkup.kpiSnapshot.length > 0 && <KpiSnapshotCard checkup={checkup} />}
       </Stack>
@@ -117,6 +132,7 @@ export function CheckupView({ aiConfigured, history, isLatest, previous, client,
       {checkup.aiState === 'domande' && <QuestionsPanel checkup={checkup} questions={questions} />}
       {checkup.aiState === 'pronto' && (
         <>
+          {reportLink}
           <SectionsEditor checkup={checkup} template={template} content={content} withAi={!readOnly} readOnly={readOnly} />
           {checkup.kpiSnapshot.length > 0 && <KpiSnapshotCard checkup={checkup} />}
           <Grid container spacing={3}>
@@ -132,8 +148,15 @@ export function CheckupView({ aiConfigured, history, isLatest, previous, client,
 
 // ----------------------------------------------------------------------
 
+const REGISTER_OPTIONS = [
+  { key: 'auto', title: 'Automatico', text: 'Lo sceglie l’AI in base al tipo di cliente' },
+  { key: 'istituzionale', title: 'Istituzionale', text: 'Formale: enti pubblici, associazioni nazionali' },
+  { key: 'commerciale', title: 'Commerciale', text: 'Dinamico: startup, aziende di prodotto' },
+];
+
 function StartWizard({ aiConfigured, client, previous }) {
   const [mode, setMode] = useState('opus');
+  const [register, setRegister] = useState('auto');
   const [pending, start] = useTransition();
 
   return (
@@ -162,6 +185,7 @@ function StartWizard({ aiConfigured, client, previous }) {
           >
             <input type="hidden" name="clientId" value={client.id} />
             <input type="hidden" name="mode" value={mode} />
+            <input type="hidden" name="register" value={register} />
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}><TextField name="name" label="Ragione sociale" defaultValue={client.name} required fullWidth /></Grid>
               <Grid size={{ xs: 12, sm: 6 }}><TextField name="sector" label="Settore" defaultValue={client.sector ?? ''} fullWidth /></Grid>
@@ -201,6 +225,25 @@ function StartWizard({ aiConfigured, client, previous }) {
                     </Stack>
                     <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>{m.text}</Typography>
                     <Label color="default">{m.cost} a check-up (stima)</Label>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+
+            <Typography variant="subtitle1" sx={{ mt: 3, mb: 1.5 }}>Registro del report</Typography>
+            <Grid container spacing={2}>
+              {REGISTER_OPTIONS.map((r) => (
+                <Grid key={r.key} size={{ xs: 12, md: 4 }}>
+                  <Card
+                    variant="outlined"
+                    onClick={() => setRegister(r.key)}
+                    sx={{ p: 2, height: 1, cursor: 'pointer', borderWidth: 2, borderColor: register === r.key ? 'primary.main' : 'divider', bgcolor: register === r.key ? 'primary.lighter' : 'transparent' }}
+                  >
+                    <Stack direction="row" sx={{ alignItems: 'center' }}>
+                      <Radio checked={register === r.key} size="small" sx={{ ml: -1 }} />
+                      <Typography variant="subtitle2" sx={{ flex: 1 }}>{r.title}</Typography>
+                    </Stack>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>{r.text}</Typography>
                   </Card>
                 </Grid>
               ))}

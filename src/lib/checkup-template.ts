@@ -10,6 +10,16 @@ export interface CheckupSection {
 
 export const CHECKUP_SECTIONS: CheckupSection[] = [
   {
+    key: "sintesi",
+    title: "Executive Summary",
+    fields: [
+      { key: "diagnosi", label: "La diagnosi in una frase", kind: "testo" },
+      { key: "problemi", label: "I 3 problemi principali e il loro impatto", kind: "elenco" },
+      { key: "azioni", label: "Le 3 azioni prioritarie da fare subito", kind: "elenco" },
+    ],
+    guide: ["Se il cliente legge solo questa pagina deve capire il valore della consulenza."],
+  },
+  {
     key: "strumenti",
     title: "Analisi degli strumenti di comunicazione esistenti",
     fields: [

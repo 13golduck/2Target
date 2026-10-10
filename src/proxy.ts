@@ -35,7 +35,7 @@ export default auth((request) => {
   return NextResponse.next({ request: { headers } });
 });
 
-const VIEWER_PATHS = [/^\/$/, /^\/clienti\/\d+$/, /^\/clienti\/\d+\/(seo|lead)$/];
+const VIEWER_PATHS = [/^\/$/, /^\/clienti\/\d+$/, /^\/clienti\/\d+\/(seo|lead)$/, /^\/report\/\d+$/];
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|logo|.*\\.(?:svg|png|jpg|webp)$).*)"],

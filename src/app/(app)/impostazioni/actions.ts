@@ -7,6 +7,7 @@ import { headers } from "next/headers";
 import { requireUser } from "@/lib/auth";
 import { isAdminRole } from "@/lib/roles";
 import { DEFAULT_LIMITS, saveLimits } from "@/lib/ai/budget";
+import { DEFAULT_METHOD, saveMethodology } from "@/lib/ai/metodologia";
 import { consumeLoginCode, requestLoginCode } from "@/lib/login-codes";
 import { grantSettingsAccess, revokeSettingsAccess, settingsUnlocked } from "@/lib/settings-access";
 import { EMPTY_MAIL, explainMailError, isMailConfigured, type MailPreset, saveMailSettings, saveMailTest, sendMail } from "@/lib/mail";
@@ -137,4 +138,18 @@ export async function updateLimits(f: FormData) {
   revalidatePath("/impostazioni");
   revalidatePath("/consumi-ai");
   return { ok: true };
+}
+
+// --- Metodologia del check-up --------------------------------------------------
+
+export async function updateMethodology(f: FormData) {
+  const me = await requireUser();
+  if (!isAdminRole(me.role)) return { error: "Solo un amministratore può cambiare la metodologia" };
+  if (!(await settingsUnlocked(me.id))) return LOCKED;
+  const text = f.get("reset") === "1" ? DEFAULT_METHOD : String(f.get("text") ?? "");
+  if (text.trim().length < 200) return { error: "La metodologia è troppo corta: almeno qualche paragrafo" };
+  if (text.length > 30_000) return { error: "La metodologia è troppo lunga (massimo 30.000 caratteri)" };
+  const version = await saveMethodology(text, me.id);
+  revalidatePath("/impostazioni");
+  return { ok: true, version };
 }

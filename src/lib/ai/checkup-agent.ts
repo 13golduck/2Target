@@ -11,6 +11,8 @@ import { kpiSnapshot } from "@/lib/queries";
 import { assertBudget, PHASE_ESTIMATE_USD } from "./budget";
 import { callClaude, MODELS, modelFor, type AiMode, type Task } from "./claude";
 import { ESEMPIO_CHECKUP } from "./esempio-checkup";
+import { methodologyText } from "./metodologia";
+import { REGISTER_LABELS, ReportSchema, type Register } from "@/lib/checkup-report";
 
 // Check-up a quattro mani: l'AI cerca online, fa domande al consulente su ciò che non trova,
 // approfondisce e scrive le 8 sezioni del modello Golduck. Il consulente rivede e approva.
@@ -27,36 +29,44 @@ const SECTIONS_GUIDE = CHECKUP_SECTIONS.map(
     (s.guide.length ? `\n   Domande guida: ${s.guide.join(" ")}` : ""),
 ).join("\n");
 
-const SYSTEM: Anthropic.Beta.BetaTextBlockParam[] = [
-  {
-    type: "text",
-    text: `Sei un consulente senior di marketing e comunicazione di Golduck, società di consulenza italiana per PMI.
+/** Prompt di sistema: ruolo + metodologia Golduck (versione del check-up) + struttura + esempio. In cache 1 ora. */
+async function systemFor(checkup: Checkup): Promise<Anthropic.Beta.BetaTextBlockParam[]> {
+  const method = await methodologyText(checkup.methodVersion);
+  return [
+    {
+      type: "text",
+      text: `Sei un consulente senior di marketing e comunicazione di Golduck, società di consulenza italiana per PMI.
 Prepari il "Communication Check-Up" di un nuovo cliente lavorando a quattro mani con un consulente Golduck:
 tu raccogli e analizzi le informazioni pubbliche, il consulente ti dà quelle interne. Il documento finale verrà
 consegnato al cliente: deve essere concreto, specifico per quell'azienda e utile per decidere.
 
 Principi di lavoro:
-- Scrivi sempre in italiano, con il registro dell'esempio: diretto, professionale, caldo, mai generico.
+- Scrivi sempre in italiano.
 - Non inventare numeri, nomi o fatti. Distingui sempre tra: dato verificato online (con fonte), informazione del
   consulente, tua ipotesi o stima (dichiarala come tale). Se un dato manca scrivi cosa servirebbe per averlo.
 - Ragiona sul modello di business: chi paga davvero (B2B, B2C, intermediari), come si chiude una vendita, quali
-  canali servono a quale fase del funnel (awareness, consideration, conversion, retention).
-- Le raccomandazioni nascono dai dati: prima l'evidenza (es. "i post con persone fanno 3-4 volte le interazioni"),
-  poi la conseguenza operativa.
+  canali servono a quale fase del funnel.
+- Le raccomandazioni nascono dai dati: prima l'evidenza, poi la conseguenza operativa.
 - Per i social pubblici annota ciò che si vede: follower, frequenza di pubblicazione, formati, tipo di contenuti,
   interazioni visibili, link in bio, coerenza col posizionamento.
+
+Metodologia Golduck (vincolante: struttura, stile, framework, regole sui dati):
+<metodologia_golduck>
+${method}
+</metodologia_golduck>
 
 Struttura del check-up (chiave sezione e chiavi dei campi):
 ${SECTIONS_GUIDE}
 
-Esempio di check-up reale consegnato da Golduck (riferimento di struttura, profondità e tono; NON copiarne i contenuti):
+Esempio di check-up reale consegnato da Golduck (riferimento di profondità e concretezza; NON copiarne i contenuti):
 <esempio>
 ${ESEMPIO_CHECKUP}
 </esempio>`,
-    // Un'ora: tra le domande al consulente e la ricerca passa spesso più di 5 minuti
-    cache_control: { type: "ephemeral", ttl: "1h" },
-  },
-];
+      // Un'ora: tra le domande al consulente e la ricerca passa spesso più di 5 minuti
+      cache_control: { type: "ephemeral", ttl: "1h" },
+    },
+  ];
+}
 
 // ── Contesto del cliente (cresce durante il lavoro) ──────────────────
 
@@ -64,6 +74,7 @@ async function clientContext(client: Client, checkup: Checkup, opts: { withAnswe
   const parts = [
     `<dati_forniti_dal_consulente>`,
     `Azienda: ${client.name}`,
+    `Registro del report: ${checkup.register === "auto" ? "scegli tu in base al tipo di cliente (istituzionale per enti e associazioni, commerciale per aziende di prodotto e startup) e dichiaralo" : REGISTER_LABELS[checkup.register as Register]}`,
     client.sector && `Settore indicato: ${client.sector}`,
     client.website && `Sito: ${client.website}`,
     client.vatNumber && `Partita IVA: ${client.vatNumber}`,
@@ -143,7 +154,7 @@ export async function runRecon(checkupId: number) {
 
   const research = await callClaude({
     model: modelFor(mode, "ricerca"),
-    system: SYSTEM,
+    system: await systemFor(checkup),
     web: { searches: 14, fetches: 14 },
     effort: "high",
     messages: [
@@ -184,7 +195,7 @@ export async function askQuestions(checkupId: number, round: number) {
   const first = round === 1;
   const r = await callClaude({
     model: modelFor(mode, "domande"),
-    system: SYSTEM,
+    system: await systemFor(checkup),
     effort: "medium",
     maxTokens: 16_000,
     outputFormat: betaZodOutputFormat(QuestionsSchema),
@@ -239,7 +250,7 @@ export async function runDeepResearch(checkupId: number) {
   await progress(checkupId, "Ricerca approfondita avviata");
   const r = await callClaude({
     model: modelFor(mode, "ricerca"),
-    system: SYSTEM,
+    system: await systemFor(checkup),
     web: { searches: 30, fetches: 25 },
     effort: "high",
     messages: [
@@ -274,9 +285,7 @@ const sectionSchema = (key: string) => {
 
 const DocumentSchema = z.object({
   sections: z.object(Object.fromEntries(CHECKUP_SECTIONS.map((s) => [s.key, sectionSchema(s.key)]))),
-  competitors: z.array(
-    z.object({ name: z.string(), location: z.string(), website: z.string(), profile: z.string(), strengths: z.string(), weaknesses: z.string(), opportunities: z.string(), threats: z.string(), bestPractices: z.string() }),
-  ),
+  report: ReportSchema,
   personas: z.array(
     z.object({ name: z.string(), priority: z.number(), segment: z.enum(["b2b", "b2c"]), ageRange: z.string(), needs: z.string(), interests: z.string(), channels: z.string(), values: z.string(), lever: z.string() }),
   ),
@@ -291,7 +300,7 @@ export async function runWriting(checkupId: number) {
   await progress(checkupId, "Scrivo il check-up");
   const r = await callClaude({
     model: modelFor(mode, "scrittura"),
-    system: SYSTEM,
+    system: await systemFor(checkup),
     effort: "high",
     maxTokens: 64_000,
     outputFormat: betaZodOutputFormat(DocumentSchema),
@@ -304,8 +313,14 @@ Scrivi il Communication Check-Up completo di ${client.name}, allo stesso livello
 - sections: tutte le sezioni e tutti i campi, testo pronto per il cliente (gli elenchi una voce per riga, senza
   trattini iniziali). Nel campo "canali" della sezione strumenti metti i numeri per canale. Nella sezione obiettivi,
   "fasi" riassume obiettivo, strategie e KPI di ogni fase del funnel.
-- competitors: i concorrenti analizzati con mini SWOT e best practice (website vuoto se non noto).
-- personas: 2-4 buyer persona in ordine di valore strategico (priority 1 = più importante).
+- sections.sintesi: l'Executive Summary (diagnosi, 3 problemi con impatto, 3 azioni prioritarie).
+- report: i dati per la pagina web e il PDF del report, coerenti con le sezioni:
+  executive (stessi 3 problemi e 3 azioni), storybrand (cliente come guida, persona come eroe), channels (tutti i
+  canali attuali e potenziali con efficacia attuale e potenziale da 0 a 5 e verdetto), funnel See-Think-Do-Care,
+  competitors (3-5, con dati chiave, ER solo se calcolabile e con la fonte, inserzioni attive "non_verificato" se non
+  hai potuto controllare, strengths, weaknesses e leva strategica), clientEr, swot, quickWins (5-8 con impatto,
+  sforzo e chi le fa), evidence (criticità da documentare con screenshot).
+- personas: almeno 3 buyer persona in ordine di valore strategico (priority 1 = più importante).
 - objectives: una voce per ciascuna delle 4 fasi del funnel, con 3-6 strategie operative e 3-5 KPI misurabili.
 - Campo "confronto" (sezione best_practice): se c'è un check-up precedente, cosa è cambiato da allora (numeri dei
   canali, KPI, raccomandazioni seguite o no, nuove priorità); altrimenti scrivi "Primo check-up".
@@ -321,18 +336,24 @@ Dove un dato non è verificato dichiaralo. Niente frasi generiche valide per qua
     await db.insert(checkupSections).values({ checkupId, sectionKey, content }).onDuplicateKeyUpdate({ set: { content } });
   }
   // Concorrenti, persona e obiettivi restano legati a questo check-up (storico)
-  for (const c of doc.competitors) {
+  for (const c of doc.report.competitors) {
     await db.insert(competitors).values({
       clientId: client.id,
       checkupId,
       name: c.name,
       location: c.location || null,
-      profile: [c.profile, c.website].filter(Boolean).join("\n"),
-      strengths: c.strengths,
-      weaknesses: c.weaknesses,
-      opportunities: c.opportunities,
-      threats: c.threats,
-      bestPractices: c.bestPractices,
+      profile: [
+        c.website,
+        `Canali: ${c.channels}`,
+        `Community: ${c.community}`,
+        `ER: ${c.er == null ? "n.d." : `${c.er}%`} (${c.erSource})`,
+        `Inserzioni attive: ${c.ads === "si" ? "sì" : c.ads === "no" ? "no" : "non verificato"}`,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      strengths: c.strengths.join("\n"),
+      weaknesses: c.weaknesses.join("\n"),
+      bestPractices: c.lever,
     });
   }
   if (doc.personas.length) {
@@ -345,7 +366,7 @@ Dove un dato non è verificato dichiaralo. Niente frasi generiche valide per qua
   }
   await db
     .update(checkups)
-    .set({ aiState: "pronto", aiError: null, status: "in_revisione", completedAt: new Date(), kpiSnapshot: await kpiSnapshot(client.id) })
+    .set({ aiState: "pronto", aiError: null, status: "in_revisione", completedAt: new Date(), report: doc.report, kpiSnapshot: await kpiSnapshot(client.id) })
     .where(eq(checkups.id, checkupId));
   await progress(checkupId, "Check-up pronto per la revisione");
 }
@@ -362,7 +383,7 @@ export async function rewriteSection(checkupId: number, sectionKey: string, inst
   const schema = sectionSchema(sectionKey);
   const r = await callClaude({
     model: modelFor(mode, "scrittura"),
-    system: SYSTEM,
+    system: await systemFor(checkup),
     effort: "medium",
     maxTokens: 16_000,
     outputFormat: betaZodOutputFormat(schema),

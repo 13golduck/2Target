@@ -21,6 +21,7 @@ import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
+import { MethodCard } from './method-card';
 import { AiLimitsCard } from './ai-limits-card';
 import { saveMail, testMail, lockSettings } from './actions';
 
@@ -54,7 +55,7 @@ const HELP = {
   smtp: <>Server, porta, utente e password li trovi nelle istruzioni del tuo provider di posta (porta 587 con STARTTLS oppure 465 con TLS).</>,
 };
 
-export function SettingsView({ mail, lastTest, limits, firstAccess }) {
+export function SettingsView({ mail, lastTest, limits, method, firstAccess }) {
   const [preset, setPreset] = useState(mail.preset ?? (mail.provider === 'smtp' ? 'smtp' : 'microsoft'));
   const [host, setHost] = useState(mail.host);
   const [port, setPort] = useState(mail.port);
@@ -257,6 +258,12 @@ export function SettingsView({ mail, lastTest, limits, firstAccess }) {
       <Box sx={{ mt: 3, maxWidth: 720 }}>
         <AiLimitsCard limits={limits} />
       </Box>
+
+      {method && (
+        <Box sx={{ mt: 3 }}>
+          <MethodCard method={method} />
+        </Box>
+      )}
     </DashboardContent>
   );
 }

@@ -1,6 +1,8 @@
 // Schema MariaDB (Drizzle). Le migrazioni si generano con `npm run db:generate` nella cartella drizzle/
 // e l'app le applica da sola all'avvio (src/instrumentation.ts).
 
+import type { CheckupReport } from "../lib/checkup-report";
+import { REGISTERS } from "../lib/checkup-report";
 import {
   boolean,
   date,
@@ -210,6 +212,12 @@ export const checkups = mysqlTable("checkups", {
   questionRound: int("question_round").notNull().default(0),
   /** Check-up precedente da cui parte il confronto (check-up periodici). */
   previousId: int("previous_id"),
+  /** Registro del report: lo sceglie il consulente all'avvio (auto = lo decide l'AI). */
+  register: mysqlEnum("register", REGISTERS).notNull().default("auto"),
+  /** Versione della metodologia Golduck usata (Impostazioni → Metodologia). */
+  methodVersion: int("method_version"),
+  /** Dati strutturati per il report web e il PDF (grafici, tabelle, matrici). */
+  report: json("report").$type<CheckupReport>(),
   /** Fotografia dei KPI quando il check-up viene chiuso (storico). */
   kpiSnapshot: json("kpi_snapshot").$type<{ label: string; scope: string; unit: string; value: number | null; target: number; status: string }[]>(),
   completedAt: datetime("completed_at"),
