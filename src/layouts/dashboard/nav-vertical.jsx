@@ -8,7 +8,7 @@ import { Scrollbar } from 'src/components/scrollbar';
 import { NavSectionMini, NavSectionVertical } from 'src/components/nav-section';
 
 import { layoutClasses } from '../core';
-import { PoweredBy } from '../components/powered-by';
+import { PoweredBy, PoweredByMini } from '../components/powered-by';
 import { NavToggleButton } from '../components/nav-toggle-button';
 
 // ----------------------------------------------------------------------
@@ -69,7 +69,7 @@ export function NavVertical({
         ]}
       />
 
-      {slots?.bottomArea}
+      {slots?.bottomArea ?? <PoweredByMini />}
     </>
   );
 

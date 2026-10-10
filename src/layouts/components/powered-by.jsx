@@ -33,3 +33,21 @@ export function PoweredBy({ height = 56, sx }) {
     </Box>
   );
 }
+
+// ----------------------------------------------------------------------
+// Versione per il menu ridotto: solo la papera Golduck, senza scritta
+
+export function PoweredByMini({ size = 32, sx }) {
+  return (
+    <Box
+      component="a"
+      href="https://www.golduck.it"
+      target="_blank"
+      rel="noopener"
+      title="powered by Golduck consulting"
+      sx={[{ display: 'flex', justifyContent: 'center', py: 2.5 }, ...(Array.isArray(sx) ? sx : [sx])]}
+    >
+      <Box component="img" src="/logo/golduck-duck.png" alt="Golduck" sx={{ width: size, height: size }} />
+    </Box>
+  );
+}

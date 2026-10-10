@@ -31,18 +31,22 @@ export function codeMatches(input: string, storedHash: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-/** Invia un codice se l'utente esiste ed è attivo. Non rivela mai se l'email è registrata. */
-export async function requestLoginCode(emailRaw: string, ip: string | null) {
+/**
+ * Invia un codice se l'utente esiste ed è attivo. Non rivela mai se l'email è registrata.
+ * purpose "settings": stesso codice monouso, chiesto di nuovo per entrare in Impostazioni.
+ * Restituisce false se non è stato inviato (utente sconosciuto o troppe richieste).
+ */
+export async function requestLoginCode(emailRaw: string, ip: string | null, purpose: "login" | "settings" = "login") {
   const email = emailRaw.trim().toLowerCase();
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  if (!user?.active) return;
+  if (!user?.active) return false;
 
   const since = new Date(Date.now() - REQUEST_WINDOW_MIN * 60_000);
   const [{ n }] = await db
     .select({ n: sql<number>`count(*)` })
     .from(loginCodes)
     .where(and(eq(loginCodes.userId, user.id), gte(loginCodes.createdAt, since)));
-  if (Number(n) >= MAX_REQUESTS) return;
+  if (Number(n) >= MAX_REQUESTS) return false;
 
   const code = newCode();
   // Un solo codice valido alla volta: i precedenti non usati vengono annullati
@@ -55,19 +59,21 @@ export async function requestLoginCode(emailRaw: string, ip: string | null) {
   });
 
   const pretty = `${code.slice(0, 3)} ${code.slice(3)}`;
+  const where = purpose === "settings" ? "le Impostazioni di 2Target" : "2Target";
   await sendMail(
     user.email,
-    `Codice di accesso a 2Target: ${pretty}`,
-    `Ciao ${user.name},\n\nil tuo codice per entrare in 2Target è: ${pretty}\n\nVale ${CODE_TTL_MIN} minuti e una sola volta. Se non hai chiesto tu l'accesso, ignora questa email.\n\n2Target · powered by Golduck`,
+    purpose === "settings" ? `Codice per le Impostazioni di 2Target: ${pretty}` : `Codice di accesso a 2Target: ${pretty}`,
+    `Ciao ${user.name},\n\nil tuo codice per entrare in ${where} è: ${pretty}\n\nVale ${CODE_TTL_MIN} minuti e una sola volta. Se non hai chiesto tu l'accesso, ignora questa email.\n\n2Target · powered by Golduck`,
     `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:24px">
       <div style="display:inline-block;background:#CDA434;color:#1C1C1C;font-weight:800;border-radius:12px;padding:10px 14px;font-size:20px">2T</div>
       <p style="font-size:16px">Ciao ${user.name.replace(/[<>&]/g, "")},</p>
-      <p style="font-size:16px">il tuo codice per entrare in <b>2Target</b> è:</p>
+      <p style="font-size:16px">il tuo codice per entrare in <b>${where}</b> è:</p>
       <p style="font-size:34px;font-weight:800;letter-spacing:6px;margin:16px 0">${pretty}</p>
       <p style="color:#637381">Vale ${CODE_TTL_MIN} minuti e una sola volta. Se non hai chiesto tu l'accesso, ignora questa email.</p>
       <p style="color:#919EAB;font-size:12px">2Target · powered by Golduck</p>
     </div>`,
   );
+  return true;
 }
 
 /** Verifica il codice: se valido lo consuma e restituisce l'utente. */

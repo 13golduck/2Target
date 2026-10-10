@@ -21,7 +21,7 @@ import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
-import { saveMail, testMail } from './actions';
+import { saveMail, testMail, lockSettings } from './actions';
 
 // ----------------------------------------------------------------------
 
@@ -88,7 +88,16 @@ export function SettingsView({ mail, lastTest, firstAccess }) {
 
   return (
     <DashboardContent>
-      <CustomBreadcrumbs heading="Impostazioni" links={[{ name: 'Panoramica' }, { name: 'Impostazioni' }]} sx={{ mb: 3 }} />
+      <CustomBreadcrumbs
+        heading="Impostazioni"
+        links={[{ name: 'Panoramica' }, { name: 'Impostazioni' }]}
+        action={
+          <Button color="inherit" variant="outlined" onClick={() => lockSettings()}>
+            Chiudi le Impostazioni
+          </Button>
+        }
+        sx={{ mb: 3 }}
+      />
 
       {firstAccess && (
         <Alert severity="warning" sx={{ mb: 3 }}>
