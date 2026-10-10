@@ -46,8 +46,6 @@ Plesk → dominio → **Node.js → Abilita**:
 | `APP_URL` | `https://2target.it` |
 | `ANTHROPIC_API_KEY` | chiave del workspace 2Target (meglio una dedicata, es. `2target-produzione`) |
 | `CRON_SECRET` | stringa casuale (`openssl rand -base64 33`) |
-| `BOOTSTRAP_ADMIN_EMAIL` | `a.infantino@golduck.it` (solo per il primo avvio) |
-| `BOOTSTRAP_ADMIN_NAME` | `Antonio Infantino` (solo per il primo avvio) |
 
 **Invio email (codici di accesso)**: non serve nessuna variabile. Si configura dentro 2Target al primo accesso,
 da **Impostazioni** (Microsoft 365 consigliato): vedi [EMAIL-MICROSOFT365.md](EMAIL-MICROSOFT365.md).
@@ -63,8 +61,9 @@ Attenzione: la pagina Node.js di Plesk **mostra le variabili in chiaro**. Non fa
 ### 5. Primo avvio
 1. **NPM install non serve** (le dipendenze sono già nel pacchetto): premi solo **Riavvia app**.
 2. All'avvio l'app crea le tabelle e, se la tabella utenti è vuota, l'amministratore `BOOTSTRAP_ADMIN_*`.
-3. Entro 60 minuti apri il sito e scrivi la tua email: la prima volta entri senza codice e arrivi in
-   **Impostazioni** per configurare l'invio email. Salva e invia la prova.
+3. Entro 60 minuti apri il sito: la pagina chiede di **creare l'account master** con la sola email.
+   Entri senza codice e arrivi in **Impostazioni**: scegli il servizio (Microsoft 365 o Google Workspace,
+   server e porta si compilano da soli), inserisci casella e password, **Salva** e **Invia email di prova**.
 4. **Togli le variabili `BOOTSTRAP_ADMIN_*`** e riavvia l'app. I colleghi si aggiungono da **Utenti**.
 5. In **Consumi AI** controlla i limiti di spesa.
 

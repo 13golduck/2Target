@@ -17,17 +17,25 @@ Consigliato: una casella dedicata (es. `noreply@golduck.it`, anche una cassetta 
 Per limitare l'app a quella sola casella: Exchange Online PowerShell, `New-ApplicationAccessPolicy` (o RBAC for Applications).
 
 ## 2. Configurare 2Target (primo accesso)
-1. Su Plesk deve esserci `BOOTSTRAP_ADMIN_EMAIL` con la tua email. **Riavvia app**.
-2. Entro **60 minuti** dal riavvio apri <https://2target.it>, scrivi quell'email: entri senza codice
-   (solo la prima volta, solo se nessuno è mai entrato e l'email non è configurata).
+1. **Riavvia app** su Plesk.
+2. Entro **60 minuti** dal riavvio apri <https://2target.it>: la pagina chiede di creare l'account master con la
+   sola email. Entri senza codice (solo se nessuno è mai entrato e l'email non è configurata).
 3. Si apre **Impostazioni**: servizio *Microsoft 365*, casella mittente, ID tenant, ID applicazione, segreto client → **Salva**.
 4. **Invia email di prova**: deve arrivarti un'email. Se c'è un errore, il messaggio di Microsoft dice cosa manca
    (di solito il consenso amministratore su `Mail.Send`).
-5. Da qui in poi si entra con il codice via email. Togli `BOOTSTRAP_ADMIN_*` da Plesk.
+5. Da qui in poi si entra con il codice via email.
 
 Il segreto si salva cifrato nel database. Quando scade (24 mesi) se ne crea uno nuovo in Entra e si aggiorna
 in Impostazioni.
 
-## Alternativa: SMTP
-In Impostazioni si può scegliere *Server SMTP* (es. Google Workspace `smtp.gmail.com`, porta 587, con
-password per app). Le variabili `SMTP_*` su Plesk restano supportate ma non servono più.
+## Alternativa: SMTP (preimpostazioni pronte)
+In Impostazioni → *Servizio di posta*:
+- **Microsoft 365 – SMTP con password**: `smtp.office365.com:587`. La casella deve avere *SMTP autenticato* attivo
+  (Microsoft 365 admin → Utenti attivi → casella → Posta → Gestisci app di posta elettronica). Con MFA serve una
+  password per app. Microsoft lo disattiva per impostazione predefinita da fine 2026.
+- **Google Workspace / Gmail**: `smtp.gmail.com:587`, utente = indirizzo completo, password = **password per app**
+  (Verifica in due passaggi attiva → <https://myaccount.google.com/apppasswords>).
+- **Altro server SMTP**: server e porta a mano.
+
+Errori comuni (la prova li spiega in italiano): `535 5.7.8` Google rifiuta la password → serve la password per app;
+`535 5.7.3` Microsoft rifiuta utente/password; `5.7.139` SMTP autenticato disattivato sulla casella.

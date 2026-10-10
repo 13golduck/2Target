@@ -4,7 +4,7 @@ import { AuthError } from "next-auth";
 import { headers } from "next/headers";
 
 import { signIn, signOut } from "@/lib/auth";
-import { firstAccessAllowed } from "@/lib/first-access";
+import { setupOpen } from "@/lib/first-access";
 import { requestLoginCode } from "@/lib/login-codes";
 
 // Limite per indirizzo IP sulle richieste di codice (in memoria: un solo processo Node su Plesk)
@@ -20,25 +20,34 @@ function tooMany(ip: string) {
   return h.n > 20;
 }
 
-export type LoginState = { step: "email" | "code"; email?: string; error?: string; info?: string };
+export type LoginState = { step: "email" | "code" | "setup"; email?: string; error?: string; info?: string };
+
+/** Primo accesso: crea l'account master con la sola email ed entra senza codice. */
+async function createMaster(email: string): Promise<LoginState> {
+  if (!(await setupOpen())) return { step: "email", email, error: "Il primo accesso è già stato fatto: accedi con il codice." };
+  try {
+    await signIn("credentials", { email, firstAccess: "true", remember: "false", redirectTo: "/impostazioni?primo=1" });
+    return { step: "setup", email };
+  } catch (e) {
+    if (e instanceof AuthError) return { step: "setup", email, error: "Esiste già un account master con un'altra email: usa quella." };
+    throw e; // il redirect di Next passa da qui
+  }
+}
 
 export async function loginStep(prev: LoginState, formData: FormData): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const returnTo = String(formData.get("returnTo") ?? "/");
+
+  if (prev.step === "setup") {
+    if (!email) return { step: "setup", error: "Scrivi l'email dell'account master." };
+    return createMaster(email);
+  }
 
   if (formData.get("action") === "codice" || prev.step === "email") {
     if (!email) return { step: "email", error: "Scrivi la tua email." };
     const h = await headers();
     const ip = (h.get("x-forwarded-for") ?? "").split(",")[0].trim() || "?";
     if (tooMany(ip)) return { step: "email", email, error: "Troppe richieste: riprova tra qualche minuto." };
-    // Primo accesso dell'amministratore, quando l'invio email non è ancora configurato
-    if (await firstAccessAllowed(email)) {
-      try {
-        await signIn("credentials", { email, firstAccess: "true", remember: "false", redirectTo: "/impostazioni?primo=1" });
-      } catch (e) {
-        if (!(e instanceof AuthError)) throw e;
-      }
-    }
     try {
       await requestLoginCode(email, ip);
     } catch (e) {

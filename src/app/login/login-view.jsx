@@ -21,9 +21,10 @@ import { loginStep } from './actions';
 // ----------------------------------------------------------------------
 // Accesso senza password: 1) email  2) codice di 6 cifre ricevuto via email.
 
-export function LoginView({ returnTo }) {
-  const [state, action, pending] = useActionState(loginStep, { step: 'email' });
+export function LoginView({ returnTo, setup }) {
+  const [state, action, pending] = useActionState(loginStep, { step: setup ? 'setup' : 'email' });
   const codeStep = state.step === 'code';
+  const setupStep = state.step === 'setup';
 
   return (
     <Box
@@ -46,16 +47,26 @@ export function LoginView({ returnTo }) {
             2Target
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            {codeStep ? 'Inserisci il codice che ti abbiamo inviato' : 'Accedi con la tua email: ti mandiamo un codice'}
+            {setupStep
+              ? 'Primo accesso: crea l’account master'
+              : codeStep
+                ? 'Inserisci il codice che ti abbiamo inviato'
+                : 'Accedi con la tua email: ti mandiamo un codice'}
           </Typography>
         </Stack>
 
         <Stack component="form" action={action} spacing={2.5}>
           <input type="hidden" name="returnTo" value={returnTo} />
+          {setupStep && (
+            <Alert severity="info">
+              Scrivi l&apos;email dell&apos;amministratore: entri subito, senza codice, e configuri l&apos;invio delle email. Dal secondo
+              accesso servirà il codice via email.
+            </Alert>
+          )}
           <TextField
             name="email"
             type="email"
-            label="Email"
+            label={setupStep ? 'Email dell’account master' : 'Email'}
             autoComplete="username"
             defaultValue={state.email ?? ''}
             required
@@ -94,7 +105,7 @@ export function LoginView({ returnTo }) {
           {state.error && <Alert severity="error">{state.error}</Alert>}
 
           <Button type="submit" size="large" variant="contained" color="inherit" loading={pending} fullWidth>
-            {codeStep ? 'Entra' : 'Inviami il codice'}
+            {setupStep ? 'Crea account ed entra' : codeStep ? 'Entra' : 'Inviami il codice'}
           </Button>
 
           {codeStep && (

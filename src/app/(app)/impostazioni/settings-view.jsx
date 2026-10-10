@@ -24,8 +24,47 @@ import { saveMail, testMail } from './actions';
 
 // ----------------------------------------------------------------------
 
+// Preimpostazioni dei servizi di posta più usati: server e porta si compilano da soli.
+const PRESETS = {
+  microsoft: { label: 'Microsoft 365 – app Entra (consigliato)' },
+  'microsoft-smtp': { label: 'Microsoft 365 – SMTP con password', host: 'smtp.office365.com', port: 587 },
+  google: { label: 'Google Workspace / Gmail – SMTP con password per app', host: 'smtp.gmail.com', port: 587 },
+  smtp: { label: 'Altro server SMTP (Aruba, Register, ...)' },
+};
+
+const HELP = {
+  'microsoft-smtp': (
+    <>
+      Utente e password della casella Microsoft 365. Nell&apos;interfaccia di amministrazione di Microsoft 365 la casella deve avere{' '}
+      <b>SMTP autenticato</b> attivo (Utenti attivi → casella → Posta → Gestisci app di posta elettronica). Con l&apos;autenticazione a più
+      fattori serve una password per app. Microsoft disattiva questo metodo per impostazione predefinita da fine 2026: per durare nel
+      tempo usa l&apos;app Entra.
+    </>
+  ),
+  google: (
+    <>
+      Utente: l&apos;indirizzo completo della casella. Password: una <b>password per app</b> di 16 lettere, non quella normale. Accedi come
+      quella casella → <Link href="https://myaccount.google.com/security" target="_blank" rel="noopener">Sicurezza</Link> → attiva la
+      Verifica in due passaggi → <Link href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Password per le app</Link>{' '}
+      → nome «2Target» → Crea. Se non è disponibile, l&apos;amministratore di Google Workspace deve consentire la verifica in due passaggi.
+    </>
+  ),
+  smtp: <>Server, porta, utente e password li trovi nelle istruzioni del tuo provider di posta (porta 587 con STARTTLS oppure 465 con TLS).</>,
+};
+
 export function SettingsView({ mail, firstAccess }) {
-  const [provider, setProvider] = useState(mail.provider);
+  const [preset, setPreset] = useState(mail.preset ?? (mail.provider === 'smtp' ? 'smtp' : 'microsoft'));
+  const [host, setHost] = useState(mail.host);
+  const [port, setPort] = useState(mail.port);
+  const provider = preset === 'microsoft' ? 'microsoft' : 'smtp';
+
+  const choose = (value) => {
+    setPreset(value);
+    if (PRESETS[value].host) {
+      setHost(PRESETS[value].host);
+      setPort(PRESETS[value].port);
+    }
+  };
   const [pending, start] = useTransition();
   const [testing, startTest] = useTransition();
   const [result, setResult] = useState(null);
@@ -61,13 +100,24 @@ export function SettingsView({ mail, firstAccess }) {
           sx={{ p: 3 }}
         >
           <Stack spacing={2.5} sx={{ maxWidth: 640 }}>
-            <TextField select name="provider" label="Servizio" value={provider} onChange={(e) => setProvider(e.target.value)}>
-              <MenuItem value="microsoft">Microsoft 365 (consigliato)</MenuItem>
-              <MenuItem value="smtp">Server SMTP (Google Workspace, Aruba, altro)</MenuItem>
+            <TextField select name="preset" label="Servizio di posta" value={preset} onChange={(e) => choose(e.target.value)}>
+              {Object.entries(PRESETS).map(([value, p]) => (
+                <MenuItem key={value} value={value}>
+                  {p.label}
+                </MenuItem>
+              ))}
             </TextField>
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField name="from" label="Casella mittente" placeholder="noreply@golduck.it" defaultValue={mail.from} fullWidth required={provider === 'microsoft'} />
+              <TextField
+                name="from"
+                label="Casella mittente"
+                placeholder={preset === 'google' ? 'developer@golduck.eu' : 'noreply@golduck.it'}
+                defaultValue={mail.from}
+                helperText={provider === 'smtp' ? "Se vuota si usa l'utente" : undefined}
+                fullWidth
+                required={provider === 'microsoft'}
+              />
               <TextField name="fromName" label="Nome visualizzato" defaultValue={mail.fromName} fullWidth />
             </Stack>
 
@@ -92,15 +142,34 @@ export function SettingsView({ mail, firstAccess }) {
               </>
             ) : (
               <>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {HELP[preset]}
+                </Typography>
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                  <TextField name="host" label="Server SMTP" placeholder="smtp.gmail.com" defaultValue={mail.host} fullWidth required />
-                  <TextField name="port" label="Porta" type="number" defaultValue={mail.port} sx={{ width: { sm: 160 } }} helperText="587 o 465" />
+                  <TextField
+                    name="host"
+                    label="Server SMTP"
+                    value={host}
+                    onChange={(e) => setHost(e.target.value)}
+                    slotProps={{ input: { readOnly: preset !== 'smtp' } }}
+                    fullWidth
+                    required
+                  />
+                  <TextField
+                    name="port"
+                    label="Porta"
+                    type="number"
+                    value={port}
+                    onChange={(e) => setPort(Number(e.target.value))}
+                    sx={{ width: { sm: 160 } }}
+                    helperText="587 o 465"
+                  />
                 </Stack>
-                <TextField name="user" label="Utente (casella)" defaultValue={mail.user} fullWidth required />
+                <TextField name="user" label="Utente (indirizzo email completo)" defaultValue={mail.user} fullWidth required />
                 <TextField
                   name="pass"
                   type="password"
-                  label="Password (per Google: password per app)"
+                  label={preset === 'google' ? 'Password per app (16 lettere)' : 'Password'}
                   autoComplete="new-password"
                   helperText={secretHelp(mail.hasPass)}
                   required={!mail.hasPass}

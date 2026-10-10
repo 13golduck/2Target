@@ -15,8 +15,12 @@ import { decryptSecret, encryptSecret } from "./secret-box";
 
 export type MailProvider = "microsoft" | "smtp";
 
+/** Preimpostazione scelta in Impostazioni (solo per l'interfaccia). */
+export type MailPreset = "microsoft" | "microsoft-smtp" | "google" | "smtp";
+
 export type MailSettings = {
   provider: MailProvider;
+  preset?: MailPreset;
   from: string;
   fromName: string;
   tenantId: string;
@@ -32,7 +36,8 @@ const KEY = "mail";
 const PURPOSE = "mail-secret";
 
 export const EMPTY_MAIL: MailSettings = {
-  provider: "microsoft",
+  provider: "smtp",
+  preset: "microsoft-smtp",
   from: "",
   fromName: "2Target",
   tenantId: "",
@@ -172,6 +177,22 @@ async function sendGraph(s: MailSettings, to: string, subject: string, html: str
 }
 
 // ----------------------------------------------------------------------------
+
+/** Spiega in italiano gli errori più comuni dei server di posta, lasciando il dettaglio originale. */
+export function explainMailError(e: unknown) {
+  const raw = e instanceof Error ? e.message : String(e);
+  const hints: [RegExp, string][] = [
+    [/5\.7\.8|BadCredentials/i, "Google non accetta utente e password: serve la password per app di 16 lettere, non la password normale."],
+    [/5\.7\.139|SmtpClientAuthentication is disabled/i, "Microsoft 365: per questa casella l'SMTP autenticato è disattivato. Va attivato nell'interfaccia di amministrazione."],
+    [/5\.7\.3|Authentication unsuccessful/i, "Microsoft 365 non accetta utente e password. Controllali; con l'autenticazione a più fattori serve una password per app, e la casella deve avere l'SMTP autenticato attivo."],
+    [/ENOTFOUND|EAI_AGAIN/i, "Server SMTP sconosciuto: controlla il nome del server."],
+    [/ETIMEDOUT|ECONNREFUSED|ECONNECTION/i, "Il server SMTP non risponde su questa porta: prova 587 oppure 465."],
+    [/wrong version number|SSL routines/i, "Porta e cifratura non coincidono: usa 587 (STARTTLS) oppure 465 (TLS)."],
+    [/5\.7\.60|SendAsDenied|not allowed to send as/i, "La casella mittente è diversa dall'utente e non c'è il permesso \"Invia come\": usa la stessa casella."],
+  ];
+  const hint = hints.find(([re]) => re.test(raw))?.[1];
+  return hint ? `${hint} (dettaglio: ${raw})` : raw;
+}
 
 export async function sendMail(to: string, subject: string, text: string, html: string) {
   const s = await activeSettings();
