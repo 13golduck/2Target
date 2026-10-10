@@ -1,14 +1,21 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { asc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { clients, editorialItems, ideas } from "@/db/schema";
+import { requireUser, visibleClientIds } from "@/lib/auth";
 import { clientStatus, kpisWithStatus } from "@/lib/queries";
+import { canWrite } from "@/lib/roles";
 import { ClientsView } from "./clients-view";
 
 export const metadata = { title: "Clienti" };
 
 export default async function ClientsPage() {
-  const list = await db.select().from(clients).orderBy(asc(clients.name));
+  const me = await requireUser();
+  const ids = await visibleClientIds(me);
+  const list =
+    ids && !ids.length
+      ? []
+      : await db.select().from(clients).where(ids ? inArray(clients.id, ids) : undefined).orderBy(asc(clients.name));
   const rows = await kpisWithStatus(list.map((c) => c.id));
   const items = await db
     .select({ clientId: editorialItems.clientId, n: sql<number>`count(*)` })
@@ -38,5 +45,5 @@ export default async function ClientsPage() {
     };
   });
 
-  return <ClientsView clients={data} />;
+  return <ClientsView clients={data} readOnly={!canWrite(me.role)} />;
 }

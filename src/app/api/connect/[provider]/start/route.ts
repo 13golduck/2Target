@@ -14,6 +14,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
   const { provider } = await params;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.redirect(`${appUrl(request)}/login`);
+  // I Viewer (clienti) non collegano canali
+  if ((session.user as { role?: string }).role === "viewer") return NextResponse.redirect(`${appUrl(request)}/`);
 
   const clientId = Number(new URL(request.url).searchParams.get("clientId"));
   const client = clientId ? await getClient(clientId) : null;

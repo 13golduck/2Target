@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
 import { AI_MODES, checkupQuestions, checkups, clients } from "@/db/schema";
-import { requireUser } from "@/lib/auth";
+import { requireWriter } from "@/lib/auth";
 import { isAiConfigured } from "@/lib/ai/claude";
 import { askQuestions, rewriteSection, runDeepResearch, runRecon, runWriting } from "@/lib/ai/checkup-agent";
 import { isRunning, runningCount, startJob } from "@/lib/ai/jobs";
@@ -39,7 +39,7 @@ async function checkupOf(id: number) {
 
 /** Dati del cliente + scelta del modello → ricognizione online e prime domande. */
 export async function startAiCheckup(f: FormData) {
-  await requireUser();
+  await requireWriter();
   if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic (ANTHROPIC_API_KEY): vedi docs/AI-ANTHROPIC.md" };
   const clientId = Number(f.get("clientId"));
   const mode = String(f.get("mode")) as (typeof AI_MODES)[number];
@@ -76,7 +76,7 @@ export async function startAiCheckup(f: FormData) {
 }
 
 export async function saveAnswers(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const checkupId = Number(f.get("checkupId"));
   const c = await checkupOf(checkupId);
   const now = new Date();
@@ -95,7 +95,7 @@ export async function saveAnswers(f: FormData) {
 
 /** Dopo le risposte: altre domande (se servono) oppure ricerca approfondita + scrittura. */
 export async function continueAiCheckup(f: FormData) {
-  await requireUser();
+  await requireWriter();
   if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic (ANTHROPIC_API_KEY): vedi docs/AI-ANTHROPIC.md" };
   await saveAnswers(f);
   const checkupId = Number(f.get("checkupId"));
@@ -126,7 +126,7 @@ export async function continueAiCheckup(f: FormData) {
 
 /** Riprende dalla fase rimasta a metà (errore o riavvio dell'app). */
 export async function resumeAiCheckup(f: FormData) {
-  await requireUser();
+  await requireWriter();
   if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic (ANTHROPIC_API_KEY): vedi docs/AI-ANTHROPIC.md" };
   const checkupId = Number(f.get("checkupId"));
   const c = await checkupOf(checkupId);
@@ -148,7 +148,7 @@ export async function resumeAiCheckup(f: FormData) {
 }
 
 export async function reviseSection(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const checkupId = Number(f.get("checkupId"));
   const sectionKey = String(f.get("sectionKey"));
   const instruction = str(f, "instruction");

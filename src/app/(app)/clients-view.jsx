@@ -29,7 +29,7 @@ import { createClient } from './actions';
 
 // ----------------------------------------------------------------------
 
-export function ClientsView({ clients }) {
+export function ClientsView({ clients, readOnly = false }) {
   const dialog = useBoolean();
   const count = (s) => clients.filter((c) => c.status === s).length;
 
@@ -39,9 +39,11 @@ export function ClientsView({ clients }) {
         heading="Clienti"
         links={[{ name: 'Panoramica' }, { name: 'Clienti' }]}
         action={
-          <Button variant="contained" startIcon={<Iconify icon="mingcute:add-line" />} onClick={dialog.onTrue}>
-            Nuovo cliente
-          </Button>
+          readOnly ? null : (
+            <Button variant="contained" startIcon={<Iconify icon="mingcute:add-line" />} onClick={dialog.onTrue}>
+              Nuovo cliente
+            </Button>
+          )
         }
         sx={{ mb: 3 }}
       />

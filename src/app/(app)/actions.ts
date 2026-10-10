@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/db";
 import * as s from "@/db/schema";
-import { requireUser } from "@/lib/auth";
+import { requireWriter } from "@/lib/auth";
 import { fromRomeInput, parseMetricInput } from "@/lib/format";
 import { METRIC_BY_KEY } from "@/lib/kpi-catalog";
 import { kpiSnapshot } from "@/lib/queries";
@@ -24,7 +24,7 @@ const oneOf = <T extends readonly string[]>(list: T, v: string | null): T[number
 
 // ── Clienti ──────────────────────────────────────────────────────────
 export async function createClient(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const name = str(f, "name");
   if (!name) return;
   let website = str(f, "website");
@@ -36,7 +36,7 @@ export async function createClient(f: FormData) {
 
 // ── KPI ──────────────────────────────────────────────────────────────
 export async function addKpi(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const clientId = int(f, "clientId")!;
   const metric = METRIC_BY_KEY[String(f.get("metricKey"))];
   if (!metric) return;
@@ -57,7 +57,7 @@ export async function addKpi(f: FormData) {
 }
 
 export async function addMeasurement(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const kpiId = int(f, "kpiId")!;
   const [kpi] = await db.select().from(s.kpis).where(eq(s.kpis.id, kpiId));
   if (!kpi) return;
@@ -70,7 +70,7 @@ export async function addMeasurement(f: FormData) {
 }
 
 export async function deleteKpi(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const id = int(f, "kpiId")!;
   const [kpi] = await db.select().from(s.kpis).where(eq(s.kpis.id, id));
   if (!kpi) return;
@@ -80,7 +80,7 @@ export async function deleteKpi(f: FormData) {
 
 // ── Check-up ─────────────────────────────────────────────────────────
 export async function createCheckup(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const clientId = int(f, "clientId")!;
   const [prev] = await db.select({ id: s.checkups.id }).from(s.checkups).where(eq(s.checkups.clientId, clientId)).orderBy(desc(s.checkups.id)).limit(1);
   const month = new Date().toLocaleDateString("it-IT", { month: "long", year: "numeric", timeZone: "Europe/Rome" }).replace(/^./, (c) => c.toUpperCase());
@@ -89,7 +89,7 @@ export async function createCheckup(f: FormData) {
 }
 
 export async function saveCheckupSection(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const checkupId = int(f, "checkupId")!;
   const [chk] = await db.select({ status: s.checkups.status }).from(s.checkups).where(eq(s.checkups.id, checkupId));
   // Un check-up consegnato fa parte dello storico: si modifica solo dopo averlo riaperto
@@ -103,7 +103,7 @@ export async function saveCheckupSection(f: FormData) {
 }
 
 export async function setCheckupStatus(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const id = int(f, "checkupId")!;
   const status = oneOf(["bozza", "in_revisione", "consegnato"] as const, str(f, "status"));
   if (!status) return;
@@ -122,7 +122,7 @@ export async function setCheckupStatus(f: FormData) {
 
 // ── Idee ─────────────────────────────────────────────────────────────
 export async function addIdea(f: FormData) {
-  const user = await requireUser();
+  const user = await requireWriter();
   const clientId = int(f, "clientId")!;
   const title = str(f, "title");
   if (!title) return;
@@ -139,7 +139,7 @@ export async function addIdea(f: FormData) {
 }
 
 export async function setIdeaStatus(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const id = int(f, "ideaId")!;
   const status = oneOf(s.IDEA_STATUSES, str(f, "status"));
   if (!status) return;
@@ -150,7 +150,7 @@ export async function setIdeaStatus(f: FormData) {
 
 /** Trascinamento nella bacheca: cambia colonna a un'idea. */
 export async function moveIdea(ideaId: number, status: string) {
-  await requireUser();
+  await requireWriter();
   const next = oneOf(s.IDEA_STATUSES, status);
   if (!next || next === "pianificata") return;
   const [idea] = await db.select({ clientId: s.ideas.clientId }).from(s.ideas).where(eq(s.ideas.id, ideaId));
@@ -161,7 +161,7 @@ export async function moveIdea(ideaId: number, status: string) {
 
 /** Trascinamento nel calendario: nuova data e ora della pubblicazione. */
 export async function rescheduleItem(itemId: number, iso: string) {
-  await requireUser();
+  await requireWriter();
   const when = new Date(iso);
   if (Number.isNaN(when.getTime())) return;
   const [item] = await db.select({ clientId: s.editorialItems.clientId, planId: s.editorialItems.planId }).from(s.editorialItems).where(eq(s.editorialItems.id, itemId));
@@ -171,7 +171,7 @@ export async function rescheduleItem(itemId: number, iso: string) {
 }
 
 export async function voteIdea(f: FormData) {
-  const user = await requireUser();
+  const user = await requireWriter();
   const ideaId = int(f, "ideaId")!;
   const value = int(f, "value") === -1 ? -1 : 1;
   await db.insert(s.ideaVotes).values({ ideaId, userId: user.id, value }).onDuplicateKeyUpdate({ set: { value } });
@@ -181,7 +181,7 @@ export async function voteIdea(f: FormData) {
 
 /** Trasforma un'idea in una scheda del piano e apre la scheda. */
 export async function planIdea(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const ideaId = int(f, "ideaId")!;
   const planId = int(f, "planId");
   const [idea] = await db.select().from(s.ideas).where(eq(s.ideas.id, ideaId));
@@ -202,7 +202,7 @@ export async function planIdea(f: FormData) {
 
 // ── Piano editoriale ─────────────────────────────────────────────────
 export async function createPlan(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const clientId = int(f, "clientId")!;
   const startsOn = str(f, "startsOn");
   const endsOn = str(f, "endsOn");
@@ -227,7 +227,7 @@ export async function createPlan(f: FormData) {
 }
 
 export async function createItem(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const planId = int(f, "planId")!;
   const [plan] = await db.select().from(s.editorialPlans).where(eq(s.editorialPlans.id, planId));
   if (!plan) return;
@@ -243,7 +243,7 @@ export async function createItem(f: FormData) {
 }
 
 export async function saveItem(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const id = int(f, "id")!;
 
   const shotList: s.ShotListEntry[] = [];
@@ -304,7 +304,7 @@ export async function saveItem(f: FormData) {
 }
 
 export async function deleteItem(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const id = int(f, "id")!;
   const [item] = await db.select().from(s.editorialItems).where(eq(s.editorialItems.id, id));
   if (!item) return;

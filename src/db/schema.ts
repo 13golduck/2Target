@@ -40,7 +40,8 @@ export const users = mysqlTable("users", {
   name: varchar("name", { length: 120 }).notNull(),
   // Facoltativa: l'accesso normale è con codice via email
   passwordHash: varchar("password_hash", { length: 255 }),
-  role: mysqlEnum("role", ["admin", "consulente"]).notNull().default("consulente"),
+  // superadmin (titolare, intoccabile) > admin > user (operatore) > viewer (cliente, sola lettura)
+  role: mysqlEnum("role", ["superadmin", "admin", "user", "viewer"]).notNull().default("user"),
   active: boolean("active").notNull().default(true),
   lastLoginAt: datetime("last_login_at"),
   createdAt: created(),
@@ -79,6 +80,16 @@ export const clients = mysqlTable("clients", {
   leadToken: varchar("lead_token", { length: 64 }).unique(),
   createdAt: created(),
 });
+
+/** Clienti visibili da un utente Viewer (il cliente vede solo i propri risultati). */
+export const userClients = mysqlTable(
+  "user_clients",
+  {
+    userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.clientId] })],
+);
 
 // ── Collegamenti alle piattaforme e canali ────────────────────────────
 export const PROVIDERS = ["meta", "google", "tiktok", "linkedin"] as const;

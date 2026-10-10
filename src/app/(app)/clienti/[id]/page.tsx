@@ -1,6 +1,8 @@
 import { asc, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
+import { requireUser } from "@/lib/auth";
+import { canWrite } from "@/lib/roles";
 import { kpiMeasurements } from "@/db/schema";
 import { METRICS } from "@/lib/kpi-catalog";
 import { kpisWithStatus } from "@/lib/queries";
@@ -9,6 +11,7 @@ import { KpiView } from "./kpi-view";
 export const metadata = { title: "KPI" };
 
 export default async function KpiPage({ params }: { params: Promise<{ id: string }> }) {
+  const readOnly = !canWrite((await requireUser()).role);
   const clientId = Number((await params).id);
   const rows = await kpisWithStatus([clientId]);
   const history = rows.length
@@ -37,5 +40,5 @@ export default async function KpiPage({ params }: { params: Promise<{ id: string
   }));
 
   const metrics = METRICS.map(({ key, label, scope, unit }) => ({ key, label, scope, unit }));
-  return <KpiView clientId={clientId} kpis={kpis} metrics={metrics} />;
+  return <KpiView readOnly={readOnly} clientId={clientId} kpis={kpis} metrics={metrics} />;
 }

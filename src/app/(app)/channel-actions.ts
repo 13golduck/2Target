@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/db";
 import { CHANNEL_KINDS, connections, socialAccounts } from "@/db/schema";
-import { requireUser } from "@/lib/auth";
+import { requireWriter } from "@/lib/auth";
 import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import * as google from "@/lib/integrations/google";
 import * as meta from "@/lib/integrations/meta";
@@ -16,7 +16,7 @@ const path = (clientId: number) => `/clienti/${clientId}/canali`;
 
 /** Canali disponibili per un collegamento (letti dalla piattaforma, senza token verso il browser). */
 export async function assetsFor(connectionId: number) {
-  await requireUser();
+  await requireWriter();
   const [conn] = await db.select().from(connections).where(eq(connections.id, connectionId));
   if (!conn) return { conn: null, assets: [] as { key: string; kind: string; handle: string; name: string; pictureUrl?: string }[] };
   const token = decryptSecret(conn.accessTokenEnc)!;
@@ -28,7 +28,7 @@ export async function assetsFor(connectionId: number) {
 }
 
 export async function attachChannels(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const connectionId = Number(f.get("connectionId"));
   const [conn] = await db.select().from(connections).where(eq(connections.id, connectionId));
   if (!conn) return;
@@ -82,7 +82,7 @@ async function upsertChannel(clientId: number, connectionId: number, kind: strin
 }
 
 export async function syncChannelNow(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const [ch] = await db.select().from(socialAccounts).where(eq(socialAccounts.id, Number(f.get("channelId"))));
   if (!ch) return { error: "Canale non trovato" };
   try {
@@ -97,7 +97,7 @@ export async function syncChannelNow(f: FormData) {
 }
 
 export async function syncClientNow(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const clientId = Number(f.get("clientId"));
   const errors = await syncClient(clientId);
   revalidatePath(path(clientId));
@@ -105,7 +105,7 @@ export async function syncClientNow(f: FormData) {
 }
 
 export async function removeChannel(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const [ch] = await db.select().from(socialAccounts).where(eq(socialAccounts.id, Number(f.get("channelId"))));
   if (!ch) return;
   await db.delete(socialAccounts).where(eq(socialAccounts.id, ch.id));
@@ -113,7 +113,7 @@ export async function removeChannel(f: FormData) {
 }
 
 export async function removeConnection(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const [conn] = await db.select().from(connections).where(eq(connections.id, Number(f.get("connectionId"))));
   if (!conn) return;
   // I canali restano (con i dati storici) ma risultano scollegati
@@ -123,7 +123,7 @@ export async function removeConnection(f: FormData) {
 }
 
 export async function addManualChannel(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const clientId = Number(f.get("clientId"));
   const platform = String(f.get("platform")) as (typeof CHANNEL_KINDS)[number];
   let handle = String(f.get("handle") ?? "").trim();

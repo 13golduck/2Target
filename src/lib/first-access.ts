@@ -1,12 +1,12 @@
 import "server-only";
-import { and, eq, isNotNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { isMailConfigured } from "./mail";
 import { getStartedAt } from "./startup-status";
 
-// Primo accesso: la pagina di login chiede di creare l'account master inserendo solo l'email,
+// Primo accesso: la pagina di login chiede di creare l'account master (ruolo Super admin) inserendo solo l'email,
 // poi si entra senza codice e si configura l'invio delle email in Impostazioni.
 // È aperto solo se TUTTE queste condizioni sono vere:
 // - nessuno è mai entrato in 2Target;
@@ -31,13 +31,13 @@ export async function claimFirstAccess(emailRaw: string) {
   const [existing] = await db
     .select()
     .from(users)
-    .where(and(eq(users.email, email), eq(users.role, "admin"), eq(users.active, true)))
+    .where(and(eq(users.email, email), inArray(users.role, ["superadmin", "admin"]), eq(users.active, true)))
     .limit(1);
   if (existing) return existing;
 
   const [{ n }] = await db.select({ n: sql<number>`count(*)` }).from(users);
   if (Number(n) > 0) return null; // c'è già un amministratore iniziale con un'altra email
-  await db.insert(users).values({ email, name: email.split("@")[0], role: "admin", active: true });
+  await db.insert(users).values({ email, name: email.split("@")[0], role: "superadmin", active: true });
   const [created] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   // Se due richieste arrivano insieme vince solo la prima
   const [{ total }] = await db.select({ total: sql<number>`count(*)` }).from(users);

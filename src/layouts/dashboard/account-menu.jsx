@@ -33,7 +33,7 @@ export function AccountMenu({ user, logoutAction }) {
         <Box sx={{ p: 2, minWidth: 220 }}>
           <Typography variant="subtitle2">{user?.name}</Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            {user?.role === 'admin' ? 'Amministratore' : 'Consulente'}
+            {user?.role}
           </Typography>
         </Box>
         <Divider sx={{ borderStyle: 'dashed' }} />

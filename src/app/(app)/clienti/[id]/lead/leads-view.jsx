@@ -71,7 +71,7 @@ const eur = (v, d = 0) => (v == null ? '—' : v.toLocaleString('it-IT', { style
 const pct = (v) => (v == null ? '—' : `${(v * 100).toLocaleString('it-IT', { maximumFractionDigits: 1 })}%`);
 const num = (v, d = 0) => (v == null ? '—' : v.toLocaleString('it-IT', { maximumFractionDigits: d }));
 
-export function LeadsView({ clientId, period, periods, stats, bySource, trend, leads, costs, intake }) {
+export function LeadsView({ clientId, period, periods, stats, bySource, trend, leads, costs, intake, readOnly = false }) {
   const router = useRouter();
   const [editing, setEditing] = useState(null); // null | {} (nuovo) | lead
   const [costOpen, setCostOpen] = useState(false);
@@ -92,12 +92,16 @@ export function LeadsView({ clientId, period, periods, stats, bySource, trend, l
           {Object.entries(periods).map(([k, v]) => <ToggleButton key={k} value={k}>{v}</ToggleButton>)}
         </ToggleButtonGroup>
         <Box sx={{ flex: 1 }} />
-        <Button variant="outlined" color="inherit" startIcon={<Iconify icon="solar:wad-of-money-bold" />} onClick={() => setCostOpen(true)}>
-          Aggiungi costo
-        </Button>
-        <Button variant="contained" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setEditing({})}>
-          Nuovo lead
-        </Button>
+        {!readOnly && (
+          <>
+            <Button variant="outlined" color="inherit" startIcon={<Iconify icon="solar:wad-of-money-bold" />} onClick={() => setCostOpen(true)}>
+              Aggiungi costo
+            </Button>
+            <Button variant="contained" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setEditing({})}>
+              Nuovo lead
+            </Button>
+          </>
+        )}
       </Stack>
 
       <Grid container spacing={2}>
@@ -126,19 +130,27 @@ export function LeadsView({ clientId, period, periods, stats, bySource, trend, l
 
       <SourceTable rows={bySource} />
 
-      <Pipeline leads={leads} onOpen={setEditing} />
+      <Pipeline leads={leads} onOpen={setEditing} readOnly={readOnly} />
 
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 7 }}>
-          <CostsCard costs={costs} onAdd={() => setCostOpen(true)} />
+      {readOnly ? (
+        <CostsCard costs={costs} readOnly />
+      ) : (
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12, md: 7 }}>
+            <CostsCard costs={costs} onAdd={() => setCostOpen(true)} />
+          </Grid>
+          <Grid size={{ xs: 12, md: 5 }}>
+            <IntakeCard clientId={clientId} intake={intake} lostReasons={stats.lostReasons} />
+          </Grid>
         </Grid>
-        <Grid size={{ xs: 12, md: 5 }}>
-          <IntakeCard clientId={clientId} intake={intake} lostReasons={stats.lostReasons} />
-        </Grid>
-      </Grid>
+      )}
 
-      <LeadDialog clientId={clientId} lead={editing} onClose={() => setEditing(null)} />
-      <CostDialog clientId={clientId} open={costOpen} onClose={() => setCostOpen(false)} />
+      {!readOnly && (
+        <>
+          <LeadDialog clientId={clientId} lead={editing} onClose={() => setEditing(null)} />
+          <CostDialog clientId={clientId} open={costOpen} onClose={() => setCostOpen(false)} />
+        </>
+      )}
     </Stack>
   );
 }
@@ -259,7 +271,7 @@ function SourceTable({ rows }) {
 
 // ----------------------------------------------------------------------
 
-function Pipeline({ leads, onOpen }) {
+function Pipeline({ leads, onOpen, readOnly = false }) {
   const [list, moveLocal] = useOptimistic(leads, (state, { id, stage }) => state.map((l) => (l.id === id ? { ...l, stage } : l)));
   const [, start] = useTransition();
   const [over, setOver] = useState(null);
@@ -298,7 +310,7 @@ function Pipeline({ leads, onOpen }) {
                 variant="outlined"
                 onDragOver={(e) => { e.preventDefault(); setOver(col.key); }}
                 onDragLeave={() => setOver((o) => (o === col.key ? null : o))}
-                onDrop={(e) => drop(col.key, e)}
+                onDrop={(e) => !readOnly && drop(col.key, e)}
                 sx={{ flex: 1, minWidth: 200, p: 1.25, borderRadius: 2, bgcolor: over === col.key ? 'primary.lighter' : 'background.neutral', borderStyle: over === col.key ? 'dashed' : 'solid' }}
               >
                 <Stack direction="row" spacing={1} sx={{ alignItems: 'center', px: 0.5, py: 0.75 }}>
@@ -310,10 +322,10 @@ function Pipeline({ leads, onOpen }) {
                   {items.map((l) => (
                     <Card
                       key={l.id}
-                      draggable
+                      draggable={!readOnly}
                       onDragStart={(e) => { e.dataTransfer.setData('text/lead', String(l.id)); e.dataTransfer.effectAllowed = 'move'; }}
-                      onClick={() => onOpen(l)}
-                      sx={{ p: 1.5, cursor: 'grab', '&:hover': { boxShadow: (t) => t.vars.customShadows.z8 } }}
+                      onClick={() => !readOnly && onOpen(l)}
+                      sx={{ p: 1.5, cursor: readOnly ? 'default' : 'grab', '&:hover': { boxShadow: (t) => t.vars.customShadows.z8 } }}
                     >
                       <Typography variant="subtitle2" noWrap>{l.name || l.email || l.phone || 'Senza nome'}</Typography>
                       {l.company && <Typography variant="caption" noWrap sx={{ display: 'block', color: 'text.secondary' }}>{l.company}</Typography>}
@@ -336,13 +348,13 @@ function Pipeline({ leads, onOpen }) {
 
 // ----------------------------------------------------------------------
 
-function CostsCard({ costs, onAdd }) {
+function CostsCard({ costs, onAdd, readOnly = false }) {
   return (
     <Card sx={{ height: 1 }}>
       <CardHeader
         title="Costi di marketing"
         subheader="Inserzioni, contenuti, consulenza: servono per costo per lead, costo di acquisizione e ROI"
-        action={<Button size="small" startIcon={<Iconify icon="mingcute:add-line" />} onClick={onAdd}>Aggiungi</Button>}
+        action={readOnly ? null : <Button size="small" startIcon={<Iconify icon="mingcute:add-line" />} onClick={onAdd}>Aggiungi</Button>}
       />
       <Scrollbar sx={{ maxHeight: 340 }}>
         <Table size="small">
@@ -363,10 +375,12 @@ function CostsCard({ costs, onAdd }) {
                 <TableCell>{COST_KINDS[c.kind]}{c.notes && <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>{c.notes}</Typography>}</TableCell>
                 <TableCell align="right">{eur(c.amount, 2)}</TableCell>
                 <TableCell align="right" padding="checkbox">
-                  <Box component="form" action={deleteCost}>
-                    <input type="hidden" name="id" value={c.id} />
-                    <IconButton type="submit" size="small"><Iconify icon="solar:trash-bin-trash-bold" width={16} /></IconButton>
-                  </Box>
+                  {!readOnly && (
+                    <Box component="form" action={deleteCost}>
+                      <input type="hidden" name="id" value={c.id} />
+                      <IconButton type="submit" size="small"><Iconify icon="solar:trash-bin-trash-bold" width={16} /></IconButton>
+                    </Box>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

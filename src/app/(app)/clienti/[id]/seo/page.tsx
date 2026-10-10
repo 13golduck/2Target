@@ -1,6 +1,8 @@
 import { and, asc, desc, eq, gte, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
+import { requireUser } from "@/lib/auth";
+import { canWrite } from "@/lib/roles";
 import { isoDaysAgo } from "@/lib/format";
 import { channelDaily, seoSnapshots, socialAccounts } from "@/db/schema";
 import { SeoView } from "./seo-view";
@@ -8,6 +10,7 @@ import { SeoView } from "./seo-view";
 export const metadata = { title: "SEO" };
 
 export default async function SeoPage({ params }: { params: Promise<{ id: string }> }) {
+  const readOnly = !canWrite((await requireUser()).role);
   const clientId = Number((await params).id);
   const channels = (await db.select().from(socialAccounts).where(eq(socialAccounts.clientId, clientId))).filter((c) =>
     ["search_console", "ga4", "website"].includes(c.platform),
@@ -30,6 +33,7 @@ export default async function SeoPage({ params }: { params: Promise<{ id: string
 
   return (
     <SeoView
+      readOnly={readOnly}
       clientId={clientId}
       searchConsole={channels
         .filter((c) => c.platform === "search_console")

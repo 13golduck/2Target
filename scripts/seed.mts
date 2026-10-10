@@ -22,7 +22,7 @@ const id = (r: [{ insertId: number }, unknown]) => r[0].insertId;
 if (process.env.DEV_DEMO_EMAIL) {
   await db
     .insert(s.users)
-    .values({ email: process.env.DEV_DEMO_EMAIL, name: "Demo Golduck", role: "admin" })
+    .values({ email: process.env.DEV_DEMO_EMAIL, name: "Demo Golduck", role: "superadmin" })
     .onDuplicateKeyUpdate({ set: { active: true } });
 }
 

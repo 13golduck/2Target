@@ -15,7 +15,7 @@ export async function bootstrapAdmin() {
       console.log("[admin] utenti già presenti: BOOTSTRAP_ADMIN_* ignorate (puoi toglierle)");
       return;
     }
-    await conn.query("insert into users (email, name, role, active) values (?, ?, 'admin', 1)", [
+    await conn.query("insert into users (email, name, role, active) values (?, ?, 'superadmin', 1)", [
       email,
       process.env.BOOTSTRAP_ADMIN_NAME?.trim() || email.split("@")[0],
     ]);

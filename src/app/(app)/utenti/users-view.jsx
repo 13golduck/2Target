@@ -4,10 +4,12 @@ import { useState, useTransition } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
+import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
@@ -15,7 +17,9 @@ import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
 import DialogTitle from '@mui/material/DialogTitle';
+import Autocomplete from '@mui/material/Autocomplete';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 
@@ -32,20 +36,25 @@ import { addUser, updateUser } from './actions';
 
 // ----------------------------------------------------------------------
 
-export function UsersView({ meId, users }) {
-  const [open, setOpen] = useState(false);
+const ROLE_COLORS = { superadmin: 'warning', admin: 'primary', user: 'info', viewer: 'default' };
+
+export function UsersView({ meId, users, roles, roleLabels, clients }) {
+  const [editing, setEditing] = useState(null); // {} = nuovo utente
   const [pending, start] = useTransition();
 
-  const change = (u, patch) =>
+  const toggleActive = (u) =>
     start(async () => {
       const fd = new FormData();
       fd.set('id', u.id);
-      fd.set('role', patch.role ?? u.role);
-      fd.set('active', String(patch.active ?? u.active));
+      fd.set('role', u.role);
+      fd.set('active', String(!u.active));
+      u.clientIds.forEach((c) => fd.append('clientIds', c));
       const r = await updateUser(fd);
       if (r?.error) toast.error(r.error);
-      else toast.success('Utente aggiornato');
+      else toast.success(u.active ? 'Utente disattivato' : 'Utente riattivato');
     });
+
+  const clientName = (id) => clients.find((c) => c.id === id)?.name ?? '—';
 
   return (
     <DashboardContent>
@@ -53,85 +62,179 @@ export function UsersView({ meId, users }) {
         heading="Utenti"
         links={[{ name: 'Panoramica' }, { name: 'Utenti' }]}
         action={
-          <Button variant="contained" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setOpen(true)}>
+          <Button variant="contained" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setEditing({})}>
             Nuovo utente
           </Button>
         }
         sx={{ mb: 3 }}
       />
       <Card>
-        <Typography variant="body2" sx={{ color: 'text.secondary', p: 3, pb: 1 }}>
-          Nessuna password: ognuno accede con il codice che riceve via email. Per togliere l&apos;accesso a qualcuno, disattivalo.
-        </Typography>
+        <Stack spacing={0.5} sx={{ p: 3, pb: 1 }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            Nessuna password: ognuno accede con il codice che riceve via email. Per togliere l&apos;accesso a qualcuno, disattivalo.
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            <b>Super admin</b> titolare, intoccabile · <b>Administrator</b> gestisce utenti e impostazioni · <b>User</b> operatore che
+            lavora sui clienti · <b>Viewer</b> cliente: vede solo grafici e risultati dei suoi clienti
+          </Typography>
+        </Stack>
         <Scrollbar>
-          <Table sx={{ minWidth: 720 }}>
+          <Table sx={{ minWidth: 820 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Nome</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>Ruolo</TableCell>
+                <TableCell>Clienti visibili</TableCell>
                 <TableCell>Ultimo accesso</TableCell>
                 <TableCell align="right">Stato</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {users.map((u) => (
-                <TableRow key={u.id} hover>
-                  <TableCell>
-                    {u.name} {u.id === meId && <Label sx={{ ml: 1 }}>tu</Label>}
-                  </TableCell>
-                  <TableCell>{u.email}</TableCell>
-                  <TableCell>
-                    <TextField select size="small" value={u.role} onChange={(e) => change(u, { role: e.target.value })} disabled={pending} sx={{ minWidth: 150 }}>
-                      <MenuItem value="admin">Amministratore</MenuItem>
-                      <MenuItem value="consulente">Consulente</MenuItem>
-                    </TextField>
-                  </TableCell>
-                  <TableCell>{u.lastLoginAt ? fmtDateTime(new Date(u.lastLoginAt)) : 'Mai'}</TableCell>
-                  <TableCell align="right">
-                    <Button size="small" color={u.active ? 'inherit' : 'success'} disabled={pending} onClick={() => change(u, { active: !u.active })}>
-                      {u.active ? 'Disattiva' : 'Riattiva'}
-                    </Button>
-                    {!u.active && <Label color="error" sx={{ ml: 1 }}>Disattivato</Label>}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {users.map((u) => {
+                const locked = u.role === 'superadmin';
+                return (
+                  <TableRow key={u.id} hover>
+                    <TableCell>
+                      {u.name} {u.id === meId && <Label sx={{ ml: 1 }}>tu</Label>}
+                    </TableCell>
+                    <TableCell>{u.email}</TableCell>
+                    <TableCell>
+                      <Label color={ROLE_COLORS[u.role]} startIcon={locked ? <Iconify icon="solar:lock-password-outline" /> : null}>
+                        {roleLabels[u.role]}
+                      </Label>
+                    </TableCell>
+                    <TableCell sx={{ maxWidth: 260 }}>
+                      {u.role === 'viewer' ? (
+                        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5 }}>
+                          {u.clientIds.map((id) => (
+                            <Chip key={id} size="small" label={clientName(id)} />
+                          ))}
+                        </Stack>
+                      ) : (
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          Tutti
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>{u.lastLoginAt ? fmtDateTime(new Date(u.lastLoginAt)) : 'Mai'}</TableCell>
+                    <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                      {locked ? (
+                        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                          Non modificabile
+                        </Typography>
+                      ) : (
+                        <>
+                          {!u.active && (
+                            <Label color="error" sx={{ mr: 1 }}>
+                              Disattivato
+                            </Label>
+                          )}
+                          <Tooltip title="Modifica ruolo e clienti">
+                            <IconButton size="small" disabled={pending} onClick={() => setEditing(u)}>
+                              <Iconify icon="solar:pen-bold" width={18} />
+                            </IconButton>
+                          </Tooltip>
+                          {u.id !== meId && (
+                            <Button size="small" color={u.active ? 'inherit' : 'success'} disabled={pending} onClick={() => toggleActive(u)}>
+                              {u.active ? 'Disattiva' : 'Riattiva'}
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </Scrollbar>
       </Card>
 
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="xs">
-        <Box
-          component="form"
-          action={(fd) =>
-            start(async () => {
-              const r = await addUser(fd);
-              if (r?.error) toast.error(r.error);
-              else {
-                toast.success('Utente aggiunto: può accedere con la sua email');
-                setOpen(false);
-              }
-            })
-          }
-        >
-          <DialogTitle>Nuovo utente</DialogTitle>
-          <DialogContent>
-            <Stack spacing={2} sx={{ pt: 1 }}>
-              <TextField name="name" label="Nome e cognome" required autoFocus fullWidth />
-              <TextField name="email" type="email" label="Email" required fullWidth />
-              <TextField select name="role" label="Ruolo" defaultValue="consulente" fullWidth>
-                <MenuItem value="consulente">Consulente</MenuItem>
-                <MenuItem value="admin">Amministratore (gestisce utenti e limiti AI)</MenuItem>
-              </TextField>
-            </Stack>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpen(false)}>Annulla</Button>
-            <Button type="submit" variant="contained" loading={pending}>Aggiungi</Button>
-          </DialogActions>
-        </Box>
-      </Dialog>
+      {editing && (
+        <UserDialog
+          key={editing.id ?? 'nuovo'}
+          user={editing}
+          roles={roles}
+          clients={clients}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </DashboardContent>
+  );
+}
+
+// ----------------------------------------------------------------------
+
+function UserDialog({ user, roles, clients, onClose }) {
+  const isNew = !user.id;
+  const [role, setRole] = useState(user.role ?? 'user');
+  const [selected, setSelected] = useState(clients.filter((c) => (user.clientIds ?? []).includes(c.id)));
+  const [pending, start] = useTransition();
+
+  return (
+    <Dialog open onClose={onClose} fullWidth maxWidth="xs">
+      <Box
+        component="form"
+        action={(fd) =>
+          start(async () => {
+            selected.forEach((c) => fd.append('clientIds', c.id));
+            if (!isNew) {
+              fd.set('id', user.id);
+              fd.set('active', String(user.active));
+            }
+            const r = isNew ? await addUser(fd) : await updateUser(fd);
+            if (r?.error) toast.error(r.error);
+            else {
+              toast.success(isNew ? 'Utente aggiunto: può accedere con la sua email' : 'Utente aggiornato');
+              onClose();
+            }
+          })
+        }
+      >
+        <DialogTitle>{isNew ? 'Nuovo utente' : `Modifica ${user.name}`}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            {isNew && (
+              <>
+                <TextField name="name" label="Nome e cognome" required autoFocus fullWidth />
+                <TextField name="email" type="email" label="Email" required fullWidth />
+              </>
+            )}
+            <TextField select name="role" label="Ruolo" value={role} onChange={(e) => setRole(e.target.value)} fullWidth>
+              {roles.map((r) => (
+                <MenuItem key={r.value} value={r.value}>
+                  <Stack>
+                    <Typography variant="body2">{r.label}</Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      {r.hint}
+                    </Typography>
+                  </Stack>
+                </MenuItem>
+              ))}
+            </TextField>
+            {role === 'viewer' && (
+              <Autocomplete
+                multiple
+                options={clients}
+                value={selected}
+                onChange={(_, v) => setSelected(v)}
+                getOptionLabel={(c) => c.name}
+                isOptionEqualToValue={(a, b) => a.id === b.id}
+                renderInput={(params) => (
+                  <TextField {...params} label="Clienti che può vedere" helperText="Vedrà solo KPI, Lead e SEO di questi clienti" />
+                )}
+              />
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Annulla</Button>
+          <Button type="submit" variant="contained" loading={pending}>
+            {isNew ? 'Aggiungi' : 'Salva'}
+          </Button>
+        </DialogActions>
+      </Box>
+    </Dialog>
   );
 }

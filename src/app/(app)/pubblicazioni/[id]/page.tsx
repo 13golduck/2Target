@@ -1,3 +1,4 @@
+import { requireWriter } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
@@ -15,6 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 export default async function ItemPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ salvato?: string }> }) {
+  await requireWriter();
   const id = Number((await params).id);
   const { salvato } = await searchParams;
   const [item] = await db.select().from(s.editorialItems).where(eq(s.editorialItems.id, id));

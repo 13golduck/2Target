@@ -33,7 +33,7 @@ import { EmptyContent } from 'src/components/empty-content';
 const n = (v, d = 0) => (v == null || Number.isNaN(v) ? '—' : Number(v).toLocaleString('it-IT', { maximumFractionDigits: d }));
 const pct = (v) => (v == null || Number.isNaN(v) ? '—' : `${(v * 100).toLocaleString('it-IT', { maximumFractionDigits: 1 })}%`);
 
-export function SeoView({ clientId, searchConsole, analytics, websites }) {
+export function SeoView({ clientId, searchConsole, analytics, websites, readOnly = false }) {
   if (!searchConsole.length && !analytics.length && !websites.length) {
     return (
       <EmptyContent
@@ -41,9 +41,11 @@ export function SeoView({ clientId, searchConsole, analytics, websites }) {
         title="Nessuna fonte SEO collegata"
         description="Collega Google (Search Console e Analytics 4) o aggiungi il sito del cliente dalla scheda Canali."
         action={
-          <Button component={RouterLink} href={`/clienti/${clientId}/canali`} variant="contained" sx={{ mt: 2 }}>
-            Vai ai canali
-          </Button>
+          readOnly ? null : (
+            <Button component={RouterLink} href={`/clienti/${clientId}/canali`} variant="contained" sx={{ mt: 2 }}>
+              Vai ai canali
+            </Button>
+          )
         }
         sx={{ py: 10 }}
       />

@@ -23,11 +23,16 @@ const TABS = [
   { href: '/canali', label: 'Canali', icon: 'eva:link-2-fill' },
 ];
 
-export function ClientHeader({ client, children }) {
+// Sezioni visibili al Viewer (cliente): grafici e risultati
+const VIEWER_TABS = ['', '/lead', '/seo'];
+
+export function ClientHeader({ client, viewer = false, children }) {
   const pathname = usePathname();
+  const tabs = viewer ? TABS.filter((t) => VIEWER_TABS.includes(t.href)) : TABS;
   const base = `/clienti/${client.id}`;
   const current =
-    TABS.slice()
+    tabs
+      .slice()
       .reverse()
       .find((t) => (t.href === '' ? pathname === base : pathname.startsWith(base + t.href)))?.href ?? '';
 
@@ -40,7 +45,7 @@ export function ClientHeader({ client, children }) {
       />
       <Card sx={{ mb: 3, px: 2 }}>
         <Tabs value={current} variant="scrollable">
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <Tab
               key={t.href}
               value={t.href}

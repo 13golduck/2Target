@@ -1,37 +1,29 @@
 'use client';
 
-import { useTransition } from 'react';
-
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Grid from '@mui/material/Grid';
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
-import Button from '@mui/material/Button';
-import Switch from '@mui/material/Switch';
 import TableRow from '@mui/material/TableRow';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
-import TextField from '@mui/material/TextField';
 import CardHeader from '@mui/material/CardHeader';
 import Typography from '@mui/material/Typography';
-import InputAdornment from '@mui/material/InputAdornment';
 import LinearProgress from '@mui/material/LinearProgress';
-import FormControlLabel from '@mui/material/FormControlLabel';
 
 import { fmtDate } from 'src/lib/format';
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import { Label } from 'src/components/label';
+import { RouterLink } from 'src/routes/components';
 import { Iconify } from 'src/components/iconify';
-import { toast } from 'src/components/snackbar';
 import { Scrollbar } from 'src/components/scrollbar';
 import { Chart, useChart } from 'src/components/chart';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
-import { updateLimits } from './actions';
 
 // ----------------------------------------------------------------------
 
@@ -39,7 +31,7 @@ const usd = (v, d = 2) => `${(v ?? 0).toLocaleString('it-IT', { minimumFractionD
 const k = (n) => (n >= 1_000_000 ? `${(n / 1_000_000).toLocaleString('it-IT', { maximumFractionDigits: 1 })}M` : n >= 1000 ? `${(n / 1000).toLocaleString('it-IT', { maximumFractionDigits: 1 })}k` : String(n));
 const MODEL = { 'claude-opus-5-5': 'Opus 5.5', 'claude-sonnet-5-5': 'Sonnet 5.5' };
 
-export function UsageView({ isAdmin, configured, running, status, tokens, monthly, byClient, recent }) {
+export function UsageView({ isAdmin, configured, running, status, tokens, monthly, byClient, recent, insights }) {
   const { limits, month, ratio, warning } = status;
   const totalIn = tokens.input + tokens.cacheRead + tokens.cacheWrite;
   const cacheShare = totalIn ? tokens.cacheRead / totalIn : 0;
@@ -60,7 +52,7 @@ export function UsageView({ isAdmin, configured, running, status, tokens, monthl
 
       <Stack spacing={3}>
         {!configured && <Alert severity="warning">Chiave API Anthropic non impostata: l&apos;AI è spenta. Guida in docs/AI-ANTHROPIC.md.</Alert>}
-        {!limits.enabled && <Alert severity="error">L&apos;AI è disattivata dall&apos;interruttore generale qui sotto.</Alert>}
+        {!limits.enabled && <Alert severity="error">L&apos;AI è disattivata dall&apos;interruttore generale in Impostazioni.</Alert>}
         {ratio >= 1 && <Alert severity="error">Budget del mese esaurito: i nuovi lavori AI sono bloccati.</Alert>}
         {ratio < 1 && warning && <Alert severity="warning">Superato il {Math.round(limits.warnPct * 100)}% del budget mensile.</Alert>}
 
@@ -103,7 +95,7 @@ export function UsageView({ isAdmin, configured, running, status, tokens, monthl
             </Card>
           </Grid>
           <Grid size={{ xs: 12, lg: 5 }}>
-            <LimitsCard limits={limits} isAdmin={isAdmin} />
+            <InsightsCard insights={insights} limits={limits} isAdmin={isAdmin} />
           </Grid>
         </Grid>
 
@@ -174,62 +166,71 @@ export function UsageView({ isAdmin, configured, running, status, tokens, monthl
   );
 }
 
-function LimitsCard({ limits, isAdmin }) {
-  const [pending, start] = useTransition();
+// ----------------------------------------------------------------------
+// Analisi dei consumi: previsione, efficienza e dove si spende. I limiti si cambiano in Impostazioni.
+
+function InsightsCard({ insights, limits, isAdmin }) {
+  const { forecast, avgCheckup, checkups, topStep, topModel, topClient, cacheShare, trendPct } = insights;
+  const over = limits.monthlyUsd > 0 && forecast > limits.monthlyUsd;
+  const rows = [
+    {
+      icon: 'solar:graph-up-bold',
+      label: 'Previsione a fine mese',
+      value: usd(forecast),
+      note: limits.monthlyUsd > 0 ? (over ? `oltre il budget di ${usd(limits.monthlyUsd, 0)}` : `entro il budget di ${usd(limits.monthlyUsd, 0)}`) : 'nessun budget impostato',
+      color: over ? 'error.main' : 'success.main',
+    },
+    {
+      icon: 'solar:transfer-vertical-bold',
+      label: 'Rispetto al mese scorso',
+      value: trendPct == null ? '—' : `${trendPct >= 0 ? '+' : ''}${Math.round(trendPct * 100)}%`,
+      note: 'a parità di giorni trascorsi',
+      color: trendPct != null && trendPct > 0.25 ? 'warning.main' : undefined,
+    },
+    { icon: 'solar:notes-bold-duotone', label: 'Costo medio per check-up', value: checkups ? usd(avgCheckup) : '—', note: `${checkups} check-up questo mese` },
+    { icon: 'solar:bolt-bold', label: 'Fase che costa di più', value: topStep ? topStep.name : '—', note: topStep ? `${usd(topStep.cost)} · ${Math.round(topStep.share * 100)}% della spesa` : 'nessun dato' },
+    { icon: 'solar:cpu-bolt-bold', label: 'Modello più usato', value: topModel ? MODEL[topModel.name] ?? topModel.name : '—', note: topModel ? `${usd(topModel.cost)} · ${Math.round(topModel.share * 100)}% della spesa` : 'nessun dato' },
+    { icon: 'solar:users-group-rounded-bold', label: 'Cliente con più spesa', value: topClient ? topClient.name : '—', note: topClient ? usd(topClient.cost) : 'nessun dato' },
+    {
+      icon: 'solar:database-bold',
+      label: 'Efficienza della cache',
+      value: `${Math.round(cacheShare * 100)}%`,
+      note: cacheShare >= 0.3 ? 'buona: le richieste ripetute costano poco' : 'bassa: ogni richiesta rilegge tutto a prezzo pieno',
+      color: cacheShare >= 0.3 ? 'success.main' : 'warning.main',
+    },
+  ];
   return (
     <Card sx={{ height: 1 }}>
       <CardHeader
-        avatar={<Iconify icon="solar:shield-check-bold" width={24} sx={{ color: 'primary.main' }} />}
-        title="Limiti e blocchi automatici"
-        subheader={isAdmin ? 'L’app ferma l’AI prima di superarli' : 'Solo un amministratore può modificarli'}
-        action={!isAdmin && <Label>Sola lettura</Label>}
-      />
-      <Box
-        component="form"
-        action={(fd) =>
-          start(async () => {
-            const r = await updateLimits(fd);
-            if (r?.error) toast.error(r.error);
-            else toast.success('Limiti salvati');
-          })
+        avatar={<Iconify icon="solar:chart-square-outline" width={24} sx={{ color: 'primary.main' }} />}
+        title="Analisi dei consumi"
+        subheader="Dove va la spesa e come si sta comportando questo mese"
+        action={
+          isAdmin ? (
+            <Label component={RouterLink} href="/impostazioni" sx={{ cursor: 'pointer' }}>
+              Limiti in Impostazioni
+            </Label>
+          ) : null
         }
-        sx={{ p: 3, pt: 1 }}
-      >
-        <fieldset disabled={!isAdmin} style={{ border: 0, padding: 0, margin: 0 }}>
-          <FormControlLabel control={<Switch name="enabled" defaultChecked={limits.enabled} />} label="AI attiva" sx={{ mb: 2 }} />
-          <Grid container spacing={2}>
-            {[
-              ['monthlyUsd', 'Budget mensile dell’app', limits.monthlyUsd, '$', 'Oltre si blocca tutto fino al mese dopo'],
-              ['warnPct', 'Avviso al', Math.round(limits.warnPct * 100), '%', 'Banner di avviso in Consumi AI'],
-              ['checkupUsd', 'Tetto per check-up', limits.checkupUsd, '$', 'Comprese ricerche e revisioni'],
-              ['clientMonthlyUsd', 'Tetto mensile per cliente', limits.clientMonthlyUsd, '$', '0 = nessun tetto'],
-              ['maxConcurrent', 'Lavori AI contemporanei', limits.maxConcurrent, '', 'Evita picchi di spesa'],
-              ['maxCheckupsPerDay', 'Check-up AI al giorno', limits.maxCheckupsPerDay, '', 'Su tutti i clienti'],
-            ].map(([name, label, value, unit, help]) => (
-              <Grid key={name} size={{ xs: 12, sm: 6 }}>
-                <TextField
-                  name={name}
-                  label={label}
-                  defaultValue={value}
-                  helperText={help}
-                  size="small"
-                  fullWidth
-                  slotProps={{ input: unit ? { endAdornment: <InputAdornment position="end">{unit}</InputAdornment> } : undefined }}
-                />
-              </Grid>
-            ))}
-          </Grid>
-          {isAdmin && (
-            <Button type="submit" variant="contained" loading={pending} sx={{ mt: 2 }}>
-              Salva limiti
-            </Button>
-          )}
-        </fieldset>
-        <Typography variant="caption" sx={{ display: 'block', mt: 2, color: 'text.secondary' }}>
-          Imposta anche il limite di spesa su platform.claude.com (organizzazione e workspace 2Target): è il blocco definitivo se
-          qualcosa sfugge a questi controlli.
-        </Typography>
-      </Box>
+      />
+      <Stack spacing={1.5} sx={{ p: 3, pt: 1 }}>
+        {rows.map((r) => (
+          <Stack key={r.label} direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+            <Iconify icon={r.icon} width={22} sx={{ color: 'text.disabled', flexShrink: 0 }} />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                {r.label}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.disabled' }} noWrap>
+                {r.note}
+              </Typography>
+            </Box>
+            <Typography variant="subtitle1" sx={{ color: r.color, textAlign: 'right' }}>
+              {r.value}
+            </Typography>
+          </Stack>
+        ))}
+      </Stack>
     </Card>
   );
 }

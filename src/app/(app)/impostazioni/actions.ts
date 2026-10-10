@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
 import { requireUser } from "@/lib/auth";
+import { isAdminRole } from "@/lib/roles";
+import { DEFAULT_LIMITS, saveLimits } from "@/lib/ai/budget";
 import { consumeLoginCode, requestLoginCode } from "@/lib/login-codes";
 import { grantSettingsAccess, revokeSettingsAccess, settingsUnlocked } from "@/lib/settings-access";
 import { EMPTY_MAIL, explainMailError, isMailConfigured, type MailPreset, saveMailSettings, saveMailTest, sendMail } from "@/lib/mail";
@@ -18,7 +20,7 @@ const LOCKED = { error: "Accesso alle Impostazioni scaduto: ricarica la pagina e
 
 async function adminEmail() {
   const me = await requireUser();
-  if (me.role !== "admin") return null;
+  if (!isAdminRole(me.role)) return null;
   const [u] = await db.select({ email: users.email }).from(users).where(eq(users.id, me.id)).limit(1);
   return { id: me.id, email: u.email };
 }
@@ -56,7 +58,7 @@ export async function lockSettings() {
 
 export async function saveMail(f: FormData) {
   const me = await requireUser();
-  if (me.role !== "admin") return { error: "Solo un amministratore può cambiare l'invio email" };
+  if (!isAdminRole(me.role)) return { error: "Solo un amministratore può cambiare l'invio email" };
   if (!(await settingsUnlocked(me.id))) return LOCKED;
   // Primo salvataggio (email non ancora configurata): resta dentro per poter inviare la prova
   const firstSetup = !(await isMailConfigured());
@@ -90,7 +92,7 @@ export async function saveMail(f: FormData) {
 /** Invia un'email di prova all'utente collegato. */
 export async function testMail() {
   const me = await requireUser();
-  if (me.role !== "admin") return { error: "Solo un amministratore" };
+  if (!isAdminRole(me.role)) return { error: "Solo un amministratore" };
   if (!(await settingsUnlocked(me.id))) return LOCKED;
   const [u] = await db.select({ email: users.email, name: users.name }).from(users).where(eq(users.id, me.id)).limit(1);
   try {
@@ -109,4 +111,30 @@ export async function testMail() {
     revalidatePath("/impostazioni");
     return { error };
   }
+}
+
+// --- Limiti di spesa AI --------------------------------------------------------
+
+const num = (f: FormData, k: string, fallback: number) => {
+  const v = Number(String(f.get(k) ?? "").replace(",", "."));
+  return Number.isFinite(v) && v >= 0 ? v : fallback;
+};
+
+export async function updateLimits(f: FormData) {
+  const me = await requireUser();
+  if (!isAdminRole(me.role)) return { error: "Solo un amministratore può cambiare i limiti" };
+  if (!(await settingsUnlocked(me.id))) return LOCKED;
+  const limits = {
+    enabled: f.get("enabled") === "on",
+    monthlyUsd: num(f, "monthlyUsd", DEFAULT_LIMITS.monthlyUsd),
+    warnPct: Math.min(1, num(f, "warnPct", DEFAULT_LIMITS.warnPct * 100) / 100),
+    checkupUsd: num(f, "checkupUsd", DEFAULT_LIMITS.checkupUsd),
+    clientMonthlyUsd: num(f, "clientMonthlyUsd", DEFAULT_LIMITS.clientMonthlyUsd),
+    maxConcurrent: Math.max(1, Math.round(num(f, "maxConcurrent", DEFAULT_LIMITS.maxConcurrent))),
+    maxCheckupsPerDay: Math.max(1, Math.round(num(f, "maxCheckupsPerDay", DEFAULT_LIMITS.maxCheckupsPerDay))),
+  };
+  await saveLimits(limits, me.id);
+  revalidatePath("/impostazioni");
+  revalidatePath("/consumi-ai");
+  return { ok: true };
 }

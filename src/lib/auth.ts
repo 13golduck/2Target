@@ -2,10 +2,11 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { userClients, users } from "@/db/schema";
+import { canWrite, isAdminRole, isViewer } from "./roles";
 import { authConfig } from "./auth.config";
 import { claimFirstAccess } from "./first-access";
 import { consumeLoginCode } from "./login-codes";
@@ -45,5 +46,34 @@ export async function requireUser() {
     .where(eq(users.id, id))
     .limit(1);
   if (!user?.active) redirect("/login");
+  return user;
+}
+
+/** Per le azioni che modificano dati: vietate ai Viewer (sola lettura). */
+export async function requireWriter() {
+  const user = await requireUser();
+  if (!canWrite(user.role)) throw new Error("Il tuo profilo è in sola lettura");
+  return user;
+}
+
+/** Super admin o Administrator, altrimenti alla home. */
+export async function requireAdmin() {
+  const user = await requireUser();
+  if (!isAdminRole(user.role)) redirect("/");
+  return user;
+}
+
+/** Clienti visibili a un Viewer (per gli altri ruoli: null = tutti). */
+export async function visibleClientIds(user: { id: number; role: string }) {
+  if (!isViewer(user.role)) return null;
+  const rows = await db.select({ id: userClients.clientId }).from(userClients).where(eq(userClients.userId, user.id));
+  return rows.map((r) => r.id);
+}
+
+/** Pagine di un cliente: un Viewer vede solo i clienti a lui assegnati. */
+export async function requireClientAccess(clientId: number) {
+  const user = await requireUser();
+  const ids = await visibleClientIds(user);
+  if (ids && !ids.includes(clientId)) notFound();
   return user;
 }

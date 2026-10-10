@@ -1,5 +1,5 @@
 // Crea o riattiva un utente del team (accesso con codice via email, nessuna password).
-// Uso: npm run user:create -- email@golduck.it "Nome Cognome" [admin|consulente]
+// Uso: npm run user:create -- email@golduck.it "Nome Cognome" [superadmin|admin|user|viewer]
 // Di solito non serve: gli amministratori aggiungono i colleghi dalla pagina Utenti.
 
 import mysql from "mysql2/promise";
@@ -12,10 +12,10 @@ process.loadEnvFile(".env.local");
 const [emailArg, nameArg, roleArg] = process.argv.slice(2);
 const email = String(emailArg ?? "").trim().toLowerCase();
 const name = (nameArg ?? "").trim() || email.split("@")[0];
-const role = roleArg === "consulente" ? "consulente" : "admin";
+const role = (["superadmin", "admin", "user", "viewer"] as const).find((r) => r === roleArg) ?? "admin";
 
 if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-  console.error('Uso: npm run user:create -- email@golduck.it "Nome Cognome" [admin|consulente]');
+  console.error('Uso: npm run user:create -- email@golduck.it "Nome Cognome" [superadmin|admin|user|viewer]');
   process.exit(1);
 }
 

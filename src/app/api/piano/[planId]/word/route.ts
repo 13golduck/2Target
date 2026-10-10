@@ -3,13 +3,13 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/db";
 import { clients, editorialItems, editorialPlans } from "@/db/schema";
-import { requireUser } from "@/lib/auth";
+import { requireWriter } from "@/lib/auth";
 import { buildPlanDocx, planFileName } from "@/lib/plan-docx";
 
 // Piano editoriale in Word per il cliente: GET /api/piano/<id piano>/word
 
 export async function GET(_request: Request, { params }: { params: Promise<{ planId: string }> }) {
-  await requireUser();
+  await requireWriter();
   const planId = Number((await params).planId);
   const [row] = planId
     ? await db

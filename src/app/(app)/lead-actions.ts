@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
 import { clients, COST_KINDS, LEAD_SOURCES, LEAD_STAGES, leadEvents, leads, marketingCosts } from "@/db/schema";
-import { requireUser } from "@/lib/auth";
+import { requireWriter } from "@/lib/auth";
 import { fromRomeInput } from "@/lib/format";
 import { updateKpisFromData } from "@/lib/integrations/sync";
 
@@ -29,7 +29,7 @@ async function afterChange(clientId: number) {
 }
 
 export async function saveLead(f: FormData) {
-  const user = await requireUser();
+  const user = await requireWriter();
   const id = Number(f.get("id")) || null;
   const clientId = Number(f.get("clientId"));
   const stage = oneOf(LEAD_STAGES, str(f, "stage")) ?? "nuovo";
@@ -73,7 +73,7 @@ async function changeStage(id: number, from: (typeof LEAD_STAGES)[number], to: (
 
 /** Trascinamento nella pipeline. */
 export async function moveLead(id: number, stage: string) {
-  const user = await requireUser();
+  const user = await requireWriter();
   const to = oneOf(LEAD_STAGES, stage);
   const [lead] = await db.select().from(leads).where(eq(leads.id, id));
   if (!lead || !to || lead.stage === to) return;
@@ -82,7 +82,7 @@ export async function moveLead(id: number, stage: string) {
 }
 
 export async function deleteLead(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const [lead] = await db.select().from(leads).where(eq(leads.id, Number(f.get("id"))));
   if (!lead) return;
   await db.delete(leads).where(eq(leads.id, lead.id));
@@ -90,7 +90,7 @@ export async function deleteLead(f: FormData) {
 }
 
 export async function addCost(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const clientId = Number(f.get("clientId"));
   const month = str(f, "month"); // AAAA-MM
   const amount = num(f, "amount");
@@ -102,7 +102,7 @@ export async function addCost(f: FormData) {
 }
 
 export async function deleteCost(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const [c] = await db.select().from(marketingCosts).where(eq(marketingCosts.id, Number(f.get("id"))));
   if (!c) return;
   await db.delete(marketingCosts).where(eq(marketingCosts.id, c.id));
@@ -111,7 +111,7 @@ export async function deleteCost(f: FormData) {
 
 /** Crea (o rigenera) la chiave per ricevere i lead dai moduli del sito. */
 export async function regenerateLeadToken(f: FormData) {
-  await requireUser();
+  await requireWriter();
   const clientId = Number(f.get("clientId"));
   await db.update(clients).set({ leadToken: randomBytes(18).toString("base64url") }).where(eq(clients.id, clientId));
   revalidatePath(path(clientId));

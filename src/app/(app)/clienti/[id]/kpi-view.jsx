@@ -37,7 +37,7 @@ const SCOPES = [
   { key: 'business', label: 'Business', icon: 'solar:users-group-rounded-bold' },
 ];
 
-export function KpiView({ clientId, kpis, metrics }) {
+export function KpiView({ clientId, kpis, metrics, readOnly = false }) {
   const [measureFor, setMeasureFor] = useState(null);
   const [newKpi, setNewKpi] = useState(false);
 
@@ -48,9 +48,11 @@ export function KpiView({ clientId, kpis, metrics }) {
           Semaforo rispetto al target: <b>Bene</b> ≥ 90%, <b>Male</b> 60–90%, <b>Troppo male</b> sotto il 60%. Per i costi
           (CPM, CPC, costo per contatto) più basso è meglio.
         </Alert>
-        <Button variant="contained" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setNewKpi(true)}>
-          Nuovo KPI
-        </Button>
+        {!readOnly && (
+          <Button variant="contained" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setNewKpi(true)}>
+            Nuovo KPI
+          </Button>
+        )}
       </Stack>
 
       {kpis.length === 0 && <EmptyContent filled title="Nessun KPI" description="Definisci il primo KPI con target e punto di partenza." sx={{ py: 10 }} />}
@@ -67,7 +69,7 @@ export function KpiView({ clientId, kpis, metrics }) {
             <Grid container spacing={3}>
               {list.map((k) => (
                 <Grid key={k.id} size={{ xs: 12, md: 6, lg: 4 }}>
-                  <KpiCard kpi={k} onMeasure={() => setMeasureFor(k)} />
+                  <KpiCard kpi={k} onMeasure={readOnly ? null : () => setMeasureFor(k)} />
                 </Grid>
               ))}
             </Grid>
@@ -140,6 +142,7 @@ function KpiCard({ kpi, onMeasure }) {
         </Typography>
       </Box>
 
+      {onMeasure && (
       <Stack direction="row" sx={{ mt: 'auto', justifyContent: 'space-between', alignItems: 'center' }}>
         <Button size="small" variant="soft" startIcon={<Iconify icon="mingcute:add-line" />} onClick={onMeasure}>
           Aggiungi misura
@@ -151,6 +154,7 @@ function KpiCard({ kpi, onMeasure }) {
           </IconButton>
         </Box>
       </Stack>
+      )}
     </Card>
   );
 }
