@@ -3,7 +3,7 @@
 import { REASONING, REGISTERS } from "@/lib/checkup-report";
 import { getMethodology } from "@/lib/ai/metodologia";
 
-import { and, desc, eq, gte, isNotNull, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
@@ -11,7 +11,7 @@ import { AI_MODES, checkupQuestions, checkups, clients } from "@/db/schema";
 import { requireWriter } from "@/lib/auth";
 import { isAiConfigured } from "@/lib/ai/claude";
 import { askQuestions, rewriteSection, runDeepResearch, runRecon, runWriting } from "@/lib/ai/checkup-agent";
-import { isRunning, runningCount, startJob } from "@/lib/ai/jobs";
+import { cancelJob, isRunning, runningCount, startJob } from "@/lib/ai/jobs";
 import { assertBudget, getLimits, BudgetError } from "@/lib/ai/budget";
 
 const str = (f: FormData, k: string) => {
@@ -40,11 +40,38 @@ async function checkupOf(id: number) {
   return c;
 }
 
-/** Dati del cliente + scelta del modello → ricognizione online e prime domande. */
+// Avvii in corso per cliente: blocca i doppi clic anche prima che il check-up sia scritto nel database
+const starting = new Set<number>();
+const ACTIVE_STATES = ["ricognizione", "domande", "ricerca", "scrittura"] as const;
+
+/** Check-up AI ancora aperto (in lavorazione o in attesa di risposte) per il cliente. */
+async function activeCheckup(clientId: number) {
+  const [c] = await db
+    .select({ id: checkups.id })
+    .from(checkups)
+    .where(and(eq(checkups.clientId, clientId), inArray(checkups.aiState, [...ACTIVE_STATES])))
+    .orderBy(desc(checkups.id))
+    .limit(1);
+  return c?.id ?? null;
+}
+
+/** Dati del cliente + scelta del modello → ricognizione online e prime domande. Un solo check-up aperto per cliente. */
 export async function startAiCheckup(f: FormData) {
   await requireWriter();
   if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic (ANTHROPIC_API_KEY): vedi docs/AI-ANTHROPIC.md" };
   const clientId = Number(f.get("clientId"));
+  if (starting.has(clientId)) return { error: "Il check-up sta già partendo", checkupId: null };
+  const open = await activeCheckup(clientId);
+  if (open) return { error: "C'è già un check-up in corso per questo cliente: lo apro. Puoi interromperlo da lì.", checkupId: open };
+  starting.add(clientId);
+  try {
+    return await startAiCheckupLocked(f, clientId);
+  } finally {
+    starting.delete(clientId);
+  }
+}
+
+async function startAiCheckupLocked(f: FormData, clientId: number) {
   const mode = String(f.get("mode")) as (typeof AI_MODES)[number];
   if (!AI_MODES.includes(mode)) return { error: "Scegli il modello" };
   const blocked = await preflight(clientId);
@@ -148,9 +175,21 @@ export async function resumeAiCheckup(f: FormData) {
   else if (!c.dossier.includes("# Ricerca approfondita")) {
     // L'errore può essere arrivato durante le domande: se non ci sono risposte si torna lì
     const unanswered = await db.select({ id: checkupQuestions.id }).from(checkupQuestions).where(and(eq(checkupQuestions.checkupId, checkupId), isNull(checkupQuestions.answer)));
-    if (c.aiState === "errore" && unanswered.length === open.length) await db.update(checkups).set({ aiState: "domande", aiError: null }).where(eq(checkups.id, checkupId));
+    if ((c.aiState === "errore" || c.aiState === "interrotto") && unanswered.length === open.length) await db.update(checkups).set({ aiState: "domande", aiError: null }).where(eq(checkups.id, checkupId));
     else startJob(checkupId, "ricerca", async () => { await runDeepResearch(checkupId); await runWriting(checkupId); });
   } else startJob(checkupId, "scrittura", () => runWriting(checkupId));
+  revalidatePath(path(c.clientId));
+  return { ok: true };
+}
+
+/** Interrompe il check-up: ferma la chiamata all'AI in corso e non avvia le fasi successive. */
+export async function stopAiCheckup(checkupId: number) {
+  await requireWriter();
+  const c = await checkupOf(checkupId);
+  const wasRunning = cancelJob(checkupId);
+  if (wasRunning) await db.update(checkups).set({ aiProgress: "Interruzione in corso…" }).where(eq(checkups.id, checkupId));
+  // Se non stava lavorando (es. in attesa delle risposte) si chiude subito
+  if (!wasRunning) await db.update(checkups).set({ aiState: "interrotto", aiProgress: "Interrotto dal consulente" }).where(eq(checkups.id, checkupId));
   revalidatePath(path(c.clientId));
   return { ok: true };
 }

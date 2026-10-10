@@ -194,7 +194,7 @@ export const seoSnapshots = mysqlTable(
 
 // ── 1. Check-up ──────────────────────────────────────────────────────
 export const AI_MODES = ["opus", "sonnet", "misto"] as const;
-export const AI_STATES = ["da_avviare", "ricognizione", "domande", "ricerca", "scrittura", "pronto", "errore"] as const;
+export const AI_STATES = ["da_avviare", "ricognizione", "domande", "ricerca", "scrittura", "pronto", "errore", "interrotto"] as const;
 
 export const checkups = mysqlTable("checkups", {
   id: int("id").autoincrement().primaryKey(),

@@ -40,7 +40,7 @@ import { Scrollbar } from 'src/components/scrollbar';
 import { StatusBadge } from 'src/components/status-badge';
 
 import { createCheckup, setCheckupStatus, saveCheckupSection } from '../../../actions';
-import { saveAnswers, reviseSection, startAiCheckup, resumeAiCheckup, continueAiCheckup } from '../../../checkup-ai-actions';
+import { saveAnswers, reviseSection, stopAiCheckup, startAiCheckup, resumeAiCheckup, continueAiCheckup } from '../../../checkup-ai-actions';
 
 // ----------------------------------------------------------------------
 
@@ -120,7 +120,7 @@ export function CheckupView({ aiConfigured, history, isLatest, previous, client,
       {bar}
       {banner}
       <Card sx={{ p: 3 }}>
-        <Stepper activeStep={checkup.aiState === 'errore' ? -1 : STEP_OF[checkup.aiState] ?? 1} alternativeLabel>
+        <Stepper activeStep={['errore', 'interrotto'].includes(checkup.aiState) ? -1 : STEP_OF[checkup.aiState] ?? 1} alternativeLabel>
           {STEPS.map((s) => (
             <Step key={s}><StepLabel>{s}</StepLabel></Step>
           ))}
@@ -128,6 +128,7 @@ export function CheckupView({ aiConfigured, history, isLatest, previous, client,
       </Card>
 
       {checkup.aiState === 'errore' && <ErrorPanel checkup={checkup} />}
+      {checkup.aiState === 'interrotto' && <InterruptedPanel checkup={checkup} />}
       {working && <WorkingPanel checkup={checkup} runs={runs} />}
       {checkup.aiState === 'domande' && <QuestionsPanel checkup={checkup} questions={questions} />}
       {checkup.aiState === 'pronto' && (
@@ -160,6 +161,9 @@ const REASONING_OPTIONS = [
 ];
 
 function StartWizard({ aiConfigured, client, previous }) {
+  const router = useRouter();
+  // Una volta premuto, il pulsante resta bloccato: niente doppi avvii
+  const [started, setStarted] = useState(false);
   const [mode, setMode] = useState('opus');
   const [reasoning, setReasoning] = useState('avanzato');
   const [register, setRegister] = useState('auto');
@@ -183,8 +187,18 @@ function StartWizard({ aiConfigured, client, previous }) {
             component="form"
             action={(fd) =>
               start(async () => {
+                if (started) return;
+                setStarted(true);
                 const r = await startAiCheckup(fd);
+                if (r?.checkupId) {
+                  if (r.error) toast.info(r.error);
+                  else toast.success('Check-up avviato: l’AI sta facendo la ricognizione online');
+                  router.push(`?id=${r.checkupId}`);
+                  router.refresh();
+                  return;
+                }
                 if (r?.error) toast.error(r.error);
+                setStarted(false);
               })
             }
             sx={{ p: 3 }}
@@ -282,8 +296,8 @@ function StartWizard({ aiConfigured, client, previous }) {
               </Alert>
             )}
             <Stack direction="row" spacing={2} sx={{ mt: 3, alignItems: 'center' }}>
-              <Button type="submit" variant="contained" size="large" loading={pending} disabled={!aiConfigured} startIcon={<Iconify icon="solar:atom-bold-duotone" />}>
-                Avvia la ricognizione
+              <Button type="submit" variant="contained" size="large" loading={pending || started} disabled={!aiConfigured || started} startIcon={<Iconify icon="solar:atom-bold-duotone" />}>
+                {started ? 'Avvio in corso…' : 'Avvia la ricognizione'}
               </Button>
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>2-4 minuti, poi arrivano le domande</Typography>
             </Stack>
@@ -338,6 +352,7 @@ function WorkingPanel({ checkup, runs }) {
         <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'right' }}>
           {searches} ricerche finora<br />≈ {spent.toFixed(2)} $
         </Typography>
+        <StopButton checkupId={checkup.id} />
       </Stack>
       <LinearProgress sx={{ mb: 2 }} />
       {!checkup.running && (
@@ -355,6 +370,46 @@ function WorkingPanel({ checkup, runs }) {
           ))}
         </Stack>
       </Scrollbar>
+    </Card>
+  );
+}
+
+/** Interrompe il check-up: ferma l'AI anche a metà di una chiamata. */
+function StopButton({ checkupId, size = 'medium' }) {
+  const [pending, start] = useTransition();
+  return (
+    <Button
+      color="error"
+      variant="outlined"
+      size={size}
+      loading={pending}
+      startIcon={<Iconify icon="solar:stop-circle-bold" />}
+      onClick={() => {
+        if (!confirm('Interrompere il check-up? L’AI si ferma subito. Potrai riprenderlo più tardi da dove si è fermato.')) return;
+        start(async () => {
+          const r = await stopAiCheckup(checkupId);
+          if (r?.ok) toast.success('Check-up interrotto');
+        });
+      }}
+    >
+      Interrompi
+    </Button>
+  );
+}
+
+function InterruptedPanel({ checkup }) {
+  return (
+    <Card sx={{ p: 3 }}>
+      <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+        <Iconify icon="solar:stop-circle-bold" width={32} sx={{ color: 'text.disabled' }} />
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="h6">Check-up interrotto</Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            Il lavoro dell’AI è fermo. Puoi riprenderlo da dove si è fermato oppure lasciarlo così e avviarne uno nuovo.
+          </Typography>
+        </Box>
+        <ResumeButton checkupId={checkup.id} />
+      </Stack>
     </Card>
   );
 }
@@ -436,6 +491,7 @@ function QuestionsPanel({ checkup, questions }) {
           <CardHeader
             title="Domande per te"
             subheader={`${answered} di ${questions.length} risposte · le domande senza risposta vengono trattate come "non noto"`}
+            action={<StopButton checkupId={checkup.id} size="small" />}
           />
           <Stack spacing={3} sx={{ p: 3, pt: 1 }}>
             {rounds.map((round) => (
@@ -648,7 +704,7 @@ function HistoryBar({ history, currentId, isNew }) {
           variant={isNew ? 'contained' : 'outlined'}
           startIcon={<Iconify icon="mingcute:add-line" />}
           sx={{ flexShrink: 0 }}
-          disabled={history[0] && WORKING.includes(history[0].aiState)}
+          disabled={history[0] && [...WORKING, 'domande'].includes(history[0].aiState)}
         >
           Nuovo check-up
         </Button>

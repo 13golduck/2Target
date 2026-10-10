@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 import { db } from "@/db";
 import { aiRuns } from "@/db/schema";
+import { currentJobSignal, JobCancelled } from "./jobs";
 import { assertBudget } from "./budget";
 
 // Chiamate a Claude per il check-up: modelli per modalità, streaming, ripresa dei turni in pausa,
@@ -98,7 +99,9 @@ export async function callClaude(o: CallOptions): Promise<CallResult> {
   const texts: string[] = [];
   const sources = new Map<string, string | undefined>();
 
+  const signal = currentJobSignal();
   for (let round = 0; round < 6; round++) {
+    if (signal?.aborted) throw new JobCancelled();
     // Controllo di spesa prima di ogni richiesta (anche alla ripresa di un turno in pausa)
     await assertBudget({ clientId: o.log.clientId, checkupId: o.log.checkupId });
     const stream = anthropic().beta.messages.stream({
@@ -112,7 +115,7 @@ export async function callClaude(o: CallOptions): Promise<CallResult> {
       // Se il modello rifiuta per una regola di sicurezza, l'API riprova con il modello più adatto
       betas: ["server-side-fallback-2026-07-01"],
       fallbacks: "default",
-    });
+    }, signal ? { signal } : undefined);
 
     stream.on("contentBlock", (block) => {
       if (!o.onProgress) return;
