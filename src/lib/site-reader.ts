@@ -25,7 +25,9 @@ const PRIORITY = [
 ];
 
 type Page = { url: string; status: number; title: string; description: string; headings: string[]; text: string; links: string[] };
-export type SiteReading = { ok: boolean; markdown: string; pages: number; problem: string | null };
+export type SiteReading = { ok: boolean; markdown: string; pages: number; problem: string | null; socialLinks: string[] };
+
+const SOCIAL = /^https?:\/\/(www\.|m\.|it-it\.)?(instagram\.com|facebook\.com|fb\.com|tiktok\.com|youtube\.com|youtu\.be|linkedin\.com|x\.com|twitter\.com|pinterest\.[a-z.]+|threads\.net)\//i;
 
 function isPrivate(ip: string) {
   return (
@@ -199,7 +201,7 @@ export async function readSite(website: string): Promise<SiteReading> {
   try {
     start = new URL(/^https?:\/\//i.test(website) ? website : `https://${website}`);
   } catch {
-    return { ok: false, pages: 0, problem: "indirizzo del sito non valido", markdown: `Indirizzo del sito non valido: «${website}».` };
+    return { ok: false, pages: 0, socialLinks: [], problem: "indirizzo del sito non valido", markdown: `Indirizzo del sito non valido: «${website}».` };
   }
 
   // Homepage: si prova l'indirizzo dato, poi con/senza www e in http
@@ -229,6 +231,7 @@ export async function readSite(website: string): Promise<SiteReading> {
     return {
       ok: false,
       pages: 0,
+      socialLinks: [],
       problem: errors[0] ?? "sito non raggiungibile",
       markdown: `Lettura diretta del sito NON riuscita. Tentativi:\n${errors.map((e) => `- ${e}`).join("\n")}\nUsa questo motivo preciso nel check-up (non scrivere genericamente che il sito "non si legge").`,
     };
@@ -279,5 +282,7 @@ ${notes.map((n) => `- ${n}`).join("\n")}
 ${pages.map(pageMarkdown).join("\n\n")}`;
   if (sitemap.urls.length) md += `\n\n### Altre pagine nella sitemap (solo indirizzi)\n${sitemap.urls.filter((u) => !pages.some((p) => p.url === u)).slice(0, 60).join("\n")}`;
   if (md.length > TOTAL_TEXT) md = `${md.slice(0, TOTAL_TEXT)}\n… [lettura tagliata per lunghezza]`;
-  return { ok: true, pages: pages.length, problem: null, markdown: md };
+  // Profili social linkati dal sito (header, footer, contatti): li legge poi social-reader
+  const socialLinks = [...new Set(pages.flatMap((p) => p.links).filter((l) => SOCIAL.test(l)))].slice(0, 30);
+  return { ok: true, pages: pages.length, problem: null, markdown: md, socialLinks };
 }

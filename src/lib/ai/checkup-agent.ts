@@ -1,6 +1,7 @@
 import "server-only";
 import { errorDetail, logError } from "@/lib/error-log";
 import { readSite, type SiteReading } from "@/lib/site-reader";
+import { readSocials } from "@/lib/social-reader";
 import { audit } from "@/lib/audit";
 import { z } from "zod";
 import { asc, eq } from "drizzle-orm";
@@ -55,6 +56,8 @@ Principi di lavoro:
   interazioni visibili, link in bio, coerenza col posizionamento.
 - Il sito del cliente viene letto direttamente da 2Target (sezione «Sito letto direttamente» negli appunti): è la
   fonte primaria su sito, offerta e messaggi, anche se il dominio non è indicizzato o la ricerca web non lo trova.
+  Lo stesso vale per i profili social (sezione «Social letti direttamente»): follower, post, ultimo post, reel, link
+  in bio e bio sono già lì, non vanno chiesti al consulente.
   Non scrivere che il sito "non si è potuto leggere" se quella sezione contiene pagine; la mancata indicizzazione
   è una criticità SEO da spiegare (con la causa tecnica se c'è), non un limite dell'analisi. Se la lettura diretta
   è fallita, riporta il motivo preciso indicato lì (es. HTTP 403, DNS, timeout).
@@ -164,18 +167,31 @@ const QuestionsSchema = z.object({
   questions: z.array(z.object({ topic: z.string(), question: z.string(), why: z.string(), options: z.array(z.string()) })),
 });
 
+/** Lettura diretta di sito e profili social (codice di 2Target, senza AI): sezioni markdown per il dossier. */
+async function readDirect(checkupId: number, client: { website: string | null; socialLinks: string | null }, withSite = true) {
+  const parts: string[] = [];
+  let siteLinks: string[] = [];
+  if (client.website) {
+    await progress(checkupId, `Leggo il sito direttamente: ${client.website}`);
+    const site: SiteReading = await readSite(client.website);
+    siteLinks = site.socialLinks;
+    await progress(checkupId, site.ok ? `Sito letto: ${site.pages} pagine` : `Sito non leggibile: ${site.problem}`);
+    if (withSite) parts.push(`# Sito letto direttamente\n${site.markdown}`);
+  }
+  await progress(checkupId, "Leggo i profili social");
+  const social = await readSocials(client.socialLinks ?? "", siteLinks);
+  await progress(checkupId, social.profiles ? `Profili social letti: ${social.profiles}` : "Nessun profilo social da leggere");
+  parts.push(`# Social letti direttamente\n${social.markdown}`);
+  return parts.join("\n\n");
+}
+
 export async function runRecon(checkupId: number) {
   const { checkup, client, mode } = await load(checkupId);
   await guard("ricognizione", "ricerca", mode, client.id, checkupId);
   await progress(checkupId, "Ricognizione online avviata");
 
-  // Prima si entra nel sito e lo si legge direttamente: funziona anche se il dominio non è indicizzato
-  let site: SiteReading | null = null;
-  if (client.website) {
-    await progress(checkupId, `Leggo il sito direttamente: ${client.website}`);
-    site = await readSite(client.website);
-    await progress(checkupId, site.ok ? `Sito letto: ${site.pages} pagine` : `Sito non leggibile: ${site.problem}`);
-  }
+  // Prima si entra nel sito e nei profili social e li si legge direttamente: funziona anche se non sono indicizzati
+  const direct = await readDirect(checkupId, client);
 
   const research = await callClaude({
     model: modelFor(mode, "ricerca"),
@@ -187,13 +203,13 @@ export async function runRecon(checkupId: number) {
         role: "user",
         content: `${await clientContext(client, checkup)}
 
-${site ? `# Lettura diretta del sito (fatta da 2Target)
-${site.markdown}
+${direct ? `${direct}
 
-Usa questa lettura come fonte primaria sul sito. Se il dominio non risulta indicizzato o la ricerca non trova
+Usa questa lettura come fonte primaria su sito e social. Se il dominio non risulta indicizzato o la ricerca non trova
 pagine, NON è un motivo per lasciare il sito o il posizionamento come ipotesi: i contenuti sono qui sopra.
 La mancata indicizzazione è una criticità SEO da segnalare (con la causa, se i controlli tecnici la mostrano),
-non un limite dell'analisi. Non chiedere al consulente informazioni che si ricavano da questa lettura.
+non un limite dell'analisi. Non chiedere al consulente informazioni che si ricavano da questa lettura
+(in particolare follower, numero di post, ultimo post, uso dei reel e link in bio dei profili letti).
 
 ` : ""}Fai la ricognizione di questa azienda cercando online (se c'è un check-up precedente, verifica soprattutto cosa è
 cambiato da allora: canali, numeri, offerta, concorrenti). Parti dal sito (leggilo: pagine principali, prodotti o
@@ -218,7 +234,7 @@ Metti la fonte (URL) accanto a ogni dato.`,
   });
 
   // La lettura del sito resta nel dossier: la usano anche domande, ricerca approfondita e scrittura
-  const dossier = site ? `${research.text}\n\n# Sito letto direttamente\n${site.markdown}` : research.text;
+  const dossier = direct ? `${research.text}\n\n${direct}` : research.text;
   await db.update(checkups).set({ dossier, sources: mergeSources(checkup.sources, research.sources) }).where(eq(checkups.id, checkupId));
   await progress(checkupId, "Preparo le domande per il consulente");
   await askQuestions(checkupId, 1);
@@ -283,13 +299,13 @@ export async function runDeepResearch(checkupId: number) {
   let { checkup, client, mode } = await load(checkupId);
   await guard("ricerca", "ricerca", mode, client.id, checkupId);
   await progress(checkupId, "Ricerca approfondita avviata");
-  // Check-up partiti prima della lettura diretta: si legge il sito adesso
-  if (client.website && !checkup.dossier?.includes("# Sito letto direttamente")) {
-    await progress(checkupId, `Leggo il sito direttamente: ${client.website}`);
-    const site = await readSite(client.website);
-    await progress(checkupId, site.ok ? `Sito letto: ${site.pages} pagine` : `Sito non leggibile: ${site.problem}`);
-    await db.update(checkups).set({ dossier: `${checkup.dossier ?? ""}\n\n# Sito letto direttamente\n${site.markdown}` }).where(eq(checkups.id, checkupId));
-    ({ checkup, client, mode } = await load(checkupId));
+  // Check-up partiti prima della lettura diretta: si leggono sito e social adesso
+  if (!checkup.dossier?.includes("# Social letti direttamente")) {
+    const direct = await readDirect(checkupId, client, !checkup.dossier?.includes("# Sito letto direttamente"));
+    if (direct) {
+      await db.update(checkups).set({ dossier: `${checkup.dossier ?? ""}\n\n${direct}` }).where(eq(checkups.id, checkupId));
+      ({ checkup, client, mode } = await load(checkupId));
+    }
   }
   const r = await callClaude({
     model: modelFor(mode, "ricerca"),
