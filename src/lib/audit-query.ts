@@ -17,10 +17,14 @@ export function parseAuditFilters(sp: AuditFilters) {
   return { days, category, user: sp.utente ?? "", client: sp.cliente ?? "", q: (sp.q ?? "").trim().slice(0, 100) };
 }
 
-export async function queryAudit(f: ReturnType<typeof parseAuditFilters>, limit = 500) {
+/** onlyUserId: per chi non è amministratore, solo le proprie voci. */
+export async function queryAudit(f: ReturnType<typeof parseAuditFilters>, limit = 500, onlyUserId?: number) {
   const where: SQL[] = [gte(auditLogs.createdAt, new Date(nowDate().getTime() - f.days * 86_400_000))];
+  if (onlyUserId) where.push(eq(auditLogs.userId, onlyUserId));
   if (f.category) where.push(eq(auditLogs.category, f.category as (typeof AUDIT_CATEGORIES)[number]));
-  if (f.user === "sistema") where.push(isNull(auditLogs.userId));
+  if (onlyUserId) {
+    /* filtro utente non applicabile */
+  } else if (f.user === "sistema") where.push(isNull(auditLogs.userId));
   else if (f.user) where.push(eq(auditLogs.userId, Number(f.user)));
   if (f.client) where.push(eq(auditLogs.clientId, Number(f.client)));
   if (f.q) {
@@ -47,6 +51,6 @@ export async function queryAudit(f: ReturnType<typeof parseAuditFilters>, limit 
     .from(auditLogs)
     .leftJoin(clients, eq(clients.id, auditLogs.clientId))
     .where(and(...where))
-    .orderBy(desc(auditLogs.id))
+    .orderBy(desc(auditLogs.createdAt), desc(auditLogs.id))
     .limit(limit);
 }

@@ -1,13 +1,13 @@
 "use server";
 
-import { and, desc, gte, ne } from "drizzle-orm";
+import { and, desc, eq, gte, notLike } from "drizzle-orm";
 
 import { db } from "@/db";
-import { errorLogs } from "@/db/schema";
+import { auditLogs } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { logError } from "@/lib/error-log";
 
-// Errori mostrati nel browser (messaggi rossi, errori JavaScript): finiscono nel registro dell'utente che li ha visti.
+// Errori mostrati nel browser (messaggi rossi, errori JavaScript): finiscono nell'audit trail, con l'utente che li ha visti.
 const recent = new Map<string, number>();
 
 export async function reportClientError(message: string, path: string, detail?: string) {
@@ -21,12 +21,14 @@ export async function reportClientError(message: string, path: string, detail?: 
   recent.set(key, now);
   if (recent.size > 500) recent.clear();
   // Se il messaggio mostrato viene da un errore già registrato dal server, si collega la voce con il dettaglio tecnico
-  const server = await db
-    .select({ id: errorLogs.id, message: errorLogs.message, detail: errorLogs.detail })
-    .from(errorLogs)
-    .where(and(gte(errorLogs.createdAt, new Date(now - 86_400_000)), ne(errorLogs.area, "Pagina")))
-    .orderBy(desc(errorLogs.id))
-    .limit(50);
+  const server = (
+    await db
+      .select({ id: auditLogs.id, message: auditLogs.description, meta: auditLogs.meta })
+      .from(auditLogs)
+      .where(and(eq(auditLogs.category, "errori"), gte(auditLogs.createdAt, new Date(now - 86_400_000)), notLike(auditLogs.action, "errore.pagina%")))
+      .orderBy(desc(auditLogs.id))
+      .limit(50)
+  ).map((r) => ({ ...r, detail: typeof r.meta?.dettaglio === "string" ? r.meta.dettaglio : null }));
   const twin = server.find((r) => r.message.length > 10 && (msg.includes(r.message.slice(0, 200)) || r.message.includes(msg)));
   const full = [detail?.slice(0, 4000), twin && `\n— Dettaglio tecnico dal server (voce #${twin.id}) —\n${twin.detail ?? ""}`].filter(Boolean).join("\n");
   const isJs = !!detail?.startsWith("File:");

@@ -33,6 +33,7 @@ import { Scrollbar } from 'src/components/scrollbar';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { addUser, updateUser, resetUserTotp } from './actions';
+import { askConfirm } from 'src/components/custom-dialog';
 
 // ----------------------------------------------------------------------
 
@@ -57,8 +58,8 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
   const clientName = (id) => clients.find((c) => c.id === id)?.name ?? '—';
   const withTotp = users.filter((u) => u.totp).length;
 
-  const resetTotp = (u) => {
-    if (!confirm(`Azzerare il doppio fattore di ${u.name}? Al prossimo accesso entrerà con il solo codice email e potrà riattivarlo dal profilo.`)) return;
+  const resetTotp = async (u) => {
+    if (!(await askConfirm({ tone: 'warning', title: `Azzerare il doppio fattore di ${u.name}?`, content: 'Al prossimo accesso entrerà con il solo codice email e potrà riattivarlo dal profilo.', confirmText: 'Azzera' }))) return;
     start(async () => {
       const r = await resetUserTotp(u.id);
       if (r?.error) toast.error(r.error);

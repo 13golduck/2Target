@@ -1,13 +1,9 @@
 import "server-only";
-import { lt } from "drizzle-orm";
+import { audit } from "@/lib/audit";
 
-import { db } from "@/db";
-import { errorLogs } from "@/db/schema";
+// Errori: finiscono nell'audit trail (registro unico), categoria «errori».
+// I messaggi vengono ripuliti da eventuali segreti evidenti.
 
-// Registro errori: chi ha visto quale errore, dove e quando. Non deve mai far fallire l'operazione che lo chiama.
-// Si conservano 90 giorni; i messaggi vengono ripuliti da eventuali segreti evidenti.
-
-const RETENTION_DAYS = 90;
 const clean = (t: string) =>
   t
     .replace(/sk-ant-[\w-]+/g, "sk-ant-***")
@@ -45,20 +41,24 @@ export function errorDetail(e: unknown, context: Record<string, unknown> = {}) {
   return lines.join("\n");
 }
 
-export async function logError(o: { userId?: number | null; area: string; message: string; detail?: string | null; path?: string | null }) {
-  try {
-    await db.insert(errorLogs).values({
-      userId: o.userId ?? null,
+/**
+ * Registra un errore nell'audit trail (categoria «errori»): messaggio, area, pagina e dettaglio tecnico.
+ * Non deve mai far fallire l'operazione che lo chiama.
+ */
+export async function logError(o: { userId?: number | null; area: string; message: string; detail?: string | null; path?: string | null; clientId?: number | null }) {
+  const message = clean(o.message).slice(0, 1000) || "Errore senza messaggio";
+  await audit({
+    userId: o.userId ?? null,
+    actorLabel: o.userId ? undefined : "Sistema",
+    category: "errori",
+    action: `errore.${o.area.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")}`.slice(0, 60),
+    description: message.slice(0, 600),
+    clientId: o.clientId ?? null,
+    path: o.path?.slice(0, 300) ?? null,
+    meta: {
       area: o.area.slice(0, 60),
-      message: clean(o.message).slice(0, 1000) || "Errore senza messaggio",
-      detail: o.detail ? clean(o.detail).slice(0, 8000) : null,
-      path: o.path?.slice(0, 300) ?? null,
-    });
-    // Pulizia occasionale delle voci vecchie
-    if (Math.random() < 0.02) {
-      await db.delete(errorLogs).where(lt(errorLogs.createdAt, new Date(Date.now() - RETENTION_DAYS * 86_400_000)));
-    }
-  } catch (e) {
-    console.error("[errori] impossibile registrare:", e);
-  }
+      ...(message.length > 600 && { messaggio: message }),
+      ...(o.detail && { dettaglio: clean(o.detail).slice(0, 8000) }),
+    },
+  });
 }

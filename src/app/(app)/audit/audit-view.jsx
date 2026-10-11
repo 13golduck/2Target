@@ -34,6 +34,7 @@ const CATEGORIES = {
   lead: { label: 'Lead e costi', color: 'info', icon: 'solar:user-plus-bold' },
   canali: { label: 'Canali', color: 'secondary', icon: 'solar:link-round-bold' },
   grafica: { label: 'Studio grafico', color: 'primary', icon: 'solar:pallete-2-bold' },
+  errori: { label: 'Errori', color: 'error', icon: 'solar:danger-triangle-bold' },
   sistema: { label: 'Sistema', color: 'default', icon: 'solar:server-bold' },
 };
 
@@ -69,7 +70,17 @@ const isChange = (v) => v && typeof v === 'object' && !Array.isArray(v) && 'prim
 
 /** Dettagli: le modifiche «prima → dopo» in tabella, il resto come elenco. */
 function MetaDetails({ meta }) {
-  const entries = Object.entries(meta ?? {});
+  const { dettaglio, ...rest } = meta ?? {};
+  const entries = Object.entries(rest);
+  const technical = typeof dettaglio === 'string' && dettaglio ? (
+    <Box sx={{ mt: 1.5 }}>
+      <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary' }}>DETTAGLIO TECNICO</Typography>
+      <Box component="pre" sx={{ m: 0, mt: 0.5, p: 1.5, borderRadius: 1, bgcolor: 'background.neutral', fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 360, overflow: 'auto' }}>
+        {dettaglio}
+      </Box>
+    </Box>
+  ) : null;
+  if (!entries.length) return technical;
   if (!entries.length) return null;
   const changes = [];
   const other = [];
@@ -98,6 +109,7 @@ function MetaDetails({ meta }) {
           </Box>
         </Box>
       )}
+      {technical}
       {other.length > 0 && (
         <Box component="pre" sx={{ m: 0, mt: 1.5, p: 1.5, borderRadius: 1, bgcolor: 'background.neutral', fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 280, overflow: 'auto' }}>
           {JSON.stringify(Object.fromEntries(other), null, 2)}
@@ -107,7 +119,7 @@ function MetaDetails({ meta }) {
   );
 }
 
-export function AuditView({ filters, people, clients, rows }) {
+export function AuditView({ admin, filters, people, clients, rows }) {
   const router = useRouter();
   const params = useSearchParams();
   const [open, setOpen] = useState(null);
@@ -154,9 +166,9 @@ export function AuditView({ filters, people, clients, rows }) {
 
       <Card sx={{ p: 2, mb: 3 }}>
         <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-          Chi ha fatto cosa, su quale cliente, quando e da dove: accessi, utenti, impostazioni, check-up, contenuti, lead, canali e
-          studio grafico. Le voci non si possono modificare né cancellare e si conservano 2 anni. Password, codici e chiavi non
-          vengono mai registrati.
+          {admin
+            ? 'Registro unico di 2Target: chi ha fatto cosa, su quale cliente, quando e da dove, insieme agli errori (con il dettaglio tecnico) e ai messaggi di sistema. Le voci non si possono modificare né cancellare e si conservano 2 anni. Password, codici e chiavi non vengono mai registrati.'
+            : 'Le tue attività e gli errori che hai incontrato. Se un errore si ripete, segnalalo a un amministratore indicando il numero della voce.'}
         </Typography>
         <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap', rowGap: 1.5, alignItems: 'center' }}>
           <TextField
@@ -182,7 +194,7 @@ export function AuditView({ filters, people, clients, rows }) {
             <MenuItem key="" value="">Tutte</MenuItem>,
             ...Object.entries(CATEGORIES).map(([k, c]) => <MenuItem key={k} value={k}>{c.label}</MenuItem>),
           ])}
-          {select('Utente', 'utente', filters.user, [
+          {admin && select('Utente', 'utente', filters.user, [
             <MenuItem key="" value="">Tutti</MenuItem>,
             <MenuItem key="sistema" value="sistema">Sistema (AI, sito, automatismi)</MenuItem>,
             ...people.map((p) => <MenuItem key={p.id} value={String(p.id)}>{p.name}</MenuItem>),
@@ -206,7 +218,7 @@ export function AuditView({ filters, people, clients, rows }) {
           {rows.map((r, i) => {
             const cat = CATEGORIES[r.category] ?? CATEGORIES.sistema;
             const href = targetHref(r);
-            const failed = /non riuscit|errat/i.test(r.description);
+            const failed = r.category === 'errori' || /non riuscit|errat/i.test(r.description);
             return (
               <Box key={r.id} sx={{ borderTop: i ? 1 : 0, borderColor: 'divider' }}>
                 <Stack

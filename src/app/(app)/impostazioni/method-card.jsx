@@ -17,6 +17,7 @@ import { Iconify } from 'src/components/iconify';
 import { toast } from 'src/components/snackbar';
 
 import { updateMethodology } from './actions';
+import { askConfirm } from 'src/components/custom-dialog';
 
 // ----------------------------------------------------------------------
 // Metodologia Golduck del check-up: le istruzioni che l'AI segue. Ogni salvataggio è una nuova versione;
@@ -77,8 +78,8 @@ export function MethodCard({ method }) {
             <Button
               color="inherit"
               disabled={pending}
-              onClick={() => {
-                if (confirm('Ripristinare il testo predefinito Golduck? Verrà salvato come nuova versione.')) submit(true);
+              onClick={async () => {
+                if (await askConfirm({ tone: 'warning', title: 'Ripristinare la metodologia Golduck?', content: 'Il testo predefinito verrà salvato come nuova versione. Le versioni precedenti restano nello storico.', confirmText: 'Ripristina' })) submit(true);
               }}
             >
               Ripristina predefinita

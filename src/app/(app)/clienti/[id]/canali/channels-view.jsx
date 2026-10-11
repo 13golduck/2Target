@@ -31,6 +31,7 @@ import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { toast } from 'src/components/snackbar';
 import { EmptyContent } from 'src/components/empty-content';
+import { confirmSubmit } from 'src/components/custom-dialog';
 
 import {
   removeChannel,
@@ -115,7 +116,7 @@ export function ChannelsView({ clientId, error, configured, connections, channel
                           <Iconify icon="solar:list-bold" width={18} />
                         </IconButton>
                       </Tooltip>
-                      <Box component="form" action={removeConnection} onSubmit={(e) => { if (!confirm('Scollegare questo account? I canali restano con i dati già scaricati.')) e.preventDefault(); }}>
+                      <Box component="form" action={removeConnection} onSubmit={(e) => confirmSubmit(e, { tone: 'warning', title: 'Scollegare questo account?', content: 'I canali restano, con i dati già scaricati, ma non si aggiornano più.', confirmText: 'Scollega' })}>
                         <input type="hidden" name="connectionId" value={c.id} />
                         <Tooltip title="Scollega account">
                           <IconButton type="submit" size="small"><Iconify icon="mingcute:close-line" width={18} /></IconButton>
@@ -247,7 +248,7 @@ function ChannelCard({ channel: c }) {
                 <IconButton onClick={sync} loading={pending}><Iconify icon="solar:restart-bold" /></IconButton>
               </Tooltip>
             )}
-            <Box component="form" action={removeChannel} onSubmit={(e) => { if (!confirm('Togliere il canale e i suoi dati?')) e.preventDefault(); }}>
+            <Box component="form" action={removeChannel} onSubmit={(e) => confirmSubmit(e, { tone: 'error', title: 'Togliere il canale?', content: 'Il canale e i dati scaricati verranno cancellati.', confirmText: 'Togli canale' })}>
               <input type="hidden" name="channelId" value={c.id} />
               <Tooltip title="Togli canale">
                 <IconButton type="submit"><Iconify icon="solar:trash-bin-trash-bold" /></IconButton>

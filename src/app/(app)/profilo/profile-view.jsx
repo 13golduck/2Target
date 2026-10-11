@@ -20,6 +20,7 @@ import { toast } from 'src/components/snackbar';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { confirmTotp, disableTotp, startTotpSetup, regenerateRecovery } from './actions';
+import { askConfirm } from 'src/components/custom-dialog';
 
 // ----------------------------------------------------------------------
 
@@ -139,8 +140,8 @@ export function ProfileView({ user }) {
                 <Button
                   color="error"
                   loading={pending}
-                  onClick={() => {
-                    if (!confirm('Disattivare il doppio fattore? L’accesso tornerà a richiedere solo il codice email.')) return;
+                  onClick={async () => {
+                    if (!(await askConfirm({ tone: 'warning', title: 'Disattivare il doppio fattore?', content: 'L’accesso tornerà a richiedere solo il codice email.', confirmText: 'Disattiva' }))) return;
                     run(() => disableTotp(code), () => { setCode(''); toast.success('Doppio fattore disattivato'); });
                   }}
                 >

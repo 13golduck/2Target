@@ -49,6 +49,8 @@ jobs:
           rm -rf dist/drizzle && cp -r drizzle dist/drizzle
           # Il .env non c'è: le variabili si impostano nell'app Node.js di Plesk
           rm -f dist/.env*
+          # Versione mostrata nei messaggi di sistema dell'audit trail
+          echo "${GITHUB_SHA::7}" > dist/VERSION
           cat > dist/README.md <<'MD'
           # 2Target · build di produzione
           Generato da GitHub Actions dal branch `main` (commit ${{ github.sha }}).

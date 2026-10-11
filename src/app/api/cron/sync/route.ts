@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { clients } from "@/db/schema";
 import { syncClient } from "@/lib/integrations/sync";
+import { audit } from "@/lib/audit";
 
 // Sincronizzazione notturna di tutti i clienti. Su Plesk: Operazioni pianificate →
 //   curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://DOMINIO/api/cron/sync
@@ -26,6 +27,16 @@ async function run(request: Request) {
 
   const list = await db.select({ id: clients.id, name: clients.name }).from(clients);
   const report: Record<string, string[]> = {};
+  const started = Date.now();
   for (const c of list) report[c.name] = await syncClient(c.id);
+  const withErrors = Object.entries(report).filter(([, e]) => e.length);
+  await audit({
+    userId: null,
+    actorLabel: "Sistema",
+    category: "sistema",
+    action: "sync.notturna",
+    description: `Aggiornamento automatico dei canali: ${list.length} clienti in ${Math.round((Date.now() - started) / 1000)} s${withErrors.length ? ` · ${withErrors.length} con errori` : " · tutto ok"}`,
+    meta: withErrors.length ? { errori: Object.fromEntries(withErrors) } : null,
+  });
   return NextResponse.json({ ok: true, report });
 }

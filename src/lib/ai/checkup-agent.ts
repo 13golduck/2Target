@@ -396,6 +396,7 @@ Dove un dato non è verificato dichiaralo. Niente frasi generiche valide per qua
       message: `Dati dei grafici del report non generati: ${e instanceof Error ? e.message : String(e)}`,
       detail: errorDetail(e, { "Check-up": checkupId, Cliente: client.id, Fase: "scrittura, dati dei grafici del report", Pagina: `/clienti/${client.id}/checkup?id=${checkupId}` }),
       path: `/clienti/${client.id}/checkup?id=${checkupId}`,
+      clientId: client.id,
     });
     await progress(checkupId, "Dati dei grafici non disponibili: il report userà il testo delle sezioni");
   }

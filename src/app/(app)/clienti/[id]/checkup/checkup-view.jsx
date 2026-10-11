@@ -41,6 +41,7 @@ import { StatusBadge } from 'src/components/status-badge';
 
 import { createCheckup, setCheckupStatus, saveCheckupSection } from '../../../actions';
 import { saveAnswers, reviseSection, stopAiCheckup, archiveCheckup, startAiCheckup, resumeAiCheckup, continueAiCheckup } from '../../../checkup-ai-actions';
+import { askConfirm } from 'src/components/custom-dialog';
 
 // ----------------------------------------------------------------------
 
@@ -396,8 +397,8 @@ function StopButton({ checkupId, size = 'medium' }) {
       size={size}
       loading={pending}
       startIcon={<Iconify icon="solar:stop-circle-bold" />}
-      onClick={() => {
-        if (!confirm('Interrompere il check-up? L’AI si ferma subito. Potrai riprenderlo più tardi da dove si è fermato.')) return;
+      onClick={async () => {
+        if (!(await askConfirm({ tone: 'warning', title: 'Interrompere il check-up?', content: 'L’AI si ferma subito. Potrai riprenderlo più tardi da dove si è fermato.', confirmText: 'Interrompi' }))) return;
         start(async () => {
           const r = await stopAiCheckup(checkupId);
           if (r?.ok) toast.success('Check-up interrotto');
@@ -460,8 +461,8 @@ function ArchiveButton({ checkupId, archived }) {
       size="small"
       loading={pending}
       startIcon={<Iconify icon="solar:archive-bold" width={18} />}
-      onClick={() => {
-        if (!confirm('Archiviare questo check-up? Non comparirà più nello storico, ma potrai ritrovarlo in «Archiviati» e ripristinarlo.')) return;
+      onClick={async () => {
+        if (!(await askConfirm({ tone: 'archive', title: 'Archiviare questo check-up?', content: 'Non comparirà più nello storico, ma potrai ritrovarlo in «Archiviati» e ripristinarlo quando vuoi.', confirmText: 'Archivia' }))) return;
         start(async () => {
           const r = await archiveCheckup(checkupId, true);
           if (r?.error) toast.error(r.error);
@@ -721,12 +722,14 @@ function HistoryBar({ history, current, isNew, showArchived }) {
   // Si può archiviare tutto ciò su cui l'AI non sta lavorando in questo momento (anche se rimasto a metà)
   const canArchive = current && !current.archived && !current.running;
 
-  const toggleArchive = (archive) =>
+  const toggleArchive = async (archive) => {
+    if (archive && !(await askConfirm({ tone: 'archive', title: 'Archiviare questo check-up?', content: 'Non comparirà più nello storico, ma potrai ritrovarlo in «Archiviati» e ripristinarlo quando vuoi.', confirmText: 'Archivia' }))) return;
     start(async () => {
       const r = await archiveCheckup(current.id, archive);
       if (r?.error) toast.error(r.error);
       else toast.success(archive ? 'Check-up archiviato' : 'Check-up ripristinato');
     });
+  };
 
   return (
     <Card sx={{ p: 2 }}>

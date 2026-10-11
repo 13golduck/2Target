@@ -120,6 +120,13 @@
       "when": 1791708642231,
       "tag": "0016_audit_dettagli",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1791711695352,
+      "tag": "0017_registro_unico",
+      "breakpoints": true
     }
   ]
 }

@@ -24,6 +24,8 @@ type AuditInput = {
   meta?: Record<string, unknown> | null;
   /** Per gli accessi falliti: l'email scritta (l'utente può non esistere). */
   actorLabel?: string;
+  /** Pagina interessata, se diversa da quella della richiesta (es. errori dei lavori in background). */
+  path?: string | null;
 };
 
 /** Da dove arriva l'azione: IP, browser e pagina (fuori da una richiesta, es. lavori in background, è tutto vuoto). */
@@ -96,7 +98,7 @@ export async function audit(o: AuditInput) {
       meta: o.meta ?? null,
       ip: ctx.ip?.slice(0, 64) ?? null,
       userAgent: ctx.userAgent?.slice(0, 300) ?? null,
-      path: ctx.path?.slice(0, 300) ?? null,
+      path: (o.path ?? ctx.path)?.slice(0, 300) ?? null,
     });
     if (Math.random() < 0.01) {
       await db.delete(auditLogs).where(lt(auditLogs.createdAt, new Date(Date.now() - RETENTION_DAYS * 86_400_000)));

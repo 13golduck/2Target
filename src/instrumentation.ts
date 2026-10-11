@@ -19,9 +19,21 @@ export async function register() {
   }
   const { bootstrapAdmin } = await import("./lib/bootstrap-admin");
   await bootstrapAdmin().catch((e) => console.error("[admin] creazione non riuscita:", e));
+  // Messaggio di sistema nell'audit trail: ogni avvio (deploy, riavvio da Plesk) resta tracciato
+  const { audit } = await import("./lib/audit");
+  const { readFile } = await import("node:fs/promises");
+  const version = (await readFile(`${process.cwd()}/VERSION`, "utf8").catch(() => "sviluppo")).trim();
+  await audit({
+    userId: null,
+    actorLabel: "Sistema",
+    category: "sistema",
+    action: "app.avvio",
+    description: `App avviata · versione ${version} · migrazioni del database aggiornate`,
+    meta: { versione: version, node: process.version, ambiente: process.env.NODE_ENV ?? null },
+  });
 }
 
-/** Errori del server durante una richiesta (pagine, azioni): finiscono nel Registro errori (visibili agli amministratori). */
+/** Errori del server durante una richiesta (pagine, azioni): finiscono nell'audit trail, categoria «errori». */
 export async function onRequestError(err: unknown, request: { path: string; method: string }, context: { routerKind: string; routeType: string }) {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   const e = err as Error & { digest?: string };

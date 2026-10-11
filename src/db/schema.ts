@@ -666,25 +666,8 @@ export const designReviews = mysqlTable(
   (t) => [index("design_reviews_client").on(t.clientId, t.createdAt)],
 );
 
-// ── Registro errori ──────────────────────────────────────────────────
-/** Errori visti dagli utenti o avvenuti sul server. Ogni utente vede i suoi, gli amministratori tutti. */
-export const errorLogs = mysqlTable(
-  "error_logs",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("user_id").references(() => users.id, { onDelete: "set null" }),
-    /** Dove: es. "Check-up AI", "Pagina", "Server", "Accesso". */
-    area: varchar("area", { length: 60 }).notNull(),
-    message: varchar("message", { length: 1000 }).notNull(),
-    detail: text("detail"),
-    path: varchar("path", { length: 300 }),
-    createdAt: created(),
-  },
-  (t) => [index("error_logs_user").on(t.userId, t.createdAt), index("error_logs_created").on(t.createdAt)],
-);
-
-// Audit trail: chi ha fatto cosa, su quale cliente, quando e da dove. Le voci non si modificano né si cancellano dall'app.
-export const AUDIT_CATEGORIES = ["accesso", "utenti", "impostazioni", "clienti", "checkup", "contenuti", "lead", "canali", "grafica", "sistema"] as const;
+// Audit trail: unico registro di azioni, errori e messaggi di sistema. Chi ha fatto cosa, su quale cliente, quando e da dove. Le voci non si modificano né si cancellano dall'app.
+export const AUDIT_CATEGORIES = ["accesso", "utenti", "impostazioni", "clienti", "checkup", "contenuti", "lead", "canali", "grafica", "errori", "sistema"] as const;
 
 export const auditLogs = mysqlTable(
   "audit_logs",

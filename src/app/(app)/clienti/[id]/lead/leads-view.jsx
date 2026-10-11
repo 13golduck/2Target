@@ -38,6 +38,7 @@ import { Scrollbar } from 'src/components/scrollbar';
 import { Chart, useChart } from 'src/components/chart';
 
 import { addCost, moveLead, saveLead, deleteCost, deleteLead, regenerateLeadToken } from '../../../lead-actions';
+import { askConfirm, confirmSubmit } from 'src/components/custom-dialog';
 
 // ----------------------------------------------------------------------
 
@@ -420,7 +421,7 @@ function IntakeCard({ clientId, intake, lostReasons }) {
               <Box component="pre" sx={{ m: 0, p: 1.5, borderRadius: 1, bgcolor: 'background.neutral', fontSize: 12, overflow: 'auto', maxHeight: 180 }}>{snippet}</Box>
               <Stack direction="row" spacing={1}>
                 <Button size="small" startIcon={<Iconify icon="solar:copy-bold" />} onClick={() => copy(snippet)}>Copia esempio modulo</Button>
-                <Box component="form" action={regenerateLeadToken} onSubmit={(e) => { if (!confirm('Il vecchio indirizzo smetterà di funzionare. Procedere?')) e.preventDefault(); }}>
+                <Box component="form" action={regenerateLeadToken} onSubmit={(e) => confirmSubmit(e, { tone: 'warning', title: 'Rigenerare l’indirizzo?', content: 'Il vecchio indirizzo smetterà di funzionare: i moduli del sito andranno aggiornati con quello nuovo.', confirmText: 'Rigenera' })}>
                   <input type="hidden" name="clientId" value={clientId} />
                   <Button type="submit" size="small" color="inherit">Rigenera indirizzo</Button>
                 </Box>
@@ -521,8 +522,8 @@ function LeadForm({ clientId, lead, onClose }) {
           <Button
             color="error"
             sx={{ mr: 'auto' }}
-            onClick={() => {
-              if (!confirm('Eliminare il lead?')) return;
+            onClick={async () => {
+              if (!(await askConfirm({ tone: 'error', title: 'Eliminare il lead?', content: 'Il lead e la sua storia verranno cancellati definitivamente.', confirmText: 'Elimina' }))) return;
               const fd = new FormData();
               fd.set('id', lead.id);
               start(async () => { await deleteLead(fd); onClose(); });

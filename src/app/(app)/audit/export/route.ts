@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
-// Esportazione CSV dell'audit trail (stessi filtri della pagina). Solo amministratori; anche l'esportazione viene registrata.
+// Esportazione CSV dell'audit trail (stessi filtri e stesse regole di visibilità della pagina). Anche l'esportazione viene registrata.
 
 const cell = (v: unknown) => {
   const s = v == null ? "" : typeof v === "string" ? v : JSON.stringify(v);
@@ -18,10 +18,11 @@ const cell = (v: unknown) => {
 export async function GET(request: Request) {
   const id = Number((await auth())?.user?.id);
   const [me] = id ? await db.select({ role: users.role, active: users.active }).from(users).where(eq(users.id, id)).limit(1) : [];
-  if (!me?.active || !isAdminRole(me.role)) return new Response("Non autorizzato", { status: 403 });
+  if (!me?.active) return new Response("Non autorizzato", { status: 403 });
 
   const filters = parseAuditFilters(Object.fromEntries(new URL(request.url).searchParams));
-  const rows = await queryAudit(filters, 20_000);
+  // Chi non è amministratore esporta solo le proprie voci
+  const rows = await queryAudit(filters, 20_000, isAdminRole(me.role) ? undefined : id);
   await audit({ userId: id, category: "sistema", action: "audit.esportato", description: `Esportato l'audit trail in CSV (${rows.length} voci, ultimi ${filters.days} giorni)` });
 
   const fmt = new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", dateStyle: "short", timeStyle: "medium" });

@@ -79,16 +79,7 @@ export function startJob(checkupId: number, state: (typeof AI_STATES)[number], j
             Pagina: where,
           }),
           path: where,
-        });
-        await audit({
-          userId: null,
-          actorLabel: "AI",
-          category: "checkup",
-          action: "checkup.errore",
-          description: `Check-up fermato per un errore nella fase ${c?.aiState ?? state}: ${message.slice(0, 300)}`,
           clientId: c?.clientId,
-          target: `checkup:${checkupId}`,
-          meta: { avviatoDa: userId ?? null, dettaglio: "vedi Registro errori" },
         });
         await db
           .update(checkups)
