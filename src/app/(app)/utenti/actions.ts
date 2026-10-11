@@ -103,3 +103,21 @@ export async function resetUserTotp(id: number) {
   revalidatePath("/utenti");
   return { ok: true };
 }
+
+/** Abilita (o toglie) a un User la pubblicazione sui profili dei clienti. Admin e Super admin pubblicano sempre. */
+export async function setCanPublish(id: number, value: boolean) {
+  const me = await requireAdmin();
+  const [target] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  if (!target) return { error: "Utente non trovato" };
+  if (target.role !== "user") return { error: "Il permesso si imposta solo per gli User: gli amministratori pubblicano sempre, i Viewer mai" };
+  await db.update(users).set({ canPublish: value }).where(eq(users.id, id));
+  await audit({
+    userId: me.id,
+    category: "utenti",
+    action: value ? "utente.pubblica_si" : "utente.pubblica_no",
+    description: `${target.name} <${target.email}>: ${value ? "abilitato" : "non più abilitato"} a pubblicare sui profili dei clienti`,
+    target: `utente:${id}`,
+  });
+  revalidatePath("/utenti");
+  return { ok: true };
+}

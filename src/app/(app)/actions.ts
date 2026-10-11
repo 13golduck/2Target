@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -11,6 +11,7 @@ import { fromRomeInput, parseMetricInput } from "@/lib/format";
 import { METRIC_BY_KEY } from "@/lib/kpi-catalog";
 import { kpiSnapshot } from "@/lib/queries";
 import { audit, diff } from "@/lib/audit";
+import { syncPendingPublications } from "@/lib/publishing/sync";
 
 const str = (f: FormData, k: string) => {
   const v = String(f.get(k) ?? "").trim();
@@ -179,6 +180,7 @@ export async function rescheduleItem(itemId: number, iso: string) {
   const [item] = await db.select({ clientId: s.editorialItems.clientId, planId: s.editorialItems.planId, title: s.editorialItems.title, scheduledAt: s.editorialItems.scheduledAt }).from(s.editorialItems).where(eq(s.editorialItems.id, itemId));
   if (!item) return;
   await db.update(s.editorialItems).set({ scheduledAt: when }).where(eq(s.editorialItems.id, itemId));
+  await syncPendingPublications(itemId, me.id);
   await audit({ userId: me.id, category: "contenuti", action: "pubblicazione.data", description: `Spostata la pubblicazione «${item.title}» nel calendario`, clientId: item.clientId, target: `pubblicazione:${itemId}`, meta: { prima: item.scheduledAt?.toISOString() ?? null, dopo: when.toISOString() } });
   revalidatePath(`/clienti/${item.clientId}/piano`);
 }
@@ -325,6 +327,7 @@ export async function saveItem(f: FormData) {
     publishedUrl: str(f, "publishedUrl"),
   };
   await db.update(s.editorialItems).set(values).where(eq(s.editorialItems.id, id));
+  await syncPendingPublications(id, me.id);
   await audit({
     userId: me.id,
     category: "contenuti",

@@ -52,6 +52,8 @@ export const users = mysqlTable("users", {
   totpEnabledAt: datetime("totp_enabled_at"),
   /** Impronte dei codici di recupero ancora non usati. */
   totpRecovery: json("totp_recovery").$type<string[]>(),
+  /** Può programmare e pubblicare sui profili dei clienti (Super admin e Administrator possono sempre). */
+  canPublish: boolean("can_publish").notNull().default(false),
   lastLoginAt: datetime("last_login_at"),
   createdAt: created(),
 });
@@ -148,7 +150,11 @@ export const socialAccounts = mysqlTable(
     lastSyncError: text("last_sync_error"),
     createdAt: created(),
   },
-  (t) => [uniqueIndex("social_accounts_unique").on(t.clientId, t.platform, t.handle)],
+  (t) => [
+    uniqueIndex("social_accounts_unique").on(t.clientId, t.platform, t.handle),
+    // Un profilo collegato appartiene a un solo cliente: impossibile pubblicare sul profilo di un altro
+    uniqueIndex("social_accounts_external").on(t.platform, t.externalId),
+  ],
 );
 
 /** Valori giornalieri per canale (follower, reach, clic SEO, sessioni…). */
@@ -698,4 +704,57 @@ export const auditLogs = mysqlTable(
     index("audit_client").on(t.clientId, t.createdAt),
     index("audit_category").on(t.category, t.createdAt),
   ],
+);
+
+// ── Pubblicazione sui social ─────────────────────────────────────────
+
+/** Foto e video caricati per una scheda del piano: file su disco (MEDIA_DIR), serviti a Meta da un indirizzo con chiave. */
+export const mediaAssets = mysqlTable(
+  "media_assets",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+    itemId: int("item_id").references(() => editorialItems.id, { onDelete: "set null" }),
+    kind: mysqlEnum("kind", ["image", "video"]).notNull(),
+    mime: varchar("mime", { length: 60 }).notNull(),
+    fileName: varchar("file_name", { length: 200 }).notNull(),
+    /** Nome del file su disco (casuale). */
+    storageKey: varchar("storage_key", { length: 80 }).notNull().unique(),
+    size: int("size").notNull(),
+    width: int("width"),
+    height: int("height"),
+    /** Ordine nel carosello. */
+    position: int("position").notNull().default(0),
+    createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: created(),
+  },
+  (t) => [index("media_assets_item").on(t.itemId, t.position)],
+);
+
+export const PUBLICATION_STATUSES = ["programmata", "in_corso", "pubblicata", "errore", "annullata"] as const;
+
+/** Una pubblicazione = una scheda su un profilo, a un'ora. Il profilo deve appartenere al cliente della scheda. */
+export const publications = mysqlTable(
+  "publications",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    itemId: int("item_id").notNull().references(() => editorialItems.id, { onDelete: "cascade" }),
+    clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+    socialAccountId: int("social_account_id").notNull().references(() => socialAccounts.id, { onDelete: "cascade" }),
+    status: mysqlEnum("status", PUBLICATION_STATUSES).notNull().default("programmata"),
+    scheduledAt: datetime("scheduled_at").notNull(),
+    /** Fotografia di ciò che si pubblica (formato, testo, file) al momento della programmazione. */
+    format: mysqlEnum("format", FORMATS).notNull(),
+    caption: text("caption"),
+    mediaIds: json("media_ids").$type<number[]>().notNull(),
+    attempts: int("attempts").notNull().default(0),
+    externalId: varchar("external_id", { length: 120 }),
+    permalink: varchar("permalink", { length: 500 }),
+    error: text("error"),
+    publishedAt: datetime("published_at"),
+    createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (t) => [index("publications_due").on(t.status, t.scheduledAt), index("publications_item").on(t.itemId)],
 );

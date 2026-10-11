@@ -30,3 +30,6 @@ export const isViewer = (r: string | null | undefined) => r === "viewer";
 
 /** Sezioni del cliente visibili a un Viewer. */
 export const VIEWER_SECTIONS = ["", "seo", "lead"] as const;
+
+/** Può programmare e pubblicare sui profili dei clienti: Super admin e Administrator sempre, gli User se abilitati. */
+export const canPublishWith = (r: string | null | undefined, canPublish: boolean | null | undefined) => isAdminRole(r) || (r === "user" && !!canPublish);

@@ -9,6 +9,7 @@ import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
+import Switch from '@mui/material/Switch';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import TableRow from '@mui/material/TableRow';
@@ -32,7 +33,7 @@ import { toast } from 'src/components/snackbar';
 import { Scrollbar } from 'src/components/scrollbar';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
-import { addUser, updateUser, resetUserTotp } from './actions';
+import { addUser, updateUser, resetUserTotp, setCanPublish } from './actions';
 import { askConfirm } from 'src/components/custom-dialog';
 
 // ----------------------------------------------------------------------
@@ -66,6 +67,22 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
       else toast.success('Doppio fattore azzerato');
     });
   };
+
+  const togglePublish = (u, value) =>
+    start(async () => {
+      const r = await setCanPublish(u.id, value);
+      if (r?.error) toast.error(r.error);
+      else toast.success(value ? `${u.name} può pubblicare` : `${u.name} non può più pubblicare`);
+    });
+
+  const publishCell = (u) =>
+    u.role === 'superadmin' || u.role === 'admin' ? (
+      <Label color="success">Sempre</Label>
+    ) : u.role === 'user' ? (
+      <Switch size="small" checked={!!u.canPublish} disabled={pending} onChange={(e) => togglePublish(u, e.target.checked)} inputProps={{ 'aria-label': `Può pubblicare: ${u.name}` }} />
+    ) : (
+      <Typography variant="caption" sx={{ color: 'text.disabled' }}>No</Typography>
+    );
 
   const totpLabel = (u) =>
     u.totp ? (
@@ -121,6 +138,10 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
                     <Button size="small" color="inherit" disabled={pending} onClick={() => resetTotp(u)}>Azzera</Button>
                   )}
                 </Stack>
+                <Stack direction="row" spacing={1} sx={{ mt: 1, alignItems: 'center' }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>Pubblica sui social</Typography>
+                  {publishCell(u)}
+                </Stack>
                 {u.role === 'viewer' && (
                   <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
                     {u.clientIds.map((id) => (
@@ -161,6 +182,7 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
                 <TableCell>Email</TableCell>
                 <TableCell>Ruolo</TableCell>
                 <TableCell>Doppio fattore</TableCell>
+                <TableCell>Pubblica sui social</TableCell>
                 <TableCell>Clienti visibili</TableCell>
                 <TableCell>Ultimo accesso</TableCell>
                 <TableCell align="right">Stato</TableCell>
@@ -188,6 +210,7 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
                         </Button>
                       )}
                     </TableCell>
+                    <TableCell>{publishCell(u)}</TableCell>
                     <TableCell sx={{ maxWidth: 260 }}>
                       {u.role === 'viewer' ? (
                         <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5 }}>

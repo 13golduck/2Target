@@ -19,6 +19,9 @@ export async function register() {
   }
   const { bootstrapAdmin } = await import("./lib/bootstrap-admin");
   await bootstrapAdmin().catch((e) => console.error("[admin] creazione non riuscita:", e));
+  // Pubblicazioni programmate: controllo ogni minuto
+  const { startPublishScheduler } = await import("./lib/publishing/scheduler");
+  startPublishScheduler();
   // Messaggio di sistema nell'audit trail: ogni avvio (deploy, riavvio da Plesk) resta tracciato
   const { audit } = await import("./lib/audit");
   const { readFile } = await import("node:fs/promises");

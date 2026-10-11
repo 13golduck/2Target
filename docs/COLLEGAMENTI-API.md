@@ -121,3 +121,28 @@ sincronizzazione; le misure inserite a mano non vengono toccate.
 - Pubblicazione dei post dalla scheda (permessi `instagram_content_publish`, `pages_manage_posts`).
 - Inserzioni Meta in lettura (`ads_read`) e moduli contatto (`leads_retrieval`) per il raccoglitore lead.
 - TikTok (Login Kit + Content Posting API, audit per la pubblicazione pubblica) e LinkedIn.
+
+---
+
+## Pubblicazione su Facebook e Instagram
+
+Dalla scheda di una pubblicazione (piano editoriale) si caricano foto e video, si scelgono i profili e si
+programma l'uscita. **Si possono scegliere solo i profili collegati al cliente della scheda**: un profilo
+appartiene a un solo cliente (2Target rifiuta di collegarlo a un secondo cliente) e il controllo si ripete
+al momento dell'invio.
+
+- **Chi pubblica:** Super admin e Administrator sempre; gli User solo se abilitati in **Utenti → Pubblica sui social**.
+- **Quando:** solo schede in stato «Approvato». Se la scheda torna in bozza, le uscite programmate si annullano;
+  se cambiano data, testo o file, le uscite programmate si aggiornano.
+- **File:** foto JPEG o PNG (convertite in JPEG nel browser, Instagram accetta solo JPEG) fino a 8 MB; video MP4/MOV
+  fino a 100 MB. Stanno in `MEDIA_DIR` (predefinita: `../private/2target-media`, fuori da httpdocs, così i deploy
+  non li cancellano). Meta li scarica da un indirizzo firmato `/api/media/<firma>/<file>`.
+- **Errori:** non si ritentano da soli (rischio di doppio post). Il dettaglio è nell'audit trail, categoria Errori;
+  dalla scheda si può riprovare dopo aver controllato il profilo.
+- **Simulazione:** in locale (`npm run dev`) nulla viene inviato a Meta. In produzione si può forzare con
+  `PUBLISH_DRY_RUN=true`.
+
+**Operazione pianificata su Plesk (necessaria).** L'app controlla le uscite ogni minuto, ma Plesk addormenta
+Node.js quando il sito non riceve visite. Su Plesk: **Operazioni pianificate → Aggiungi attività → Recupera un URL**,
+`https://2target.it/api/cron/publish`, ogni 5 minuti (`*/5 * * * *`). Non serve chiave: pubblica solo ciò che
+è già programmato e arrivato all'ora.

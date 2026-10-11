@@ -27,6 +27,7 @@ import { toast } from 'src/components/snackbar';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { BriefPanel } from './brief-panel';
+import { PublishPanel } from './publish-panel';
 import { DesignReviewPanel } from '../../design-review-panel';
 import { saveItem, deleteItem } from '../../actions';
 
@@ -41,7 +42,7 @@ const L = {
 };
 const STATUS_COLOR = { bozza: 'default', da_approvare: 'warning', approvato: 'info', pubblicato: 'success', annullato: 'error' };
 
-export function ItemView({ saved, client, item, issues, series, personas, options, design }) {
+export function ItemView({ saved, client, item, issues, series, personas, options, design, publishing }) {
   const [isPaid, setIsPaid] = useState(item.isPaid);
   const [destination, setDestination] = useState(item.ctaDestination ?? '');
   const [caption, setCaption] = useState(item.caption ?? '');
@@ -183,7 +184,7 @@ export function ItemView({ saved, client, item, issues, series, personas, option
               <Card>
                 <CardHeader title="Pubblicazione" action={<Label color={STATUS_COLOR[item.status]}>{L.status[item.status]}</Label>} />
                 <Stack spacing={2.5} sx={{ p: 3 }}>
-                  <TextField select name="status" label="Stato" defaultValue={item.status} fullWidth>
+                  <TextField key={item.status} select name="status" label="Stato" defaultValue={item.status} fullWidth>
                     {Object.entries(L.status).map(([k, v]) => <MenuItem key={k} value={k}>{v}</MenuItem>)}
                   </TextField>
                   <TextField name="scheduledAt" type="datetime-local" label="Data e ora (ora italiana)" defaultValue={item.scheduledAt} slotProps={{ inputLabel: { shrink: true } }} fullWidth />
@@ -289,6 +290,11 @@ export function ItemView({ saved, client, item, issues, series, personas, option
             Salva scheda
           </Button>
         </Box>
+      </Box>
+
+      {/* Pubblicazione sui profili del cliente: fuori dal modulo della scheda (ha i suoi pulsanti) */}
+      <Box sx={{ mt: 3 }}>
+        <PublishPanel item={item} client={client} {...publishing} />
       </Box>
 
       {/* Studio grafico: fuori dal modulo della scheda (ha i suoi pulsanti) */}

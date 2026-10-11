@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/db";
-import { CHANNEL_KINDS, connections, socialAccounts } from "@/db/schema";
+import { CHANNEL_KINDS, clients, connections, socialAccounts } from "@/db/schema";
 import { requireWriter } from "@/lib/auth";
 import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import * as google from "@/lib/integrations/google";
@@ -37,15 +37,29 @@ export async function attachChannels(f: FormData) {
   const token = decryptSecret(conn.accessTokenEnc)!;
 
   const ids: number[] = [];
+  const refused: string[] = [];
+  // Un profilo appartiene a un solo cliente: se è già di un altro cliente non si collega
+  const owner = async (kind: string, externalId: string) => {
+    const [o] = await db
+      .select({ clientId: socialAccounts.clientId, name: clients.name })
+      .from(socialAccounts)
+      .innerJoin(clients, eq(clients.id, socialAccounts.clientId))
+      .where(and(eq(socialAccounts.platform, kind as (typeof CHANNEL_KINDS)[number]), eq(socialAccounts.externalId, externalId)));
+    return o && o.clientId !== conn.clientId ? o.name : null;
+  };
   if (conn.provider === "meta") {
     for (const a of await meta.listAssets(token)) {
       if (!chosen.has(`${a.kind}|${a.externalId}`)) continue;
-      ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, a.pictureUrl, encryptSecret(a.pageToken)));
+      const other = await owner(a.kind, a.externalId);
+      if (other) refused.push(`@${a.handle} è già collegato al cliente ${other}`);
+      else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, a.pictureUrl, encryptSecret(a.pageToken)));
     }
   } else {
     for (const a of await google.listAssets(token)) {
       if (!chosen.has(`${a.kind}|${a.externalId}`)) continue;
-      ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, undefined, null));
+      const other = await owner(a.kind, a.externalId);
+      if (other) refused.push(`${a.handle} è già collegato al cliente ${other}`);
+      else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, undefined, null));
     }
   }
 
@@ -55,7 +69,15 @@ export async function attachChannels(f: FormData) {
     await syncChannel(ch).catch(() => undefined);
   }
   await updateKpisFromData(conn.clientId);
-  await audit({ userId: me.id, category: "canali", action: "canali.collegati", description: `Collegati ${ids.length} canali da ${conn.provider === "meta" ? "Meta" : "Google"} (${conn.accountName})`, clientId: conn.clientId });
+  await audit({
+    userId: me.id,
+    category: "canali",
+    action: "canali.collegati",
+    description: `Collegati ${ids.length} canali da ${conn.provider === "meta" ? "Meta" : "Google"} (${conn.accountName})${refused.length ? ` · ${refused.length} rifiutati perché di un altro cliente` : ""}`,
+    clientId: conn.clientId,
+    meta: refused.length ? { rifiutati: refused } : null,
+  });
+  if (refused.length) redirect(`${path(conn.clientId)}?errore=${encodeURIComponent(`Non collegati: ${refused.join("; ")}. Un profilo può appartenere a un solo cliente.`)}`);
   redirect(path(conn.clientId));
 }
 

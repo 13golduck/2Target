@@ -19,11 +19,21 @@ export async function GET() {
     const who = msg.match(/for user '([^']*)'@'([^']*)'/);
     if (who) database += ` (MariaDB ha rifiutato ${who[1]}@${who[2]}${/using password: NO/.test(msg) ? ", senza password" : ""})`;
   }
+  // Cartella di foto e video da pubblicare (fuori dall'app): deve essere scrivibile
+  let media = "ok";
+  try {
+    const { access, constants } = await import("node:fs/promises");
+    const { ensureMediaDir } = await import("@/lib/media");
+    await access(await ensureMediaDir(), constants.W_OK);
+  } catch (e) {
+    media = `cartella dei file non scrivibile (${errorCode(e)})`;
+  }
   const startup = getStartupError();
   const set = (k: string) => Boolean(process.env[k]?.trim());
   const body = {
     database,
     migrazioni: startup ? explainDbError(startup) : "ok",
+    media,
     databaseUrl: database === "ok" ? undefined : describeDatabaseUrl(),
     variabili: {
       DATABASE_URL: set("DATABASE_URL"),

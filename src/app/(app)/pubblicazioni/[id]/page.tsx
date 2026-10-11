@@ -1,11 +1,15 @@
 import { requireWriter } from "@/lib/auth";
+import { inArray } from "drizzle-orm";
+import { previewMediaUrl } from "@/lib/media";
+import { isDryRun } from "@/lib/publishing/meta-publish";
+import { canPublishWith } from "@/lib/roles";
 import { notFound } from "next/navigation";
-import { desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import * as s from "@/db/schema";
 import { AD_BUTTONS_BY_DESTINATION, itemIssues } from "@/lib/editorial-plan";
-import { toRomeInput } from "@/lib/format";
+import { nowDate, toRomeInput } from "@/lib/format";
 import { FUNNEL_STAGES } from "@/lib/funnel";
 import { toPlanItem } from "@/lib/plan-adapter";
 import { isAiConfigured } from "@/lib/ai/claude";
@@ -17,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 }
 
 export default async function ItemPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ salvato?: string }> }) {
-  await requireWriter();
+  const me = await requireWriter();
   const id = Number((await params).id);
   const { salvato } = await searchParams;
   const [item] = await db.select().from(s.editorialItems).where(eq(s.editorialItems.id, id));
@@ -27,6 +31,14 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
   const personas = await db.select({ id: s.buyerPersonas.id, name: s.buyerPersonas.name }).from(s.buyerPersonas).where(eq(s.buyerPersonas.clientId, item.clientId));
   const [kit] = await db.select({ clientId: s.brandKits.clientId }).from(s.brandKits).where(eq(s.brandKits.clientId, item.clientId));
   const reviews = await db.select().from(s.designReviews).where(eq(s.designReviews.itemId, id)).orderBy(desc(s.designReviews.id)).limit(10);
+  const [meRow] = await db.select({ canPublish: s.users.canPublish }).from(s.users).where(eq(s.users.id, me.id));
+  // Solo i profili di QUESTO cliente: non si può scegliere il profilo di un altro
+  const channels = await db
+    .select()
+    .from(s.socialAccounts)
+    .where(and(eq(s.socialAccounts.clientId, item.clientId), inArray(s.socialAccounts.platform, ["facebook", "instagram"])));
+  const media = await db.select().from(s.mediaAssets).where(eq(s.mediaAssets.itemId, id)).orderBy(asc(s.mediaAssets.position));
+  const pubs = await db.select().from(s.publications).where(eq(s.publications.itemId, id)).orderBy(desc(s.publications.id));
   const issues = itemIssues(toPlanItem(item)).map((i) => ({ level: i.level, message: i.message.replace(`"${item.title}": `, "") }));
 
   return (
@@ -46,6 +58,31 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
         aiConfigured: isAiConfigured(),
         hasBrandKit: !!kit,
         reviews: reviews.map((r) => ({ id: r.id, fileName: r.fileName, thumb: r.thumb, result: r.result, createdAt: r.createdAt.toISOString() })),
+      }}
+      publishing={{
+        canPublish: canPublishWith(me.role, meRow?.canPublish),
+        dryRun: isDryRun(),
+        scheduledAt: item.scheduledAt?.toISOString() ?? null,
+        scheduledFuture: !!item.scheduledAt && item.scheduledAt.getTime() > nowDate().getTime() + 60_000,
+        channels: channels.map((c) => ({
+          id: c.id,
+          platform: c.platform,
+          handle: c.handle,
+          name: c.name,
+          pictureUrl: c.pictureUrl,
+          ready: c.connected && !!c.assetTokenEnc && !!c.externalId,
+        })),
+        media: media.map((m) => ({ id: m.id, kind: m.kind, mime: m.mime, fileName: m.fileName, width: m.width, height: m.height, size: m.size, url: previewMediaUrl(m.id) })),
+        publications: pubs.map((p) => ({
+          id: p.id,
+          socialAccountId: p.socialAccountId,
+          status: p.status,
+          scheduledAt: p.scheduledAt.toISOString(),
+          publishedAt: p.publishedAt?.toISOString() ?? null,
+          permalink: p.permalink,
+          error: p.error,
+          files: p.mediaIds.length,
+        })),
       }}
       series={series}
       personas={personas}

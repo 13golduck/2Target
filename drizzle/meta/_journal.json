@@ -127,6 +127,13 @@
       "when": 1791711695352,
       "tag": "0017_registro_unico",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1791717047289,
+      "tag": "0018_pubblicazione_social",
+      "breakpoints": true
     }
   ]
 }

@@ -8,10 +8,13 @@ const { auth } = NextAuth(authConfig);
 
 // /api/cron ha una sua chiave (CRON_SECRET); /api/lead riceve i moduli dei siti dei clienti (chiave per cliente)
 const PUBLIC = ["/login", "/api/auth", "/api/cron", "/api/lead", "/api/stato"];
+const SIGNED_MEDIA = /^\/api\/media\/[\w-]{22}\/[\w-]+\.(jpg|png|mp4|mov)$/;
 
 export default auth((request) => {
   const { pathname, search } = request.nextUrl;
   if (PUBLIC.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return NextResponse.next();
+  // File da pubblicare: Meta li scarica senza accesso, ma solo con l'indirizzo firmato
+  if (SIGNED_MEDIA.test(pathname)) return NextResponse.next();
 
   if (!request.auth?.user) {
     // Dietro nginx/Passenger l'URL interno è 127.0.0.1: il redirect usa il dominio reale
