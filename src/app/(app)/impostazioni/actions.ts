@@ -6,7 +6,8 @@ import { headers } from "next/headers";
 
 import { requireUser } from "@/lib/auth";
 import { isAdminRole } from "@/lib/roles";
-import { DEFAULT_LIMITS, saveLimits } from "@/lib/ai/budget";
+import { DEFAULT_LIMITS, getLimits, saveLimits } from "@/lib/ai/budget";
+import { audit } from "@/lib/audit";
 import { DEFAULT_METHOD, saveMethodology } from "@/lib/ai/metodologia";
 import { consumeLoginCode, requestLoginCode } from "@/lib/login-codes";
 import { grantSettingsAccess, revokeSettingsAccess, settingsUnlocked } from "@/lib/settings-access";
@@ -45,15 +46,21 @@ export async function verifySettingsCode(f: FormData) {
   const me = await adminEmail();
   if (!me) return { error: "Solo un amministratore può entrare in Impostazioni" };
   const user = await consumeLoginCode(me.email, str(f, "code"));
-  if (!user || user.id !== me.id) return { error: "Codice non valido o scaduto. Controlla o chiedine uno nuovo." };
+  if (!user || user.id !== me.id) {
+    await audit({ userId: me.id, category: "impostazioni", action: "impostazioni.codice_errato", description: "Codice errato per entrare in Impostazioni" });
+    return { error: "Codice non valido o scaduto. Controlla o chiedine uno nuovo." };
+  }
   await grantSettingsAccess(me.id);
+  await audit({ userId: me.id, category: "impostazioni", action: "impostazioni.sblocco", description: "Entrato in Impostazioni con il codice email" });
   revalidatePath("/impostazioni");
   return { ok: true };
 }
 
 /** Richiude subito le Impostazioni. */
 export async function lockSettings() {
+  const me = await requireUser();
   await revokeSettingsAccess();
+  await audit({ userId: me.id, category: "impostazioni", action: "impostazioni.chiuse", description: "Uscito da Impostazioni" });
   revalidatePath("/impostazioni");
 }
 
@@ -86,6 +93,14 @@ export async function saveMail(f: FormData) {
     me.id,
   );
   if (firstSetup) await grantSettingsAccess(me.id);
+  // Solo i dati non segreti: le credenziali non finiscono mai nell'audit
+  await audit({
+    userId: me.id,
+    category: "impostazioni",
+    action: "email.configurazione",
+    description: `Modificato l'invio email (${preset}, mittente ${from || "—"})${str(f, "pass") || str(f, "clientSecret") ? ": credenziali aggiornate" : ""}`,
+    meta: { preset, host: str(f, "host") || null, port, user: str(f, "user").toLowerCase() || null },
+  });
   revalidatePath("/impostazioni");
   return { ok: true, savedAt: new Date().toISOString() };
 }
@@ -104,11 +119,13 @@ export async function testMail() {
       `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:24px"><p style="font-size:16px">Ciao ${u.name.replace(/[<>&]/g, "")},</p><p style="font-size:16px">l'invio delle email di <b>2Target</b> funziona. Da ora l'accesso avviene con il codice via email.</p><p style="color:#919EAB;font-size:12px">2Target · powered by Golduck</p></div>`,
     );
     await saveMailTest({ ok: true, at: new Date().toISOString(), to: u.email }, me.id);
+    await audit({ userId: me.id, category: "impostazioni", action: "email.prova", description: `Email di prova inviata a ${u.email}` });
     revalidatePath("/impostazioni");
     return { ok: true, to: u.email };
   } catch (e) {
     const error = explainMailError(e);
     await saveMailTest({ ok: false, at: new Date().toISOString(), error }, me.id);
+    await audit({ userId: me.id, category: "impostazioni", action: "email.prova", description: `Email di prova non riuscita: ${error}` });
     revalidatePath("/impostazioni");
     return { error };
   }
@@ -134,7 +151,9 @@ export async function updateLimits(f: FormData) {
     maxConcurrent: Math.max(1, Math.round(num(f, "maxConcurrent", DEFAULT_LIMITS.maxConcurrent))),
     maxCheckupsPerDay: Math.max(1, Math.round(num(f, "maxCheckupsPerDay", DEFAULT_LIMITS.maxCheckupsPerDay))),
   };
+  const before = await getLimits();
   await saveLimits(limits, me.id);
+  await audit({ userId: me.id, category: "impostazioni", action: "ai.limiti", description: "Modificati i limiti di spesa AI", meta: { prima: before, dopo: limits } });
   revalidatePath("/impostazioni");
   revalidatePath("/consumi-ai");
   return { ok: true };
@@ -150,6 +169,7 @@ export async function updateMethodology(f: FormData) {
   if (text.trim().length < 200) return { error: "La metodologia è troppo corta: almeno qualche paragrafo" };
   if (text.length > 30_000) return { error: "La metodologia è troppo lunga (massimo 30.000 caratteri)" };
   const version = await saveMethodology(text, me.id);
+  await audit({ userId: me.id, category: "impostazioni", action: "metodologia.versione", description: f.get("reset") === "1" ? `Metodologia riportata al testo Golduck originale (versione ${version})` : `Salvata la metodologia, versione ${version}` });
   revalidatePath("/impostazioni");
   return { ok: true, version };
 }

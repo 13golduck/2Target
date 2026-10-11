@@ -13,6 +13,7 @@ import { isAiConfigured } from "@/lib/ai/claude";
 import { askQuestions, rewriteSection, runDeepResearch, runRecon, runWriting } from "@/lib/ai/checkup-agent";
 import { cancelJob, isRunning, runningCount, startJob } from "@/lib/ai/jobs";
 import { assertBudget, getLimits, BudgetError } from "@/lib/ai/budget";
+import { audit } from "@/lib/audit";
 
 const str = (f: FormData, k: string) => {
   const v = String(f.get(k) ?? "").trim();
@@ -106,6 +107,7 @@ async function startAiCheckupLocked(f: FormData, clientId: number, userId: numbe
     .insert(checkups)
     .values({ clientId, period: monthLabel(), aiMode: mode, aiState: "ricognizione", aiLog: [], previousId: prev?.id ?? null, register, reasoning, methodVersion });
   startJob(r.insertId, "ricognizione", () => runRecon(r.insertId), userId);
+  await audit({ userId, category: "checkup", action: "checkup.avvio", description: `Avviato il check-up AI (modello ${mode}, ragionamento ${reasoning}, registro ${register}, metodologia v${methodVersion})`, clientId, target: `checkup:${r.insertId}` });
   revalidatePath(path(clientId));
   return { ok: true, checkupId: r.insertId };
 }
@@ -140,6 +142,7 @@ export async function continueAiCheckup(f: FormData) {
   const blocked = await preflight(c.clientId, checkupId);
   if (blocked) return { error: blocked };
 
+  await audit({ userId: me.id, category: "checkup", action: "checkup.risposte", description: next === "domande" ? "Inviate le risposte: chiesto un altro giro di domande" : "Inviate le risposte: avviata ricerca approfondita e scrittura", clientId: c.clientId, target: `checkup:${checkupId}` });
   if (next === "domande") {
     if (c.questionRound >= 3) return { error: "Bastano tre giri di domande: avvia la ricerca approfondita" };
     startJob(checkupId, "ricognizione", async () => {
@@ -169,6 +172,7 @@ export async function resumeAiCheckup(f: FormData) {
   const blocked = await preflight(c.clientId, checkupId);
   if (blocked) return { error: blocked };
   const open = await db.select({ id: checkupQuestions.id }).from(checkupQuestions).where(eq(checkupQuestions.checkupId, checkupId));
+  await audit({ userId: me.id, category: "checkup", action: "checkup.ripresa", description: `Ripreso il check-up AI (era: ${c.aiState})`, clientId: c.clientId, target: `checkup:${checkupId}`, meta: c.aiError ? { errore: c.aiError.slice(0, 300) } : null });
 
   if (!c.dossier) startJob(checkupId, "ricognizione", () => runRecon(checkupId), me.id);
   else if (!open.length) startJob(checkupId, "ricognizione", async () => void (await askQuestions(checkupId, 1)), me.id);
@@ -184,9 +188,10 @@ export async function resumeAiCheckup(f: FormData) {
 
 /** Interrompe il check-up: ferma la chiamata all'AI in corso e non avvia le fasi successive. */
 export async function stopAiCheckup(checkupId: number) {
-  await requireWriter();
+  const me = await requireWriter();
   const c = await checkupOf(checkupId);
   const wasRunning = cancelJob(checkupId);
+  await audit({ userId: me.id, category: "checkup", action: "checkup.interrotto", description: "Interrotto il check-up AI", clientId: c.clientId, target: `checkup:${checkupId}` });
   if (wasRunning) await db.update(checkups).set({ aiProgress: "Interruzione in corso…" }).where(eq(checkups.id, checkupId));
   // Se non stava lavorando (es. in attesa delle risposte) si chiude subito
   if (!wasRunning) await db.update(checkups).set({ aiState: "interrotto", aiProgress: "Interrotto dal consulente" }).where(eq(checkups.id, checkupId));
@@ -196,18 +201,22 @@ export async function stopAiCheckup(checkupId: number) {
 
 /** Archivia (o ripristina) un check-up. Quelli ancora aperti vanno prima interrotti. */
 export async function archiveCheckup(checkupId: number, archive: boolean) {
-  await requireWriter();
+  const me = await requireWriter();
   const c = await checkupOf(checkupId);
-  if (archive && (isRunning(checkupId) || (ACTIVE_STATES as readonly string[]).includes(c.aiState))) {
-    return { error: "Il check-up è ancora in corso: interrompilo prima di archiviarlo" };
-  }
-  await db.update(checkups).set({ archivedAt: archive ? new Date() : null }).where(eq(checkups.id, checkupId));
+  if (archive && isRunning(checkupId)) return { error: "L'AI sta lavorando su questo check-up: interrompilo prima di archiviarlo" };
+  // Rimasto a metà (riavvio dell'app, attesa risposte): si chiude come interrotto, così non blocca un nuovo check-up
+  const stale = archive && (ACTIVE_STATES as readonly string[]).includes(c.aiState);
+  await db
+    .update(checkups)
+    .set({ archivedAt: archive ? new Date() : null, ...(stale && { aiState: "interrotto" as const, aiProgress: "Archiviato senza completare" }) })
+    .where(eq(checkups.id, checkupId));
+  await audit({ userId: me.id, category: "checkup", action: archive ? "checkup.archiviato" : "checkup.ripristinato", description: archive ? "Check-up archiviato" : "Check-up ripristinato dall'archivio", clientId: c.clientId, target: `checkup:${checkupId}` });
   revalidatePath(path(c.clientId));
   return { ok: true };
 }
 
 export async function reviseSection(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   const checkupId = Number(f.get("checkupId"));
   const sectionKey = String(f.get("sectionKey"));
   const instruction = str(f, "instruction");
@@ -216,6 +225,7 @@ export async function reviseSection(f: FormData) {
   if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic" };
   try {
     await rewriteSection(checkupId, sectionKey, instruction);
+    await audit({ userId: me.id, category: "checkup", action: "checkup.revisione_ai", description: `Sezione «${sectionKey}» riscritta dall'AI su richiesta`, clientId: c.clientId, target: `checkup:${checkupId}`, meta: { istruzione: instruction.slice(0, 300) } });
   } catch (e) {
     return { error: (e as Error).message };
   }

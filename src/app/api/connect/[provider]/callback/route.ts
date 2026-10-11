@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { audit } from "@/lib/audit";
 
 import { db } from "@/db";
 import { connections } from "@/db/schema";
@@ -66,6 +67,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
       .select({ id: connections.id })
       .from(connections)
       .where(and(eq(connections.clientId, state.clientId), eq(connections.provider, values.provider), eq(connections.externalUserId, values.externalUserId)));
+    await audit({ userId: Number(session.user.id), category: "canali", action: "collegamento.nuovo", description: `Collegato l'account ${provider === "meta" ? "Meta" : "Google"} «${grant.accountName}»`, clientId: state.clientId, target: `collegamento:${row.id}` });
     const res = back(state.clientId, `scegli=${row.id}`);
     res.cookies.delete({ name: "oauth_nonce", path: "/api/connect" });
     return res;

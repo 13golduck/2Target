@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/db";
 import { clients, LEAD_SOURCES, leadEvents, leads } from "@/db/schema";
+import { audit } from "@/lib/audit";
 
 // Raccoglitore pubblico dei lead: i moduli del sito del cliente inviano qui (JSON o form).
 //   POST /api/lead/<chiave del cliente>
@@ -86,6 +87,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     stageChangedAt: now,
   });
   await db.insert(leadEvents).values({ leadId: r.insertId, toStage: "nuovo", at: now });
+  await audit({ userId: null, actorLabel: "Modulo del sito", category: "lead", action: "lead.dal_sito", description: `Lead ricevuto dal sito: «${get("name") ?? get("email") ?? get("phone")}»`, clientId: client.id, target: `lead:${r.insertId}` });
 
   // Modulo HTML classico: torna alla pagina di ringraziamento del sito, se indicata e dello stesso sito
   const redirect = get("redirect", 500);

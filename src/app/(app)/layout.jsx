@@ -32,6 +32,7 @@ export default async function AppLayout({ children }) {
           ? [
               { title: "Utenti", path: "/utenti", icon: <NavIcon name="ic-user" /> },
               { title: "Impostazioni", path: "/impostazioni", icon: <NavIcon name="ic-settings" /> },
+              { title: "Audit trail", path: "/audit", icon: <NavIcon name="ic-file" /> },
             ]
           : []),
         { title: "Registro errori", path: "/errori", icon: <NavIcon name="ic-disabled" /> },

@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { userClients, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { ASSIGNABLE_ROLES, isAdminRole, type Role } from "@/lib/roles";
+import { audit } from "@/lib/audit";
 
 async function requireAdmin() {
   const me = await requireUser();
@@ -25,8 +26,10 @@ async function setClients(userId: number, role: Role, clientIds: number[]) {
   }
 }
 
+const ROLE_LABEL: Record<string, string> = { superadmin: "Super admin", admin: "Administrator", user: "User", viewer: "Viewer" };
+
 export async function addUser(f: FormData) {
-  await requireAdmin();
+  const me = await requireAdmin();
   const email = String(f.get("email") ?? "").trim().toLowerCase();
   const name = String(f.get("name") ?? "").trim();
   const role = pickRole(f.get("role"));
@@ -41,6 +44,14 @@ export async function addUser(f: FormData) {
   else await db.insert(users).values({ email, name, role });
   const [saved] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
   await setClients(saved.id, role, clientIds);
+  await audit({
+    userId: me.id,
+    category: "utenti",
+    action: existing ? "utente.riattivato" : "utente.nuovo",
+    description: `${existing ? "Aggiornato e riattivato" : "Aggiunto"} l'utente ${name} <${email}> come ${ROLE_LABEL[role]}`,
+    target: `utente:${saved.id}`,
+    meta: role === "viewer" ? { clienti: clientIds } : null,
+  });
   revalidatePath("/utenti");
   return { ok: true };
 }
@@ -59,8 +70,24 @@ export async function updateUser(f: FormData) {
   if (id === me.id && (!active || !isAdminRole(role))) return { error: "Non puoi togliere a te stesso l'accesso da amministratore" };
   if (role === "viewer" && !clientIds.length) return { error: "Scegli almeno un cliente da mostrare al Viewer" };
 
+  const oldClients = (await db.select({ id: userClients.clientId }).from(userClients).where(eq(userClients.userId, id))).map((r) => r.id).sort();
   await db.update(users).set({ role, active }).where(eq(users.id, id));
   await setClients(id, role, clientIds);
+  const changes = [
+    target.role !== role && `ruolo ${ROLE_LABEL[target.role]} → ${ROLE_LABEL[role]}`,
+    target.active !== active && (active ? "riattivato" : "disattivato"),
+    role === "viewer" && oldClients.join(",") !== [...clientIds].sort().join(",") && "clienti visibili cambiati",
+  ].filter(Boolean);
+  if (changes.length) {
+    await audit({
+      userId: me.id,
+      category: "utenti",
+      action: target.active !== active ? (active ? "utente.riattivato" : "utente.disattivato") : "utente.ruolo",
+      description: `${target.name} <${target.email}>: ${changes.join(", ")}`,
+      target: `utente:${id}`,
+      meta: { prima: { ruolo: target.role, attivo: target.active, clienti: oldClients }, dopo: { ruolo: role, attivo: active, clienti: role === "viewer" ? clientIds : [] } },
+    });
+  }
   revalidatePath("/utenti");
   return { ok: true };
 }
@@ -72,6 +99,7 @@ export async function resetUserTotp(id: number) {
   if (!target) return { error: "Utente non trovato" };
   if (target.role === "superadmin" && target.id !== me.id) return { error: "Il Super admin non può essere modificato" };
   await db.update(users).set({ totpSecret: null, totpEnabledAt: null, totpRecovery: null }).where(eq(users.id, id));
+  await audit({ userId: me.id, category: "utenti", action: "2fa.azzerato", description: `Azzerato il doppio fattore di ${target.name} <${target.email}>`, target: `utente:${id}` });
   revalidatePath("/utenti");
   return { ok: true };
 }

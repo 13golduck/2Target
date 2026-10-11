@@ -11,6 +11,7 @@ import { isAiConfigured } from "@/lib/ai/claude";
 import { draftBrandKit, generateBrief, reviewDesign } from "@/lib/ai/designer";
 import { BrandKitSchema } from "@/lib/design-types";
 import { logError } from "@/lib/error-log";
+import { audit } from "@/lib/audit";
 
 // Studio grafico: brand kit, brief grafici e revisioni (Senior Graphic Designer AI).
 
@@ -41,6 +42,7 @@ export async function saveBrandKit(f: FormData) {
     set.logo = logoField;
   }
   await db.insert(brandKits).values({ clientId, ...set }).onDuplicateKeyUpdate({ set });
+  await audit({ userId: me.id, category: "grafica", action: "brandkit.salvato", description: `Salvato il brand kit${logoField === "" ? " (logo rimosso)" : logoField !== "keep" ? " con un nuovo logo" : ""}`, clientId });
   revalidatePath(`/clienti/${clientId}/brand`);
   return { ok: true };
 }
@@ -61,6 +63,8 @@ export async function createBrief(itemId: number, note?: string) {
   if (!isAiConfigured()) return NO_AI;
   try {
     const brief = await generateBrief(itemId, note?.slice(0, 800));
+    const [it] = await db.select({ clientId: editorialItems.clientId, title: editorialItems.title }).from(editorialItems).where(eq(editorialItems.id, itemId));
+    await audit({ userId: me.id, category: "grafica", action: "brief.generato", description: `Brief grafico generato per «${it?.title ?? itemId}»`, clientId: it?.clientId, target: `pubblicazione:${itemId}` });
     revalidatePath(`/pubblicazioni/${itemId}`);
     return { ok: true, brief };
   } catch (e) {
@@ -94,6 +98,7 @@ export async function reviewUpload(f: FormData) {
       result,
       createdBy: me.id,
     });
+    await audit({ userId: me.id, category: "grafica", action: "revisione.nuova", description: `Revisione grafica AI di «${file.name.slice(0, 120)}»`, clientId, target: itemId ? `pubblicazione:${itemId}` : null });
     revalidatePath(`/clienti/${clientId}/brand`);
     if (itemId) revalidatePath(`/pubblicazioni/${itemId}`);
     return { ok: true, result };
@@ -103,10 +108,11 @@ export async function reviewUpload(f: FormData) {
 }
 
 export async function deleteReview(id: number) {
-  await requireWriter();
+  const me = await requireWriter();
   const [r] = await db.select({ clientId: designReviews.clientId, itemId: designReviews.itemId }).from(designReviews).where(eq(designReviews.id, id));
   if (!r) return;
   await db.delete(designReviews).where(eq(designReviews.id, id));
+  await audit({ userId: me.id, category: "grafica", action: "revisione.eliminata", description: "Eliminata una revisione grafica", clientId: r.clientId });
   revalidatePath(`/clienti/${r.clientId}/brand`);
   if (r.itemId) revalidatePath(`/pubblicazioni/${r.itemId}`);
 }

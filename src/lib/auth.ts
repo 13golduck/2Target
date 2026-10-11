@@ -11,6 +11,7 @@ import { authConfig } from "./auth.config";
 import { claimFirstAccess } from "./first-access";
 import { checkLoginCode, consumeLoginCode, failLoginAttempt } from "./login-codes";
 import { verifySecondFactor } from "./two-factor";
+import { audit } from "./audit";
 
 // Accesso senza password: email + codice di 6 cifre ricevuto via email (vedi ./login-codes).
 // I limiti (scadenza, tentativi, richieste) stanno nella tabella login_codes, quindi valgono
@@ -32,6 +33,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           if (!candidate) return null;
           if (!(await verifySecondFactor(candidate, String(credentials?.totp ?? "")))) {
             await failLoginAttempt(candidate.id);
+            await audit({ userId: candidate.id, category: "accesso", action: "accesso.2fa_errato", description: "Accesso non riuscito: codice del doppio fattore errato" });
             return null;
           }
           user = await consumeLoginCode(email, code);
@@ -39,6 +41,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user) return null;
         await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
         const remember = ["on", "true", "1"].includes(String(credentials?.remember ?? ""));
+        await audit({
+          userId: user.id,
+          category: "accesso",
+          action: credentials?.firstAccess === "true" ? "accesso.primo" : "accesso.ok",
+          description: credentials?.firstAccess === "true" ? "Primo accesso: creato l'account master" : `Accesso effettuato${user.totpEnabledAt ? " con doppio fattore" : ""}${remember ? " (ricordami)" : ""}`,
+        });
         return { id: String(user.id), email: user.email, name: user.name, role: user.role, remember };
       },
     }),

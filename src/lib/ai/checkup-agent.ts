@@ -1,4 +1,6 @@
 import "server-only";
+import { logError } from "@/lib/error-log";
+import { audit } from "@/lib/audit";
 import { z } from "zod";
 import { asc, eq } from "drizzle-orm";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
@@ -389,6 +391,12 @@ Dove un dato non è verificato dichiaralo. Niente frasi generiche valide per qua
   } catch (e) {
     if (currentJobSignal()?.aborted) throw e;
     console.error(`[ai] dati del report ${checkupId}:`, e);
+    await logError({
+      area: "Check-up AI",
+      message: `Dati dei grafici del report non generati: ${e instanceof Error ? e.message : String(e)}`,
+      detail: `Check-up ${checkupId}, fase scrittura (dati del report)\n${e instanceof Error ? (e.stack ?? "") : ""}`,
+      path: `/clienti/${client.id}/checkup?id=${checkupId}`,
+    });
     await progress(checkupId, "Dati dei grafici non disponibili: il report userà il testo delle sezioni");
   }
 
@@ -425,6 +433,7 @@ Dove un dato non è verificato dichiaralo. Niente frasi generiche valide per qua
     .update(checkups)
     .set({ aiState: "pronto", aiError: null, status: "in_revisione", completedAt: new Date(), report, kpiSnapshot: await kpiSnapshot(client.id) })
     .where(eq(checkups.id, checkupId));
+  await audit({ userId: null, actorLabel: "AI", category: "checkup", action: "checkup.pronto", description: `Check-up completato dall'AI${report ? "" : " (senza dati dei grafici)"}: pronto per la revisione`, clientId: client.id, target: `checkup:${checkupId}` });
   await progress(checkupId, "Check-up pronto per la revisione");
 }
 

@@ -9,6 +9,7 @@ import { clients, COST_KINDS, LEAD_SOURCES, LEAD_STAGES, leadEvents, leads, mark
 import { requireWriter } from "@/lib/auth";
 import { fromRomeInput } from "@/lib/format";
 import { updateKpisFromData } from "@/lib/integrations/sync";
+import { audit } from "@/lib/audit";
 
 const str = (f: FormData, k: string) => {
   const v = String(f.get(k) ?? "").trim();
@@ -52,11 +53,13 @@ export async function saveLead(f: FormData) {
     if (!old) return { error: "Lead non trovato" };
     await db.update(leads).set(data).where(eq(leads.id, id));
     if (old.stage !== stage) await changeStage(id, old.stage, stage, user.id);
+    await audit({ userId: user.id, category: "lead", action: "lead.modifica", description: `Modificato il lead «${data.name ?? data.email ?? data.phone ?? id}»${old.stage !== stage ? `: ${old.stage} → ${stage}` : ""}`, clientId: old.clientId, target: `lead:${id}` });
     await afterChange(old.clientId);
   } else {
     const [r] = await db.insert(leads).values({ ...data, clientId, stage: "nuovo", stageChangedAt: data.receivedAt });
     await db.insert(leadEvents).values({ leadId: r.insertId, toStage: "nuovo", at: data.receivedAt, userId: user.id });
     if (stage !== "nuovo") await changeStage(r.insertId, "nuovo", stage, user.id);
+    await audit({ userId: user.id, category: "lead", action: "lead.nuovo", description: `Inserito a mano il lead «${data.name ?? data.email ?? data.phone ?? r.insertId}»`, clientId, target: `lead:${r.insertId}` });
     await afterChange(clientId);
   }
   return { ok: true };
@@ -78,41 +81,46 @@ export async function moveLead(id: number, stage: string) {
   const [lead] = await db.select().from(leads).where(eq(leads.id, id));
   if (!lead || !to || lead.stage === to) return;
   await changeStage(id, lead.stage, to, user.id);
+  await audit({ userId: user.id, category: "lead", action: "lead.fase", description: `Lead «${lead.name ?? lead.email ?? id}»: ${lead.stage} → ${to}`, clientId: lead.clientId, target: `lead:${id}` });
   await afterChange(lead.clientId);
 }
 
 export async function deleteLead(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   const [lead] = await db.select().from(leads).where(eq(leads.id, Number(f.get("id"))));
   if (!lead) return;
   await db.delete(leads).where(eq(leads.id, lead.id));
+  await audit({ userId: me.id, category: "lead", action: "lead.eliminato", description: `Eliminato il lead «${lead.name ?? lead.email ?? lead.id}»`, clientId: lead.clientId, target: `lead:${lead.id}` });
   await afterChange(lead.clientId);
 }
 
 export async function addCost(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   const clientId = Number(f.get("clientId"));
   const month = str(f, "month"); // AAAA-MM
   const amount = num(f, "amount");
   const source = oneOf(LEAD_SOURCES, str(f, "source"));
   if (!month || !/^\d{4}-\d{2}$/.test(month) || amount == null || !source) return { error: "Compila mese, fonte e importo" };
+  await audit({ userId: me.id, category: "lead", action: "costo.nuovo", description: `Registrato un costo di ${amount} € (${source}, ${month})`, clientId });
   await db.insert(marketingCosts).values({ clientId, month: `${month}-01`, source, kind: oneOf(COST_KINDS, str(f, "kind")) ?? "inserzioni", amount, notes: str(f, "notes") });
   await afterChange(clientId);
   return { ok: true };
 }
 
 export async function deleteCost(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   const [c] = await db.select().from(marketingCosts).where(eq(marketingCosts.id, Number(f.get("id"))));
   if (!c) return;
   await db.delete(marketingCosts).where(eq(marketingCosts.id, c.id));
+  await audit({ userId: me.id, category: "lead", action: "costo.eliminato", description: `Eliminato un costo di ${c.amount} € (${c.source}, ${String(c.month).slice(0, 7)})`, clientId: c.clientId });
   await afterChange(c.clientId);
 }
 
 /** Crea (o rigenera) la chiave per ricevere i lead dai moduli del sito. */
 export async function regenerateLeadToken(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   const clientId = Number(f.get("clientId"));
   await db.update(clients).set({ leadToken: randomBytes(18).toString("base64url") }).where(eq(clients.id, clientId));
+  await audit({ userId: me.id, category: "lead", action: "lead.chiave", description: "Rigenerata la chiave dei moduli del sito (la vecchia non funziona più)", clientId });
   revalidatePath(path(clientId));
 }

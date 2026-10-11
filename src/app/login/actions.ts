@@ -3,7 +3,8 @@
 import { AuthError } from "next-auth";
 import { headers } from "next/headers";
 
-import { signIn, signOut } from "@/lib/auth";
+import { auth, signIn, signOut } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 import { setupOpen } from "@/lib/first-access";
 import { checkLoginCode, requestLoginCode } from "@/lib/login-codes";
 import { logError } from "@/lib/error-log";
@@ -64,7 +65,10 @@ export async function loginStep(prev: LoginState, formData: FormData): Promise<L
   // Codice email giusto e doppio fattore attivo: si chiede il codice dell'app prima di entrare
   if (prev.step === "code") {
     const user = await checkLoginCode(email, code);
-    if (!user) return { step: "code", email, error: "Codice non valido o scaduto. Controlla o chiedine uno nuovo." };
+    if (!user) {
+      await audit({ userId: null, actorLabel: email.slice(0, 200), category: "accesso", action: "accesso.codice_errato", description: `Accesso non riuscito: codice email errato o scaduto per ${email}` });
+      return { step: "code", email, error: "Codice non valido o scaduto. Controlla o chiedine uno nuovo." };
+    }
     if (user.totpEnabledAt) return { step: "totp", email, code, remember: formData.get("remember") === "on" };
   }
 
@@ -87,5 +91,7 @@ export async function loginStep(prev: LoginState, formData: FormData): Promise<L
 }
 
 export async function logout() {
+  const id = Number((await auth())?.user?.id);
+  if (id) await audit({ userId: id, category: "accesso", action: "accesso.uscita", description: "Uscita dall'app" });
   await signOut({ redirectTo: "/login" });
 }

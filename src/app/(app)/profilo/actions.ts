@@ -10,6 +10,7 @@ import { requireUser } from "@/lib/auth";
 import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import { hashRecovery, newRecoveryCodes, newTotpSecret, otpauthUrl, verifyTotp } from "@/lib/totp";
 import { TOTP_PURPOSE, verifySecondFactor } from "@/lib/two-factor";
+import { audit } from "@/lib/audit";
 
 // Doppio fattore dell'utente collegato: attivazione con QR code, conferma, codici di recupero, disattivazione.
 
@@ -37,6 +38,7 @@ export async function confirmTotp(code: string) {
   if (!verifyTotp(secret, code)) return { error: "Codice non valido: controlla che l'ora del telefono sia giusta e riprova" };
   const codes = newRecoveryCodes();
   await db.update(users).set({ totpEnabledAt: new Date(), totpRecovery: codes.map(hashRecovery) }).where(eq(users.id, user.id));
+  await audit({ userId: user.id, category: "accesso", action: "2fa.attivato", description: "Attivato il doppio fattore di autenticazione" });
   revalidatePath("/profilo");
   revalidatePath("/utenti");
   return { ok: true, codes };
@@ -48,6 +50,7 @@ export async function disableTotp(code: string) {
   if (!user.totpEnabledAt) return { ok: true };
   if (!(await verifySecondFactor(user, code))) return { error: "Codice non valido" };
   await db.update(users).set({ totpSecret: null, totpEnabledAt: null, totpRecovery: null }).where(eq(users.id, user.id));
+  await audit({ userId: user.id, category: "accesso", action: "2fa.disattivato", description: "Disattivato il doppio fattore di autenticazione" });
   revalidatePath("/profilo");
   revalidatePath("/utenti");
   return { ok: true };
@@ -61,6 +64,7 @@ export async function regenerateRecovery(code: string) {
   if (!secret || !verifyTotp(secret, code)) return { error: "Codice dell'app non valido" };
   const codes = newRecoveryCodes();
   await db.update(users).set({ totpRecovery: codes.map(hashRecovery) }).where(eq(users.id, user.id));
+  await audit({ userId: user.id, category: "accesso", action: "2fa.recupero", description: "Generati nuovi codici di recupero del doppio fattore" });
   revalidatePath("/profilo");
   return { ok: true, codes };
 }

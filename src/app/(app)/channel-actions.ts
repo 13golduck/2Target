@@ -11,6 +11,7 @@ import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import * as google from "@/lib/integrations/google";
 import * as meta from "@/lib/integrations/meta";
 import { syncChannel, syncClient, updateKpisFromData } from "@/lib/integrations/sync";
+import { audit } from "@/lib/audit";
 
 const path = (clientId: number) => `/clienti/${clientId}/canali`;
 
@@ -28,7 +29,7 @@ export async function assetsFor(connectionId: number) {
 }
 
 export async function attachChannels(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   const connectionId = Number(f.get("connectionId"));
   const [conn] = await db.select().from(connections).where(eq(connections.id, connectionId));
   if (!conn) return;
@@ -54,6 +55,7 @@ export async function attachChannels(f: FormData) {
     await syncChannel(ch).catch(() => undefined);
   }
   await updateKpisFromData(conn.clientId);
+  await audit({ userId: me.id, category: "canali", action: "canali.collegati", description: `Collegati ${ids.length} canali da ${conn.provider === "meta" ? "Meta" : "Google"} (${conn.accountName})`, clientId: conn.clientId });
   redirect(path(conn.clientId));
 }
 
@@ -105,25 +107,27 @@ export async function syncClientNow(f: FormData) {
 }
 
 export async function removeChannel(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   const [ch] = await db.select().from(socialAccounts).where(eq(socialAccounts.id, Number(f.get("channelId"))));
   if (!ch) return;
   await db.delete(socialAccounts).where(eq(socialAccounts.id, ch.id));
+  await audit({ userId: me.id, category: "canali", action: "canale.rimosso", description: `Rimosso il canale ${ch.platform} «${ch.name ?? ch.handle}»`, clientId: ch.clientId });
   revalidatePath(path(ch.clientId));
 }
 
 export async function removeConnection(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   const [conn] = await db.select().from(connections).where(eq(connections.id, Number(f.get("connectionId"))));
   if (!conn) return;
   // I canali restano (con i dati storici) ma risultano scollegati
   await db.update(socialAccounts).set({ connected: false, assetTokenEnc: null }).where(eq(socialAccounts.connectionId, conn.id));
   await db.delete(connections).where(eq(connections.id, conn.id));
+  await audit({ userId: me.id, category: "canali", action: "collegamento.rimosso", description: `Scollegato l'account ${conn.provider === "meta" ? "Meta" : "Google"} «${conn.accountName}»`, clientId: conn.clientId });
   revalidatePath(path(conn.clientId));
 }
 
 export async function addManualChannel(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   const clientId = Number(f.get("clientId"));
   const platform = String(f.get("platform")) as (typeof CHANNEL_KINDS)[number];
   let handle = String(f.get("handle") ?? "").trim();
@@ -142,6 +146,7 @@ export async function addManualChannel(f: FormData) {
     .insert(socialAccounts)
     .values({ clientId, platform, handle, name: handle })
     .onDuplicateKeyUpdate({ set: { name: handle } });
+  await audit({ userId: me.id, category: "canali", action: "canale.manuale", description: `Aggiunto a mano il canale ${platform} «${handle}»`, clientId });
   if (platform === "website") {
     const [ch] = await db.select().from(socialAccounts).where(r.insertId ? eq(socialAccounts.id, r.insertId) : and(eq(socialAccounts.clientId, clientId), eq(socialAccounts.platform, "website"), eq(socialAccounts.handle, handle)));
     try {

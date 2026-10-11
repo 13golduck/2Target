@@ -682,3 +682,33 @@ export const errorLogs = mysqlTable(
   },
   (t) => [index("error_logs_user").on(t.userId, t.createdAt), index("error_logs_created").on(t.createdAt)],
 );
+
+// Audit trail: chi ha fatto cosa, su quale cliente, quando e da dove. Le voci non si modificano né si cancellano dall'app.
+export const AUDIT_CATEGORIES = ["accesso", "utenti", "impostazioni", "clienti", "checkup", "contenuti", "lead", "canali", "grafica", "sistema"] as const;
+
+export const auditLogs = mysqlTable(
+  "audit_logs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("user_id").references(() => users.id, { onDelete: "set null" }),
+    /** Nome ed email al momento dell'azione: restano leggibili anche se l'utente cambia o viene disattivato. */
+    actor: varchar("actor", { length: 200 }),
+    category: mysqlEnum("category", AUDIT_CATEGORIES).notNull(),
+    /** Codice dell'azione, es. "checkup.avvio", "utente.ruolo". */
+    action: varchar("action", { length: 60 }).notNull(),
+    description: varchar("description", { length: 600 }).notNull(),
+    clientId: int("client_id").references(() => clients.id, { onDelete: "set null" }),
+    /** Oggetto toccato, es. "checkup:12", "lead:40". */
+    target: varchar("target", { length: 80 }),
+    /** Dettagli (valori prima/dopo). Mai segreti. */
+    meta: json("meta").$type<Record<string, unknown>>(),
+    ip: varchar("ip", { length: 64 }),
+    createdAt: created(),
+  },
+  (t) => [
+    index("audit_created").on(t.createdAt),
+    index("audit_user").on(t.userId, t.createdAt),
+    index("audit_client").on(t.clientId, t.createdAt),
+    index("audit_category").on(t.category, t.createdAt),
+  ],
+);

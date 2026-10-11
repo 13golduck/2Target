@@ -359,7 +359,16 @@ function WorkingPanel({ checkup, runs }) {
       </Stack>
       <LinearProgress sx={{ mb: 2 }} />
       {!checkup.running && (
-        <Alert severity="warning" sx={{ mb: 2 }} action={<ResumeButton checkupId={checkup.id} />}>
+        <Alert
+          severity="warning"
+          sx={{ mb: 2 }}
+          action={
+            <Stack direction="row" spacing={0.5}>
+              <ResumeButton checkupId={checkup.id} />
+              <ArchiveButton checkupId={checkup.id} archived={checkup.archived} />
+            </Stack>
+          }
+        >
           Il lavoro risulta interrotto (forse l&apos;app è stata riavviata).
         </Alert>
       )}
@@ -411,7 +420,10 @@ function InterruptedPanel({ checkup }) {
             Il lavoro dell’AI è fermo. Puoi riprenderlo da dove si è fermato oppure lasciarlo così e avviarne uno nuovo.
           </Typography>
         </Box>
-        <ResumeButton checkupId={checkup.id} />
+        <Stack direction="row" spacing={1}>
+          <ResumeButton checkupId={checkup.id} />
+          <ArchiveButton checkupId={checkup.id} archived={checkup.archived} />
+        </Stack>
       </Stack>
     </Card>
   );
@@ -438,13 +450,38 @@ function ResumeButton({ checkupId }) {
   );
 }
 
+/** Archivia un check-up fermo (errore, interrotto o rimasto a metà dopo un riavvio). */
+function ArchiveButton({ checkupId, archived }) {
+  const [pending, start] = useTransition();
+  if (archived) return null;
+  return (
+    <Button
+      color="inherit"
+      size="small"
+      loading={pending}
+      startIcon={<Iconify icon="solar:archive-bold" width={18} />}
+      onClick={() => {
+        if (!confirm('Archiviare questo check-up? Non comparirà più nello storico, ma potrai ritrovarlo in «Archiviati» e ripristinarlo.')) return;
+        start(async () => {
+          const r = await archiveCheckup(checkupId, true);
+          if (r?.error) toast.error(r.error);
+          else toast.success('Check-up archiviato');
+        });
+      }}
+    >
+      Archivia
+    </Button>
+  );
+}
+
 function ErrorPanel({ checkup }) {
   return (
     <Alert severity="error" sx={{ '& .MuiAlert-message': { width: 1 } }}>
       <b>L&apos;AI si è fermata.</b> <Box component="span" sx={{ wordBreak: 'break-word' }}>{checkup.aiError}</Box>
-      <Box sx={{ mt: 1.5 }}>
+      <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
         <ResumeButton checkupId={checkup.id} />
-      </Box>
+        <ArchiveButton checkupId={checkup.id} archived={checkup.archived} />
+      </Stack>
     </Alert>
   );
 }
@@ -681,7 +718,8 @@ function HistoryBar({ history, current, isNew, showArchived }) {
   // Gli archiviati non disturbano: si vedono solo se richiesti (o se è quello aperto)
   const visible = history.filter((h) => showArchived || !h.archived || h.id === currentId);
   const activeOne = history.find((h) => !h.archived && [...WORKING, 'domande'].includes(h.aiState));
-  const canArchive = current && !current.archived && ![...WORKING, 'domande'].includes(current.aiState);
+  // Si può archiviare tutto ciò su cui l'AI non sta lavorando in questo momento (anche se rimasto a metà)
+  const canArchive = current && !current.archived && !current.running;
 
   const toggleArchive = (archive) =>
     start(async () => {
