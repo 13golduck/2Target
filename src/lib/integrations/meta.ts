@@ -180,13 +180,15 @@ export async function syncFacebookPage(pageId: string, token: string) {
   if (followers != null) daily.push({ day: today(), metric: "followers", value: followers });
 
   type FbPost = { id: string; message?: string; created_time: string; permalink_url?: string; full_picture?: string; shares?: { count: number }; reactions?: { summary?: { total_count: number } }; comments?: { summary?: { total_count: number } } };
-  const res = await getJson<{ data: FbPost[] }>(
-    graph(`${pageId}/posts`, {
-      fields: "id,message,created_time,permalink_url,full_picture,shares,reactions.summary(true).limit(0),comments.summary(true).limit(0)",
-      limit: 25,
-      access_token: token,
-    }),
-  );
+  const postsWith = (fields: string) => getJson<{ data: FbPost[] }>(graph(`${pageId}/posts`, { fields, limit: 25, access_token: token }));
+  let res: { data: FbPost[] };
+  try {
+    res = await postsWith("id,message,created_time,permalink_url,full_picture,shares,reactions.summary(true).limit(0),comments.summary(true).limit(0)");
+  } catch (e) {
+    // Reazioni e commenti richiedono pages_read_user_content: senza, si leggono comunque i post (e le condivisioni)
+    if (!(e instanceof Error && /\(#10\)|pages_read_user_content/.test(e.message))) throw e;
+    res = await postsWith("id,message,created_time,permalink_url,full_picture,shares");
+  }
   const posts: PostData[] = res.data.map((p) => {
     const likes = p.reactions?.summary?.total_count ?? 0;
     const comments = p.comments?.summary?.total_count ?? 0;
