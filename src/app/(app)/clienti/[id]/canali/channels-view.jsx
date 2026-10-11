@@ -108,7 +108,8 @@ export function ChannelsView({ clientId, error, configured, connections, channel
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography variant="body2" noWrap>{c.accountName}</Typography>
                         <Typography variant="caption" sx={{ color: c.status === 'attivo' ? 'text.secondary' : 'error.main' }}>
-                          {c.status === 'attivo' ? (c.expiresAt && p.key === 'meta' ? `scade il ${fmtDate(c.expiresAt)}` : 'collegato') : 'da ricollegare'}
+                          {/* Meta: i token delle pagine collegate non scadono; serve ricollegare solo se Meta revoca l'accesso */}
+                          {c.status === 'attivo' ? (p.key === 'meta' ? 'collegato · pagine attive senza scadenza' : 'collegato') : 'da ricollegare'}
                         </Typography>
                       </Box>
                       <Tooltip title="Scegli i canali">
