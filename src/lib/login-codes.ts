@@ -100,3 +100,33 @@ export async function consumeLoginCode(emailRaw: string, codeRaw: string) {
   const [res] = await db.update(loginCodes).set({ usedAt: new Date() }).where(and(eq(loginCodes.id, row.id), isNull(loginCodes.usedAt)));
   return res.affectedRows === 1 ? user : null;
 }
+
+/**
+ * Controlla il codice senza consumarlo (serve a capire se chiedere anche il secondo fattore).
+ * Un codice sbagliato conta come tentativo.
+ */
+export async function checkLoginCode(emailRaw: string, codeRaw: string) {
+  const email = emailRaw.trim().toLowerCase();
+  const code = normalizeCode(codeRaw);
+  if (code.length !== 6) return null;
+  const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  if (!user?.active) return null;
+  const [row] = await db
+    .select()
+    .from(loginCodes)
+    .where(and(eq(loginCodes.userId, user.id), isNull(loginCodes.usedAt)))
+    .orderBy(desc(loginCodes.id))
+    .limit(1);
+  if (!row || row.expiresAt.getTime() < Date.now() || row.attempts >= MAX_ATTEMPTS) return null;
+  if (!codeMatches(code, row.codeHash)) {
+    await db.update(loginCodes).set({ attempts: row.attempts + 1 }).where(eq(loginCodes.id, row.id));
+    return null;
+  }
+  return user;
+}
+
+/** Secondo fattore sbagliato: conta come tentativo sul codice in corso (5 errori lo bloccano). */
+export async function failLoginAttempt(userId: number) {
+  const [row] = await db.select().from(loginCodes).where(and(eq(loginCodes.userId, userId), isNull(loginCodes.usedAt))).orderBy(desc(loginCodes.id)).limit(1);
+  if (row) await db.update(loginCodes).set({ attempts: row.attempts + 1 }).where(eq(loginCodes.id, row.id));
+}

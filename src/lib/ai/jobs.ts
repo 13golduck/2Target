@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { AI_STATES, checkups } from "@/db/schema";
+import { logError } from "@/lib/error-log";
 
 // Lavori lunghi dell'AI eseguiti in background nel processo Node (su Plesk ce n'è uno solo).
 // Lo stato sta nel database: la pagina lo rilegge ogni pochi secondi e si può chiudere e riaprire.
@@ -25,7 +26,7 @@ export class JobCancelled extends Error {
   }
 }
 
-export function startJob(checkupId: number, state: (typeof AI_STATES)[number], job: () => Promise<void>) {
+export function startJob(checkupId: number, state: (typeof AI_STATES)[number], job: () => Promise<void>, userId?: number) {
   if (running.has(checkupId)) return false;
   const controller = new AbortController();
   running.set(checkupId, controller);
@@ -39,6 +40,14 @@ export function startJob(checkupId: number, state: (typeof AI_STATES)[number], j
       } else {
         const message = e instanceof Error ? e.message : String(e);
         console.error(`[ai] check-up ${checkupId}:`, e);
+        const [c] = await db.select({ clientId: checkups.clientId }).from(checkups).where(eq(checkups.id, checkupId));
+        await logError({
+          userId,
+          area: "Check-up AI",
+          message,
+          detail: `Check-up ${checkupId}, fase ${state}\n${e instanceof Error ? (e.stack ?? "") : ""}`,
+          path: c ? `/clienti/${c.clientId}/checkup?id=${checkupId}` : null,
+        });
         await db
           .update(checkups)
           .set({ aiState: "errore", aiError: message.slice(0, 1000), aiProgress: "Interrotto per un errore" })

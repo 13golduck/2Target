@@ -57,7 +57,7 @@ async function activeCheckup(clientId: number) {
 
 /** Dati del cliente + scelta del modello → ricognizione online e prime domande. Un solo check-up aperto per cliente. */
 export async function startAiCheckup(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic (ANTHROPIC_API_KEY): vedi docs/AI-ANTHROPIC.md" };
   const clientId = Number(f.get("clientId"));
   if (starting.has(clientId)) return { error: "Il check-up sta già partendo", checkupId: null };
@@ -65,13 +65,13 @@ export async function startAiCheckup(f: FormData) {
   if (open) return { error: "C'è già un check-up in corso per questo cliente: lo apro. Puoi interromperlo da lì.", checkupId: open };
   starting.add(clientId);
   try {
-    return await startAiCheckupLocked(f, clientId);
+    return await startAiCheckupLocked(f, clientId, me.id);
   } finally {
     starting.delete(clientId);
   }
 }
 
-async function startAiCheckupLocked(f: FormData, clientId: number) {
+async function startAiCheckupLocked(f: FormData, clientId: number, userId: number) {
   const mode = String(f.get("mode")) as (typeof AI_MODES)[number];
   if (!AI_MODES.includes(mode)) return { error: "Scegli il modello" };
   const blocked = await preflight(clientId);
@@ -105,7 +105,7 @@ async function startAiCheckupLocked(f: FormData, clientId: number) {
   const [r] = await db
     .insert(checkups)
     .values({ clientId, period: monthLabel(), aiMode: mode, aiState: "ricognizione", aiLog: [], previousId: prev?.id ?? null, register, reasoning, methodVersion });
-  startJob(r.insertId, "ricognizione", () => runRecon(r.insertId));
+  startJob(r.insertId, "ricognizione", () => runRecon(r.insertId), userId);
   revalidatePath(path(clientId));
   return { ok: true, checkupId: r.insertId };
 }
@@ -130,7 +130,7 @@ export async function saveAnswers(f: FormData) {
 
 /** Dopo le risposte: altre domande (se servono) oppure ricerca approfondita + scrittura. */
 export async function continueAiCheckup(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic (ANTHROPIC_API_KEY): vedi docs/AI-ANTHROPIC.md" };
   await saveAnswers(f);
   const checkupId = Number(f.get("checkupId"));
@@ -148,12 +148,12 @@ export async function continueAiCheckup(f: FormData) {
         await runDeepResearch(checkupId);
         await runWriting(checkupId);
       }
-    });
+    }, me.id);
   } else {
     startJob(checkupId, "ricerca", async () => {
       await runDeepResearch(checkupId);
       await runWriting(checkupId);
-    });
+    }, me.id);
   }
   revalidatePath(path(c.clientId));
   return { ok: true };
@@ -161,7 +161,7 @@ export async function continueAiCheckup(f: FormData) {
 
 /** Riprende dalla fase rimasta a metà (errore o riavvio dell'app). */
 export async function resumeAiCheckup(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic (ANTHROPIC_API_KEY): vedi docs/AI-ANTHROPIC.md" };
   const checkupId = Number(f.get("checkupId"));
   const c = await checkupOf(checkupId);
@@ -170,14 +170,14 @@ export async function resumeAiCheckup(f: FormData) {
   if (blocked) return { error: blocked };
   const open = await db.select({ id: checkupQuestions.id }).from(checkupQuestions).where(eq(checkupQuestions.checkupId, checkupId));
 
-  if (!c.dossier) startJob(checkupId, "ricognizione", () => runRecon(checkupId));
-  else if (!open.length) startJob(checkupId, "ricognizione", async () => void (await askQuestions(checkupId, 1)));
+  if (!c.dossier) startJob(checkupId, "ricognizione", () => runRecon(checkupId), me.id);
+  else if (!open.length) startJob(checkupId, "ricognizione", async () => void (await askQuestions(checkupId, 1)), me.id);
   else if (!c.dossier.includes("# Ricerca approfondita")) {
     // L'errore può essere arrivato durante le domande: se non ci sono risposte si torna lì
     const unanswered = await db.select({ id: checkupQuestions.id }).from(checkupQuestions).where(and(eq(checkupQuestions.checkupId, checkupId), isNull(checkupQuestions.answer)));
     if ((c.aiState === "errore" || c.aiState === "interrotto") && unanswered.length === open.length) await db.update(checkups).set({ aiState: "domande", aiError: null }).where(eq(checkups.id, checkupId));
-    else startJob(checkupId, "ricerca", async () => { await runDeepResearch(checkupId); await runWriting(checkupId); });
-  } else startJob(checkupId, "scrittura", () => runWriting(checkupId));
+    else startJob(checkupId, "ricerca", async () => { await runDeepResearch(checkupId); await runWriting(checkupId); }, me.id);
+  } else startJob(checkupId, "scrittura", () => runWriting(checkupId), me.id);
   revalidatePath(path(c.clientId));
   return { ok: true };
 }
@@ -190,6 +190,18 @@ export async function stopAiCheckup(checkupId: number) {
   if (wasRunning) await db.update(checkups).set({ aiProgress: "Interruzione in corso…" }).where(eq(checkups.id, checkupId));
   // Se non stava lavorando (es. in attesa delle risposte) si chiude subito
   if (!wasRunning) await db.update(checkups).set({ aiState: "interrotto", aiProgress: "Interrotto dal consulente" }).where(eq(checkups.id, checkupId));
+  revalidatePath(path(c.clientId));
+  return { ok: true };
+}
+
+/** Archivia (o ripristina) un check-up. Quelli ancora aperti vanno prima interrotti. */
+export async function archiveCheckup(checkupId: number, archive: boolean) {
+  await requireWriter();
+  const c = await checkupOf(checkupId);
+  if (archive && (isRunning(checkupId) || (ACTIVE_STATES as readonly string[]).includes(c.aiState))) {
+    return { error: "Il check-up è ancora in corso: interrompilo prima di archiviarlo" };
+  }
+  await db.update(checkups).set({ archivedAt: archive ? new Date() : null }).where(eq(checkups.id, checkupId));
   revalidatePath(path(c.clientId));
   return { ok: true };
 }

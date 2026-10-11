@@ -9,7 +9,7 @@ import { CheckupView } from "./checkup-view";
 
 export const metadata = { title: "Check-up" };
 
-export default async function CheckupPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ id?: string; nuovo?: string }> }) {
+export default async function CheckupPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ id?: string; nuovo?: string; archiviati?: string }> }) {
   const clientId = Number((await params).id);
   const sp = await searchParams;
   const [client] = await db.select().from(clients).where(eq(clients.id, clientId));
@@ -33,8 +33,11 @@ export default async function CheckupPage({ params, searchParams }: { params: Pr
     completedAt: c.completedAt?.toISOString() ?? null,
     deliveredAt: c.deliveredAt?.toISOString() ?? null,
     costUsd: Number(costs.find((x) => x.checkupId === c.id)?.cost ?? 0),
+    archived: !!c.archivedAt,
   }));
-  const checkup = sp.nuovo ? undefined : (all.find((c) => c.id === Number(sp.id)) ?? all[0]);
+  // Si apre il più recente non archiviato; gli archiviati restano raggiungibili dallo storico
+  const active = all.filter((c) => !c.archivedAt);
+  const checkup = sp.nuovo ? undefined : (all.find((c) => c.id === Number(sp.id)) ?? active[0]);
   const sections = checkup ? await db.select().from(checkupSections).where(eq(checkupSections.checkupId, checkup.id)) : [];
   const questions = checkup
     ? await db.select().from(checkupQuestions).where(eq(checkupQuestions.checkupId, checkup.id)).orderBy(asc(checkupQuestions.round), asc(checkupQuestions.position))
@@ -45,7 +48,8 @@ export default async function CheckupPage({ params, searchParams }: { params: Pr
     <CheckupView
       aiConfigured={isAiConfigured()}
       history={history}
-      isLatest={!checkup || checkup.id === all[0]?.id}
+      showArchived={sp.archiviati === "1"}
+      isLatest={!checkup || checkup.id === active[0]?.id}
       previous={all.length && !checkup ? { period: all[0].period } : null}
       client={{
         id: client.id,
@@ -72,6 +76,7 @@ export default async function CheckupPage({ params, searchParams }: { params: Pr
               aiLog: checkup.aiLog ?? [],
               aiError: checkup.aiError,
               running: isRunning(checkup.id),
+              archived: !!checkup.archivedAt,
               findings: checkup.findings ?? [],
               sources: checkup.sources ?? [],
               questionRound: checkup.questionRound,

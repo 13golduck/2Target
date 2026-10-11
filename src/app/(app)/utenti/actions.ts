@@ -64,3 +64,14 @@ export async function updateUser(f: FormData) {
   revalidatePath("/utenti");
   return { ok: true };
 }
+
+/** Azzera il doppio fattore di un utente (telefono perso). Il Super admin può farlo solo per sé dal suo profilo. */
+export async function resetUserTotp(id: number) {
+  const me = await requireAdmin();
+  const [target] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  if (!target) return { error: "Utente non trovato" };
+  if (target.role === "superadmin" && target.id !== me.id) return { error: "Il Super admin non può essere modificato" };
+  await db.update(users).set({ totpSecret: null, totpEnabledAt: null, totpRecovery: null }).where(eq(users.id, id));
+  revalidatePath("/utenti");
+  return { ok: true };
+}

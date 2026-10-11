@@ -10,11 +10,16 @@ import { BudgetError } from "@/lib/ai/budget";
 import { isAiConfigured } from "@/lib/ai/claude";
 import { draftBrandKit, generateBrief, reviewDesign } from "@/lib/ai/designer";
 import { BrandKitSchema } from "@/lib/design-types";
+import { logError } from "@/lib/error-log";
 
 // Studio grafico: brand kit, brief grafici e revisioni (Senior Graphic Designer AI).
 
 const NO_AI = { error: "Manca la chiave API di Anthropic: l'AI è spenta (vedi Consumi AI)." };
-const aiError = (e: unknown) => ({ error: e instanceof BudgetError ? e.message : `L'AI non ha risposto: ${e instanceof Error ? e.message : "errore"}` });
+async function aiError(e: unknown, userId: number, what: string) {
+  const error = e instanceof BudgetError ? e.message : `L'AI non ha risposto: ${e instanceof Error ? e.message : "errore"}`;
+  await logError({ userId, area: `Studio grafico: ${what}`, message: error, detail: e instanceof Error ? e.stack : null });
+  return { error };
+}
 const HEX = /^#[0-9a-f]{6}$/i;
 
 export async function saveBrandKit(f: FormData) {
@@ -42,24 +47,24 @@ export async function saveBrandKit(f: FormData) {
 
 /** Proposta dell'AI: non viene salvata, il consulente la rivede nel modulo. */
 export async function proposeBrandKit(clientId: number) {
-  await requireWriter();
+  const me = await requireWriter();
   if (!isAiConfigured()) return NO_AI;
   try {
     return { ok: true, data: await draftBrandKit(clientId) };
   } catch (e) {
-    return aiError(e);
+    return aiError(e, me.id, "brand kit");
   }
 }
 
 export async function createBrief(itemId: number, note?: string) {
-  await requireWriter();
+  const me = await requireWriter();
   if (!isAiConfigured()) return NO_AI;
   try {
     const brief = await generateBrief(itemId, note?.slice(0, 800));
     revalidatePath(`/pubblicazioni/${itemId}`);
     return { ok: true, brief };
   } catch (e) {
-    return aiError(e);
+    return aiError(e, me.id, "brief");
   }
 }
 
@@ -93,7 +98,7 @@ export async function reviewUpload(f: FormData) {
     if (itemId) revalidatePath(`/pubblicazioni/${itemId}`);
     return { ok: true, result };
   } catch (e) {
-    return aiError(e);
+    return aiError(e, me.id, "revisione");
   }
 }
 

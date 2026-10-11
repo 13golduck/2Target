@@ -24,6 +24,7 @@ import { loginStep } from './actions';
 export function LoginView({ returnTo, setup }) {
   const [state, action, pending] = useActionState(loginStep, { step: setup ? 'setup' : 'email' });
   const codeStep = state.step === 'code';
+  const totpStep = state.step === 'totp';
   const setupStep = state.step === 'setup';
 
   return (
@@ -49,7 +50,9 @@ export function LoginView({ returnTo, setup }) {
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             {setupStep
               ? 'Primo accesso: crea l’account master'
-              : codeStep
+              : totpStep
+                ? 'Inserisci il codice della tua app di autenticazione'
+                : codeStep
                 ? 'Inserisci il codice che ti abbiamo inviato'
                 : 'Accedi con la tua email: ti mandiamo un codice'}
           </Typography>
@@ -72,7 +75,7 @@ export function LoginView({ returnTo, setup }) {
             required
             fullWidth
             autoFocus={!codeStep}
-            slotProps={{ input: { readOnly: codeStep } }}
+            slotProps={{ input: { readOnly: codeStep || totpStep } }}
           />
 
           {codeStep && (
@@ -102,10 +105,26 @@ export function LoginView({ returnTo, setup }) {
             </>
           )}
 
+          {totpStep && (
+            <>
+              <Alert severity="info">Il codice email è giusto. Il tuo account ha il doppio fattore: apri l’app (Google o Microsoft Authenticator…) e inserisci il codice di 2Target.</Alert>
+              <TextField
+                name="totp"
+                label="Codice dell’app (6 cifre)"
+                autoComplete="one-time-code"
+                required
+                fullWidth
+                autoFocus
+                helperText="Telefono perso? Inserisci uno dei codici di recupero (formato abcd-efgh)."
+                slotProps={{ htmlInput: { maxLength: 9, style: { letterSpacing: 4, fontSize: 22, textAlign: 'center' } } }}
+              />
+            </>
+          )}
+
           {state.error && <Alert severity="error">{state.error}</Alert>}
 
           <Button type="submit" size="large" variant="contained" color="inherit" loading={pending} fullWidth>
-            {setupStep ? 'Crea account ed entra' : codeStep ? 'Entra' : 'Inviami il codice'}
+            {setupStep ? 'Crea account ed entra' : codeStep || totpStep ? 'Entra' : 'Inviami il codice'}
           </Button>
 
           {codeStep && (

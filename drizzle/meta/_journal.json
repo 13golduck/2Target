@@ -85,6 +85,27 @@
       "when": 1791640605422,
       "tag": "0011_stato_interrotto",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1791700223487,
+      "tag": "0012_archivio_checkup",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1791700348155,
+      "tag": "0013_registro_errori",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1791700581783,
+      "tag": "0014_doppio_fattore",
+      "breakpoints": true
     }
   ]
 }

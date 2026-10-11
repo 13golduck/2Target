@@ -5,7 +5,8 @@ import { headers } from "next/headers";
 
 import { signIn, signOut } from "@/lib/auth";
 import { setupOpen } from "@/lib/first-access";
-import { requestLoginCode } from "@/lib/login-codes";
+import { checkLoginCode, requestLoginCode } from "@/lib/login-codes";
+import { logError } from "@/lib/error-log";
 
 // Limite per indirizzo IP sulle richieste di codice (in memoria: un solo processo Node su Plesk)
 const hits = new Map<string, { n: number; t: number }>();
@@ -20,7 +21,7 @@ function tooMany(ip: string) {
   return h.n > 20;
 }
 
-export type LoginState = { step: "email" | "code" | "setup"; email?: string; error?: string; info?: string };
+export type LoginState = { step: "email" | "code" | "totp" | "setup"; email?: string; code?: string; remember?: boolean; error?: string; info?: string };
 
 /** Primo accesso: crea l'account master con la sola email ed entra senza codice. */
 async function createMaster(email: string): Promise<LoginState> {
@@ -52,22 +53,35 @@ export async function loginStep(prev: LoginState, formData: FormData): Promise<L
       await requestLoginCode(email, ip);
     } catch (e) {
       console.error("[login] invio codice:", e);
+      await logError({ area: "Accesso", message: `Invio del codice non riuscito: ${e instanceof Error ? e.message : String(e)}`, detail: `Email: ${email}`, path: "/login" });
       return { step: "email", email, error: "Non riesco a inviare l'email in questo momento. Riprova o avvisa l'amministratore." };
     }
     // Stessa risposta per email registrate e non: nessuno può scoprire chi è utente
     return { step: "code", email, info: "Se l'indirizzo è registrato ti abbiamo inviato un codice di 6 cifre. Controlla anche lo spam." };
   }
 
+  const code = String(formData.get("code") ?? prev.code ?? "");
+  // Codice email giusto e doppio fattore attivo: si chiede il codice dell'app prima di entrare
+  if (prev.step === "code") {
+    const user = await checkLoginCode(email, code);
+    if (!user) return { step: "code", email, error: "Codice non valido o scaduto. Controlla o chiedine uno nuovo." };
+    if (user.totpEnabledAt) return { step: "totp", email, code, remember: formData.get("remember") === "on" };
+  }
+
   try {
     await signIn("credentials", {
       email,
-      code: formData.get("code"),
-      remember: formData.get("remember") === "on" ? "true" : "false",
+      code,
+      totp: String(formData.get("totp") ?? ""),
+      remember: formData.get("remember") === "on" || (prev.step === "totp" && prev.remember) ? "true" : "false",
       redirectTo: returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/",
     });
     return { step: "code", email };
   } catch (e) {
-    if (e instanceof AuthError) return { step: "code", email, error: "Codice non valido o scaduto. Controlla o chiedine uno nuovo." };
+    if (e instanceof AuthError) {
+      if (prev.step === "totp") return { step: "totp", email, code, remember: prev.remember, error: "Codice dell'app non valido. Riprova o usa un codice di recupero." };
+      return { step: "code", email, error: "Codice non valido o scaduto. Controlla o chiedine uno nuovo." };
+    }
     throw e; // il redirect di Next passa da qui
   }
 }

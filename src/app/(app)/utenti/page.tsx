@@ -30,6 +30,7 @@ export default async function UsersPage() {
         role: u.role,
         active: u.active,
         lastLoginAt: u.lastLoginAt?.toISOString() ?? null,
+        totp: !!u.totpEnabledAt,
         clientIds: links.filter((l) => l.userId === u.id).map((l) => l.clientId),
       }))}
     />

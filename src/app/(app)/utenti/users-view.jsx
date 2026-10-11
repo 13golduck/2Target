@@ -32,7 +32,7 @@ import { toast } from 'src/components/snackbar';
 import { Scrollbar } from 'src/components/scrollbar';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
-import { addUser, updateUser } from './actions';
+import { addUser, updateUser, resetUserTotp } from './actions';
 
 // ----------------------------------------------------------------------
 
@@ -55,6 +55,23 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
     });
 
   const clientName = (id) => clients.find((c) => c.id === id)?.name ?? '—';
+  const withTotp = users.filter((u) => u.totp).length;
+
+  const resetTotp = (u) => {
+    if (!confirm(`Azzerare il doppio fattore di ${u.name}? Al prossimo accesso entrerà con il solo codice email e potrà riattivarlo dal profilo.`)) return;
+    start(async () => {
+      const r = await resetUserTotp(u.id);
+      if (r?.error) toast.error(r.error);
+      else toast.success('Doppio fattore azzerato');
+    });
+  };
+
+  const totpLabel = (u) =>
+    u.totp ? (
+      <Label color="success" startIcon={<Iconify icon="solar:shield-check-bold" />}>Attivo</Label>
+    ) : (
+      <Label color="warning">Non attivo</Label>
+    );
 
   return (
     <DashboardContent>
@@ -72,6 +89,9 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
         <Stack spacing={0.5} sx={{ p: 3, pb: 1 }}>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             Nessuna password: ognuno accede con il codice che riceve via email. Per togliere l&apos;accesso a qualcuno, disattivalo.
+          </Typography>
+          <Typography variant="body2">
+            Doppio fattore attivo: <b>{withTotp}</b> su {users.length} utenti. Ognuno lo attiva da Profilo e sicurezza (menu in alto a destra).
           </Typography>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
             <b>Super admin</b> titolare, intoccabile · <b>Administrator</b> gestisce utenti e impostazioni · <b>User</b> operatore che
@@ -93,6 +113,13 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
                   </Label>
                 </Stack>
                 <Typography variant="body2" sx={{ color: 'text.secondary', wordBreak: 'break-all' }}>{u.email}</Typography>
+                <Stack direction="row" spacing={1} sx={{ mt: 1, alignItems: 'center' }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>Doppio fattore</Typography>
+                  {totpLabel(u)}
+                  {u.totp && !locked && (
+                    <Button size="small" color="inherit" disabled={pending} onClick={() => resetTotp(u)}>Azzera</Button>
+                  )}
+                </Stack>
                 {u.role === 'viewer' && (
                   <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
                     {u.clientIds.map((id) => (
@@ -126,12 +153,13 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
         </Stack>
 
         <Scrollbar sx={{ display: { xs: 'none', md: 'block' } }}>
-          <Table sx={{ minWidth: 820 }}>
+          <Table sx={{ minWidth: 940 }}>
             <TableHead>
               <TableRow>
                 <TableCell>Nome</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>Ruolo</TableCell>
+                <TableCell>Doppio fattore</TableCell>
                 <TableCell>Clienti visibili</TableCell>
                 <TableCell>Ultimo accesso</TableCell>
                 <TableCell align="right">Stato</TableCell>
@@ -150,6 +178,14 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
                       <Label color={ROLE_COLORS[u.role]} startIcon={locked ? <Iconify icon="solar:lock-password-outline" /> : null}>
                         {roleLabels[u.role]}
                       </Label>
+                    </TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                      {totpLabel(u)}
+                      {u.totp && !locked && (
+                        <Button size="small" color="inherit" disabled={pending} onClick={() => resetTotp(u)} sx={{ ml: 0.5 }}>
+                          Azzera
+                        </Button>
+                      )}
                     </TableCell>
                     <TableCell sx={{ maxWidth: 260 }}>
                       {u.role === 'viewer' ? (

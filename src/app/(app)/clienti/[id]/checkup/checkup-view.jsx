@@ -40,7 +40,7 @@ import { Scrollbar } from 'src/components/scrollbar';
 import { StatusBadge } from 'src/components/status-badge';
 
 import { createCheckup, setCheckupStatus, saveCheckupSection } from '../../../actions';
-import { saveAnswers, reviseSection, stopAiCheckup, startAiCheckup, resumeAiCheckup, continueAiCheckup } from '../../../checkup-ai-actions';
+import { saveAnswers, reviseSection, stopAiCheckup, archiveCheckup, startAiCheckup, resumeAiCheckup, continueAiCheckup } from '../../../checkup-ai-actions';
 
 // ----------------------------------------------------------------------
 
@@ -58,7 +58,7 @@ const STEPS = ['Dati del cliente', 'Ricognizione online', 'Domande al consulente
 const STEP_OF = { ricognizione: 1, domande: 2, ricerca: 3, scrittura: 4, pronto: 5 };
 const WORKING = ['ricognizione', 'ricerca', 'scrittura'];
 
-export function CheckupView({ aiConfigured, history, isLatest, previous, client, checkup, questions, runs, template, content }) {
+export function CheckupView({ aiConfigured, history, showArchived, isLatest, previous, client, checkup, questions, runs, template, content }) {
   const router = useRouter();
   const ai = checkup && checkup.aiMode;
   const working = ai && WORKING.includes(checkup.aiState);
@@ -70,7 +70,7 @@ export function CheckupView({ aiConfigured, history, isLatest, previous, client,
     return () => clearInterval(t);
   }, [working, router]);
 
-  const bar = <HistoryBar history={history} currentId={checkup?.id} isNew={!checkup} />;
+  const bar = <HistoryBar history={history} current={checkup} isNew={!checkup} showArchived={showArchived} />;
 
   if (!checkup) {
     return (
@@ -96,10 +96,16 @@ export function CheckupView({ aiConfigured, history, isLatest, previous, client,
       </Button>
     </Card>
   );
-  const banner = !isLatest && (
-    <Alert severity="info" icon={<Iconify icon="solar:clock-circle-bold" />}>
-      Stai guardando un check-up dello storico ({checkup.period}). I dati sono quelli di allora.
+  const banner = checkup.archived ? (
+    <Alert severity="warning" icon={<Iconify icon="solar:archive-bold" />}>
+      Questo check-up è archiviato ({checkup.period}): resta consultabile ma non compare tra quelli su cui si lavora.
     </Alert>
+  ) : (
+    !isLatest && (
+      <Alert severity="info" icon={<Iconify icon="solar:clock-circle-bold" />}>
+        Stai guardando un check-up dello storico{checkup.period ? ` (${checkup.period})` : ''}. I dati sono quelli di allora.
+      </Alert>
+    )
   );
 
   if (!ai) {
@@ -119,12 +125,24 @@ export function CheckupView({ aiConfigured, history, isLatest, previous, client,
     <Stack spacing={3}>
       {bar}
       {banner}
-      <Card sx={{ p: 3 }}>
-        <Stepper activeStep={['errore', 'interrotto'].includes(checkup.aiState) ? -1 : STEP_OF[checkup.aiState] ?? 1} alternativeLabel>
+      <Card sx={{ p: { xs: 2, md: 3 } }}>
+        <Stepper
+          activeStep={['errore', 'interrotto'].includes(checkup.aiState) ? -1 : STEP_OF[checkup.aiState] ?? 1}
+          alternativeLabel
+          sx={{ display: { xs: 'none', md: 'flex' } }}
+        >
           {STEPS.map((s) => (
             <Step key={s}><StepLabel>{s}</StepLabel></Step>
           ))}
         </Stepper>
+        {/* Smartphone: fase corrente e barra di avanzamento al posto dei sei passi */}
+        <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            {checkup.aiState === 'interrotto' ? 'Interrotto' : checkup.aiState === 'errore' ? 'Fermo per un errore' : `Fase ${(STEP_OF[checkup.aiState] ?? 1) + 1} di ${STEPS.length}`}
+          </Typography>
+          <Typography variant="subtitle1">{STEPS[STEP_OF[checkup.aiState] ?? 1]}</Typography>
+          <LinearProgress variant="determinate" value={(((STEP_OF[checkup.aiState] ?? 1) + 1) / STEPS.length) * 100} sx={{ mt: 1, height: 6, borderRadius: 1 }} />
+        </Box>
       </Card>
 
       {checkup.aiState === 'errore' && <ErrorPanel checkup={checkup} />}
@@ -328,7 +346,7 @@ function WorkingPanel({ checkup, runs }) {
   const searches = runs.reduce((t, r) => t + r.webSearches, 0);
   return (
     <Card sx={{ p: 3 }}>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 2 }}>
+      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' }, rowGap: 1.5 }}>
         <Iconify icon="solar:atom-bold-duotone" width={32} sx={{ color: 'primary.main', animation: 'spin 3s linear infinite', '@keyframes spin': { to: { transform: 'rotate(360deg)' } } }} />
         <Box sx={{ flex: 1 }}>
           <Typography variant="h6">{label}</Typography>
@@ -385,8 +403,8 @@ function StopButton({ checkupId, size = 'medium' }) {
 function InterruptedPanel({ checkup }) {
   return (
     <Card sx={{ p: 3 }}>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-        <Iconify icon="solar:stop-circle-bold" width={32} sx={{ color: 'text.disabled' }} />
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { xs: 'flex-start', sm: 'center' } }}>
+        <Iconify icon="solar:stop-circle-bold" width={32} sx={{ color: 'text.disabled', display: { xs: 'none', sm: 'block' } }} />
         <Box sx={{ flex: 1 }}>
           <Typography variant="h6">Check-up interrotto</Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -422,8 +440,11 @@ function ResumeButton({ checkupId }) {
 
 function ErrorPanel({ checkup }) {
   return (
-    <Alert severity="error" action={<ResumeButton checkupId={checkup.id} />}>
-      <b>L&apos;AI si è fermata.</b> {checkup.aiError}
+    <Alert severity="error" sx={{ '& .MuiAlert-message': { width: 1 } }}>
+      <b>L&apos;AI si è fermata.</b> <Box component="span" sx={{ wordBreak: 'break-word' }}>{checkup.aiError}</Box>
+      <Box sx={{ mt: 1.5 }}>
+        <ResumeButton checkupId={checkup.id} />
+      </Box>
     </Alert>
   );
 }
@@ -653,7 +674,22 @@ function Section({ index, section, checkupId, values, filled, withAi, readOnly }
 
 const MODE_SHORT = { opus: 'Opus', sonnet: 'Sonnet', misto: 'Misto' };
 
-function HistoryBar({ history, currentId, isNew }) {
+function HistoryBar({ history, current, isNew, showArchived }) {
+  const [pending, start] = useTransition();
+  const currentId = current?.id;
+  const archivedCount = history.filter((h) => h.archived).length;
+  // Gli archiviati non disturbano: si vedono solo se richiesti (o se è quello aperto)
+  const visible = history.filter((h) => showArchived || !h.archived || h.id === currentId);
+  const activeOne = history.find((h) => !h.archived && [...WORKING, 'domande'].includes(h.aiState));
+  const canArchive = current && !current.archived && ![...WORKING, 'domande'].includes(current.aiState);
+
+  const toggleArchive = (archive) =>
+    start(async () => {
+      const r = await archiveCheckup(current.id, archive);
+      if (r?.error) toast.error(r.error);
+      else toast.success(archive ? 'Check-up archiviato' : 'Check-up ripristinato');
+    });
+
   return (
     <Card sx={{ p: 2 }}>
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ alignItems: { md: 'center' } }}>
@@ -662,37 +698,60 @@ function HistoryBar({ history, currentId, isNew }) {
           <Typography variant="subtitle2">Storico check-up</Typography>
         </Stack>
         <Stack direction="row" spacing={1} sx={{ flex: 1, overflowX: 'auto', py: 0.5 }}>
-          {history.map((h, i) => (
+          {visible.map((h) => (
             <Chip
               key={h.id}
               component={RouterLink}
-              href={`?id=${h.id}`}
+              href={`?id=${h.id}${showArchived ? '&archiviati=1' : ''}`}
               clickable
               color={h.id === currentId ? 'primary' : 'default'}
               variant={h.id === currentId ? 'filled' : 'outlined'}
+              icon={h.archived ? <Iconify icon="solar:archive-bold" width={16} /> : undefined}
               label={
                 <span>
                   {h.period ?? fmtDate(h.createdAt)}
-                  {i === 0 && ' · ultimo'}
+                  {h.id === history[0]?.id && ' · ultimo'}
                   {' · '}
-                  {STATUS[h.status].label.toLowerCase()}
+                  {h.aiState === 'interrotto' ? 'interrotto' : STATUS[h.status].label.toLowerCase()}
                   {h.aiMode && ` · ${MODE_SHORT[h.aiMode]}`}
                   {h.costUsd > 0 && ` · ${h.costUsd.toFixed(2)} $`}
                 </span>
               }
             />
           ))}
+          {archivedCount > 0 && (
+            <Chip
+              component={RouterLink}
+              href={showArchived ? `?id=${currentId ?? ''}` : `?archiviati=1${currentId ? `&id=${currentId}` : ''}`}
+              clickable
+              variant="soft"
+              icon={<Iconify icon="solar:archive-bold" width={16} />}
+              label={showArchived ? 'Nascondi archiviati' : `Archiviati (${archivedCount})`}
+            />
+          )}
         </Stack>
-        <Button
-          component={RouterLink}
-          href="?nuovo=1"
-          variant={isNew ? 'contained' : 'outlined'}
-          startIcon={<Iconify icon="mingcute:add-line" />}
-          sx={{ flexShrink: 0 }}
-          disabled={history[0] && [...WORKING, 'domande'].includes(history[0].aiState)}
-        >
-          Nuovo check-up
-        </Button>
+        <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
+          {current?.archived ? (
+            <Button color="inherit" variant="outlined" loading={pending} onClick={() => toggleArchive(false)} startIcon={<Iconify icon="solar:archive-up-bold" />}>
+              Ripristina
+            </Button>
+          ) : (
+            canArchive && (
+              <Button color="inherit" variant="outlined" loading={pending} onClick={() => toggleArchive(true)} startIcon={<Iconify icon="solar:archive-bold" />}>
+                Archivia
+              </Button>
+            )
+          )}
+          <Button
+            component={RouterLink}
+            href="?nuovo=1"
+            variant={isNew ? 'contained' : 'outlined'}
+            startIcon={<Iconify icon="mingcute:add-line" />}
+            disabled={!!activeOne}
+          >
+            Nuovo check-up
+          </Button>
+        </Stack>
       </Stack>
     </Card>
   );

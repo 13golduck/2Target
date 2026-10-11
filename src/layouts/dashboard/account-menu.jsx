@@ -9,6 +9,9 @@ import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 
+import { RouterLink } from 'src/routes/components';
+
+import { Iconify } from 'src/components/iconify';
 import { CustomPopover } from 'src/components/custom-popover';
 
 // ----------------------------------------------------------------------
@@ -35,6 +38,12 @@ export function AccountMenu({ user, logoutAction }) {
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             {user?.role}
           </Typography>
+        </Box>
+        <Divider sx={{ borderStyle: 'dashed' }} />
+        <Box sx={{ p: 1 }}>
+          <Button component={RouterLink} href="/profilo" onClick={popover.onClose} fullWidth color="inherit" startIcon={<Iconify icon="solar:shield-check-bold" />} sx={{ justifyContent: 'flex-start' }}>
+            Profilo e sicurezza
+          </Button>
         </Box>
         <Divider sx={{ borderStyle: 'dashed' }} />
         <Box component="form" action={logoutAction} sx={{ p: 1 }}>

@@ -1,0 +1,1 @@
+ALTER TABLE `checkups` ADD `archived_at` datetime;

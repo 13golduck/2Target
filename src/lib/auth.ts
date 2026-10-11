@@ -9,7 +9,8 @@ import { userClients, users } from "@/db/schema";
 import { canWrite, isAdminRole, isViewer } from "./roles";
 import { authConfig } from "./auth.config";
 import { claimFirstAccess } from "./first-access";
-import { consumeLoginCode } from "./login-codes";
+import { checkLoginCode, consumeLoginCode, failLoginAttempt } from "./login-codes";
+import { verifySecondFactor } from "./two-factor";
 
 // Accesso senza password: email + codice di 6 cifre ricevuto via email (vedi ./login-codes).
 // I limiti (scadenza, tentativi, richieste) stanno nella tabella login_codes, quindi valgono
@@ -19,13 +20,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
-      credentials: { email: {}, code: {}, remember: {}, firstAccess: {} },
+      credentials: { email: {}, code: {}, totp: {}, remember: {}, firstAccess: {} },
       async authorize(credentials) {
         const email = String(credentials?.email ?? "");
-        const user =
-          credentials?.firstAccess === "true"
-            ? await claimFirstAccess(email)
-            : await consumeLoginCode(email, String(credentials?.code ?? ""));
+        const code = String(credentials?.code ?? "");
+        let user;
+        if (credentials?.firstAccess === "true") user = await claimFirstAccess(email);
+        else {
+          // Prima si controlla il codice email, poi il secondo fattore; il codice si consuma solo se tutto è giusto
+          const candidate = await checkLoginCode(email, code);
+          if (!candidate) return null;
+          if (!(await verifySecondFactor(candidate, String(credentials?.totp ?? "")))) {
+            await failLoginAttempt(candidate.id);
+            return null;
+          }
+          user = await consumeLoginCode(email, code);
+        }
         if (!user) return null;
         await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
         const remember = ["on", "true", "1"].includes(String(credentials?.remember ?? ""));

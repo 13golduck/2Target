@@ -7,6 +7,7 @@ import { isAdminRole, isViewer, ROLE_LABELS } from "@/lib/roles";
 import { NavIcon } from "src/components/nav-icon";
 import { DashboardLayout } from "src/layouts/dashboard";
 import { logout } from "../login/actions";
+import { ErrorReporter } from "./error-reporter";
 
 export default async function AppLayout({ children }) {
   const user = await requireUser();
@@ -33,6 +34,7 @@ export default async function AppLayout({ children }) {
               { title: "Impostazioni", path: "/impostazioni", icon: <NavIcon name="ic-settings" /> },
             ]
           : []),
+        { title: "Registro errori", path: "/errori", icon: <NavIcon name="ic-disabled" /> },
       ],
     },
     {
@@ -63,6 +65,7 @@ export default async function AppLayout({ children }) {
 
   return (
     <DashboardLayout navData={navData} user={{ name: user.name, role: ROLE_LABELS[user.role] ?? user.role }} logoutAction={logout}>
+      <ErrorReporter />
       {children}
     </DashboardLayout>
   );

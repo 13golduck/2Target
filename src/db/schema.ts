@@ -47,6 +47,11 @@ export const users = mysqlTable("users", {
   // superadmin (titolare, intoccabile) > admin > user (operatore) > viewer (cliente, sola lettura)
   role: mysqlEnum("role", ["superadmin", "admin", "user", "viewer"]).notNull().default("user"),
   active: boolean("active").notNull().default(true),
+  /** Doppio fattore (app di autenticazione): segreto cifrato; attivo solo se totpEnabledAt è valorizzato. */
+  totpSecret: text("totp_secret"),
+  totpEnabledAt: datetime("totp_enabled_at"),
+  /** Impronte dei codici di recupero ancora non usati. */
+  totpRecovery: json("totp_recovery").$type<string[]>(),
   lastLoginAt: datetime("last_login_at"),
   createdAt: created(),
 });
@@ -227,6 +232,8 @@ export const checkups = mysqlTable("checkups", {
   completedAt: datetime("completed_at"),
   createdAt: created(),
   deliveredAt: datetime("delivered_at"),
+  /** Archiviato: resta nello storico ma non compare tra quelli su cui si lavora. */
+  archivedAt: datetime("archived_at"),
 });
 
 /** Domande dell'AI al consulente e risposte, per giro. */
@@ -657,4 +664,21 @@ export const designReviews = mysqlTable(
     createdAt: created(),
   },
   (t) => [index("design_reviews_client").on(t.clientId, t.createdAt)],
+);
+
+// ── Registro errori ──────────────────────────────────────────────────
+/** Errori visti dagli utenti o avvenuti sul server. Ogni utente vede i suoi, gli amministratori tutti. */
+export const errorLogs = mysqlTable(
+  "error_logs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("user_id").references(() => users.id, { onDelete: "set null" }),
+    /** Dove: es. "Check-up AI", "Pagina", "Server", "Accesso". */
+    area: varchar("area", { length: 60 }).notNull(),
+    message: varchar("message", { length: 1000 }).notNull(),
+    detail: text("detail"),
+    path: varchar("path", { length: 300 }),
+    createdAt: created(),
+  },
+  (t) => [index("error_logs_user").on(t.userId, t.createdAt), index("error_logs_created").on(t.createdAt)],
 );
