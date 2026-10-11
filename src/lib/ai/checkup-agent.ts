@@ -1,5 +1,6 @@
 import "server-only";
 import { errorDetail, logError } from "@/lib/error-log";
+import { readSite, type SiteReading } from "@/lib/site-reader";
 import { audit } from "@/lib/audit";
 import { z } from "zod";
 import { asc, eq } from "drizzle-orm";
@@ -52,6 +53,11 @@ Principi di lavoro:
 - Le raccomandazioni nascono dai dati: prima l'evidenza, poi la conseguenza operativa.
 - Per i social pubblici annota ciò che si vede: follower, frequenza di pubblicazione, formati, tipo di contenuti,
   interazioni visibili, link in bio, coerenza col posizionamento.
+- Il sito del cliente viene letto direttamente da 2Target (sezione «Sito letto direttamente» negli appunti): è la
+  fonte primaria su sito, offerta e messaggi, anche se il dominio non è indicizzato o la ricerca web non lo trova.
+  Non scrivere che il sito "non si è potuto leggere" se quella sezione contiene pagine; la mancata indicizzazione
+  è una criticità SEO da spiegare (con la causa tecnica se c'è), non un limite dell'analisi. Se la lettura diretta
+  è fallita, riporta il motivo preciso indicato lì (es. HTTP 403, DNS, timeout).
 
 Metodologia Golduck (vincolante: struttura, stile, framework, regole sui dati):
 <metodologia_golduck>
@@ -163,6 +169,14 @@ export async function runRecon(checkupId: number) {
   await guard("ricognizione", "ricerca", mode, client.id, checkupId);
   await progress(checkupId, "Ricognizione online avviata");
 
+  // Prima si entra nel sito e lo si legge direttamente: funziona anche se il dominio non è indicizzato
+  let site: SiteReading | null = null;
+  if (client.website) {
+    await progress(checkupId, `Leggo il sito direttamente: ${client.website}`);
+    site = await readSite(client.website);
+    await progress(checkupId, site.ok ? `Sito letto: ${site.pages} pagine` : `Sito non leggibile: ${site.problem}`);
+  }
+
   const research = await callClaude({
     model: modelFor(mode, "ricerca"),
     system: await systemFor(checkup),
@@ -173,7 +187,15 @@ export async function runRecon(checkupId: number) {
         role: "user",
         content: `${await clientContext(client, checkup)}
 
-Fai la ricognizione di questa azienda cercando online (se c'è un check-up precedente, verifica soprattutto cosa è
+${site ? `# Lettura diretta del sito (fatta da 2Target)
+${site.markdown}
+
+Usa questa lettura come fonte primaria sul sito. Se il dominio non risulta indicizzato o la ricerca non trova
+pagine, NON è un motivo per lasciare il sito o il posizionamento come ipotesi: i contenuti sono qui sopra.
+La mancata indicizzazione è una criticità SEO da segnalare (con la causa, se i controlli tecnici la mostrano),
+non un limite dell'analisi. Non chiedere al consulente informazioni che si ricavano da questa lettura.
+
+` : ""}Fai la ricognizione di questa azienda cercando online (se c'è un check-up precedente, verifica soprattutto cosa è
 cambiato da allora: canali, numeri, offerta, concorrenti). Parti dal sito (leggilo: pagine principali, prodotti o
 servizi, a chi si rivolge, chiamate all'azione, area B2B, contatti) e cerca: profili social e cosa pubblicano,
 recensioni e reputazione, articoli e premi, dati pubblici dell'azienda (anno di fondazione, sede, dimensione se nota),
@@ -195,7 +217,9 @@ Metti la fonte (URL) accanto a ogni dato.`,
     log: { step: "Ricognizione online", clientId: client.id, checkupId },
   });
 
-  await db.update(checkups).set({ dossier: research.text, sources: mergeSources(checkup.sources, research.sources) }).where(eq(checkups.id, checkupId));
+  // La lettura del sito resta nel dossier: la usano anche domande, ricerca approfondita e scrittura
+  const dossier = site ? `${research.text}\n\n# Sito letto direttamente\n${site.markdown}` : research.text;
+  await db.update(checkups).set({ dossier, sources: mergeSources(checkup.sources, research.sources) }).where(eq(checkups.id, checkupId));
   await progress(checkupId, "Preparo le domande per il consulente");
   await askQuestions(checkupId, 1);
 }
@@ -256,9 +280,17 @@ restituisci "questions" vuota. "findings": solo eventuali nuovi fatti emersi (pu
 // ── 2. Ricerca approfondita + scrittura ──────────────────────────────
 
 export async function runDeepResearch(checkupId: number) {
-  const { checkup, client, mode } = await load(checkupId);
+  let { checkup, client, mode } = await load(checkupId);
   await guard("ricerca", "ricerca", mode, client.id, checkupId);
   await progress(checkupId, "Ricerca approfondita avviata");
+  // Check-up partiti prima della lettura diretta: si legge il sito adesso
+  if (client.website && !checkup.dossier?.includes("# Sito letto direttamente")) {
+    await progress(checkupId, `Leggo il sito direttamente: ${client.website}`);
+    const site = await readSite(client.website);
+    await progress(checkupId, site.ok ? `Sito letto: ${site.pages} pagine` : `Sito non leggibile: ${site.problem}`);
+    await db.update(checkups).set({ dossier: `${checkup.dossier ?? ""}\n\n# Sito letto direttamente\n${site.markdown}` }).where(eq(checkups.id, checkupId));
+    ({ checkup, client, mode } = await load(checkupId));
+  }
   const r = await callClaude({
     model: modelFor(mode, "ricerca"),
     system: await systemFor(checkup),
