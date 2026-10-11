@@ -31,9 +31,9 @@ export async function GET() {
       APP_URL: set("APP_URL"),
       CRON_SECRET: set("CRON_SECRET"),
       ANTHROPIC_API_KEY: set("ANTHROPIC_API_KEY"),
-      SMTP_HOST: set("SMTP_HOST"),
-      SMTP_USER: set("SMTP_USER"),
-      SMTP_PASS: set("SMTP_PASS"),
+      META_APP_ID: set("META_APP_ID"),
+      META_APP_SECRET: set("META_APP_SECRET"),
+      META_CONFIG_ID: set("META_CONFIG_ID"),
     },
   };
   const ok = database === "ok" && !startup && body.variabili.AUTH_SECRET;

@@ -10,6 +10,7 @@ Mai nel repository, mai in chat.
 |---|---|
 | `APP_URL` | indirizzo dell'app: `http://localhost:3070` in locale, `https://2target.it` online |
 | `META_APP_ID`, `META_APP_SECRET` | Meta for Developers → la tua app → Impostazioni app → Di base |
+| `META_CONFIG_ID` | Meta for Developers → la tua app → Facebook Login for Business → Configurazioni (ID della configurazione) |
 | `META_GRAPH_VERSION` | facoltativa, predefinita `v25.0`; si aggiorna quando Meta ritira la versione |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google Cloud → API e servizi → Credenziali |
 | `GOOGLE_PAGESPEED_KEY` | Google Cloud → Credenziali → Chiave API (gratuita) |
@@ -41,8 +42,10 @@ Dopo aver cambiato le variabili: in locale riavvia `npm run dev`, su Plesk **Ria
 6. **Ruoli dell'app → Ruoli**: aggiungi come amministratori o sviluppatori le persone del team che
    collegheranno i clienti.
 
-**Permessi richiesti da 2Target (sola lettura):** `pages_show_list`, `pages_read_engagement`,
-`read_insights`, `business_management`, `instagram_basic`, `instagram_manage_insights`.
+**Permessi richiesti da 2Target:** lettura `pages_show_list`, `pages_read_engagement`, `read_insights`,
+`business_management`, `instagram_basic`, `instagram_manage_insights`; pubblicazione `pages_manage_posts`,
+`instagram_content_publish`. Si scelgono nella **configurazione** di Facebook Login for Business
+(token d'accesso dell'utente), il cui ID va in `META_CONFIG_ID`.
 
 **Serve la revisione dell'app di Meta?** Con l'accesso *standard* i permessi funzionano per le persone
 che hanno un ruolo sull'app, sulle pagine che quelle persone gestiscono. Per uno strumento interno, in cui

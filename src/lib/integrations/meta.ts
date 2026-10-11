@@ -16,7 +16,8 @@ export function authorizeUrl(state: string, request?: Request) {
     redirect_uri: callbackUrl("meta", request),
     state,
     response_type: "code",
-    scope: META.scopes.join(","),
+    // Facebook Login for Business: con la configurazione i permessi sono quelli scelti in Meta for Developers
+    ...(META.configId ? { config_id: META.configId, override_default_response_type: "true" } : { scope: META.scopes.join(",") }),
   })}`;
 }
 

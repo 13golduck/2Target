@@ -7,14 +7,19 @@ export const META = {
   appId: process.env.META_APP_ID ?? "",
   appSecret: process.env.META_APP_SECRET ?? "",
   version: process.env.META_GRAPH_VERSION ?? "v25.0",
-  // Lettura di profili, post e statistiche. Pubblicazione e inserzioni si aggiungono più avanti.
+  /** Configurazione di "Facebook Login for Business" (Meta for Developers → Configurazioni): elenca i permessi chiesti. */
+  configId: process.env.META_CONFIG_ID ?? "",
+  // Lettura di profili, post e statistiche + pubblicazione su Pagine e Instagram.
+  // Con META_CONFIG_ID i permessi li decide la configurazione; questo elenco serve senza configurazione.
   scopes: [
     "pages_show_list",
     "pages_read_engagement",
+    "pages_manage_posts",
     "read_insights",
     "business_management",
     "instagram_basic",
     "instagram_manage_insights",
+    "instagram_content_publish",
   ],
 };
 
