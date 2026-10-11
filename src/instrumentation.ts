@@ -19,6 +19,9 @@ export async function register() {
   }
   const { bootstrapAdmin } = await import("./lib/bootstrap-admin");
   await bootstrapAdmin().catch((e) => console.error("[admin] creazione non riuscita:", e));
+  // Chiavi delle integrazioni salvate in Impostazioni
+  const { loadIntegrationKeys } = await import("./lib/integrations/keys");
+  await loadIntegrationKeys().catch((e) => console.error("[integrazioni] chiavi non caricate:", e));
   // Pubblicazioni programmate: controllo ogni minuto
   const { startPublishScheduler } = await import("./lib/publishing/scheduler");
   startPublishScheduler();

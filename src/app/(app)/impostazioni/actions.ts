@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/auth";
 import { isAdminRole } from "@/lib/roles";
 import { DEFAULT_LIMITS, getLimits, saveLimits } from "@/lib/ai/budget";
 import { audit } from "@/lib/audit";
+import { FIELDS, saveIntegrationKeys } from "@/lib/integrations/keys";
 import { DEFAULT_METHOD, saveMethodology } from "@/lib/ai/metodologia";
 import { consumeLoginCode, requestLoginCode } from "@/lib/login-codes";
 import { grantSettingsAccess, revokeSettingsAccess, settingsUnlocked } from "@/lib/settings-access";
@@ -173,4 +174,26 @@ export async function updateMethodology(f: FormData) {
   await audit({ userId: me.id, category: "impostazioni", action: "metodologia.versione", description: f.get("reset") === "1" ? `Metodologia riportata al testo Golduck originale (versione ${version})` : `Salvata la metodologia, versione ${version}` });
   revalidatePath("/impostazioni");
   return { ok: true, version };
+}
+
+// --- Integrazioni (Meta, Google) -----------------------------------------------
+
+export async function saveIntegrations(f: FormData) {
+  const me = await requireUser();
+  if (!isAdminRole(me.role)) return { error: "Solo un amministratore può cambiare le integrazioni" };
+  if (!(await settingsUnlocked(me.id))) return LOCKED;
+  const input: Record<string, string> = {};
+  for (const field of FIELDS) {
+    const v = f.get(field);
+    if (v !== null) input[field] = String(v);
+  }
+  const clear = FIELDS.filter((field) => f.get(`clear:${field}`) === "1");
+  if (input.metaAppId && !/^\d{6,25}$/.test(input.metaAppId.trim())) return { error: "L'ID app di Meta è fatto solo di cifre" };
+  if (input.metaConfigId && !/^\d{6,25}$/.test(input.metaConfigId.trim())) return { error: "L'ID configurazione di Meta è fatto solo di cifre" };
+  if (input.googleClientId && !/\.apps\.googleusercontent\.com$/.test(input.googleClientId.trim())) return { error: "L'ID client di Google finisce con .apps.googleusercontent.com" };
+  const changed = await saveIntegrationKeys(input, clear, me.id);
+  // Solo i nomi dei campi cambiati: mai i valori
+  if (changed.length) await audit({ userId: me.id, category: "impostazioni", action: "integrazioni.chiavi", description: `Aggiornate le chiavi delle integrazioni: ${changed.join(", ")}`, meta: { campi: changed } });
+  revalidatePath("/impostazioni");
+  return { ok: true, changed: changed.length };
 }

@@ -1,4 +1,5 @@
 import "server-only";
+import { ensureIntegrationKeys } from "@/lib/integrations/keys";
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 
 import { db } from "@/db";
@@ -170,6 +171,7 @@ export type SocialReading = { markdown: string; profiles: number };
 
 /** Legge i profili social trovati. Non lancia mai. */
 export async function readSocials(clientSocialText: string, siteLinks: string[]): Promise<SocialReading> {
+  await ensureIntegrationKeys();
   const profiles = extractProfiles(clientSocialText ?? "", siteLinks);
   if (!profiles.length) return { profiles: 0, markdown: "Nessun profilo social indicato nella scheda cliente né trovato sul sito." };
   const lens = await discoveryLens().catch(() => null);

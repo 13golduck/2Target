@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { ensureIntegrationKeys } from "@/lib/integrations/keys";
 import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
@@ -11,6 +12,7 @@ import * as meta from "@/lib/integrations/meta";
 // Avvio del collegamento: porta l'utente alla pagina di consenso della piattaforma.
 
 export async function GET(request: Request, { params }: { params: Promise<{ provider: string }> }) {
+  await ensureIntegrationKeys();
   const { provider } = await params;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.redirect(`${appUrl(request)}/login`);

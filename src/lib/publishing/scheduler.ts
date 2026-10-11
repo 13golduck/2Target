@@ -1,4 +1,5 @@
 import "server-only";
+import { ensureIntegrationKeys } from "@/lib/integrations/keys";
 import { and, asc, eq, inArray, lt, lte } from "drizzle-orm";
 
 import { db } from "@/db";
@@ -47,6 +48,7 @@ export async function runDuePublications() {
 
 /** Pubblica subito una pubblicazione (se è ancora programmata). Restituisce true se l'ha presa in carico. */
 export async function processPublication(id: number) {
+  await ensureIntegrationKeys();
   const [claim] = await db
     .update(publications)
     .set({ status: "in_corso", attempts: 1, error: null })

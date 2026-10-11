@@ -1,4 +1,5 @@
 import { and, desc, eq, gte, inArray } from "drizzle-orm";
+import { ensureIntegrationKeys } from "@/lib/integrations/keys";
 
 import { db } from "@/db";
 import { isoDaysAgo } from "@/lib/format";
@@ -10,6 +11,7 @@ import { ChannelsView } from "./channels-view";
 export const metadata = { title: "Canali" };
 
 export default async function ChannelsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ scegli?: string; errore?: string }> }) {
+  await ensureIntegrationKeys();
   const clientId = Number((await params).id);
   const sp = await searchParams;
 

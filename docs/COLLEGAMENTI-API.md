@@ -1,5 +1,9 @@
 # Collegare Meta e Google a 2Target
 
+> **Dove si inseriscono le chiavi:** in 2Target, **Impostazioni → Integrazioni** (cifrate nel database).
+> La pagina mostra anche gli indirizzi di ritorno da registrare. Le variabili d'ambiente elencate sotto
+> funzionano ancora come riserva (valgono solo se il campo in Impostazioni è vuoto).
+
 2Target legge i dati dei clienti con le **app sviluppatore di Golduck**. Si creano una volta sola,
 con gli account Golduck; poi ogni cliente si collega dalla scheda **Canali** con un clic.
 

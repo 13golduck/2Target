@@ -1,0 +1,101 @@
+import "server-only";
+import { eq } from "drizzle-orm";
+
+import { db } from "@/db";
+import { appSettings } from "@/db/schema";
+import { decryptSecret, encryptSecret } from "@/lib/secret-box";
+
+// Chiavi delle integrazioni (Meta, Google) inserite in Impostazioni: cifrate nel database.
+// Hanno la precedenza sulle variabili d'ambiente di Plesk, che restano come riserva.
+// Si tengono in memoria (globalThis: lo stesso processo serve pagine, azioni e instrumentation)
+// e si ricaricano all'avvio e a ogni salvataggio.
+
+const KEY = "integrations";
+const PURPOSE = "integrations";
+
+export type IntegrationKeys = {
+  metaAppId: string;
+  metaAppSecret: string;
+  metaConfigId: string;
+  googleClientId: string;
+  googleClientSecret: string;
+  googlePageSpeedKey: string;
+};
+
+export const SECRET_FIELDS = ["metaAppSecret", "googleClientSecret", "googlePageSpeedKey"] as const;
+const ENV: Record<keyof IntegrationKeys, string> = {
+  metaAppId: "META_APP_ID",
+  metaAppSecret: "META_APP_SECRET",
+  metaConfigId: "META_CONFIG_ID",
+  googleClientId: "GOOGLE_CLIENT_ID",
+  googleClientSecret: "GOOGLE_CLIENT_SECRET",
+  googlePageSpeedKey: "GOOGLE_PAGESPEED_KEY",
+};
+export const FIELDS = Object.keys(ENV) as (keyof IntegrationKeys)[];
+
+const g = globalThis as unknown as { __integrationKeys?: Partial<IntegrationKeys> };
+
+/** Valore effettivo: Impostazioni, altrimenti variabile d'ambiente. Sincrono (dalla memoria). */
+export function integrationKey(field: keyof IntegrationKeys) {
+  return g.__integrationKeys?.[field] || process.env[ENV[field]]?.trim() || "";
+}
+
+type Stored = Partial<Record<keyof IntegrationKeys, string>>;
+
+async function readStored(): Promise<Stored> {
+  const [row] = await db.select().from(appSettings).where(eq(appSettings.key, KEY)).limit(1);
+  return (row?.value as Stored) ?? {};
+}
+
+/** Ricarica in memoria le chiavi salvate (all'avvio e dopo ogni modifica). */
+export async function loadIntegrationKeys() {
+  const stored = await readStored();
+  const plain: Partial<IntegrationKeys> = {};
+  for (const f of FIELDS) {
+    const v = stored[f];
+    if (!v) continue;
+    plain[f] = (SECRET_FIELDS as readonly string[]).includes(f) ? (decryptSecret(v, PURPOSE) ?? "") : v;
+  }
+  g.__integrationKeys = plain;
+  return plain;
+}
+
+/** Stato per la pagina Impostazioni: mai i segreti, solo da dove arriva ogni valore. */
+export async function integrationStatus() {
+  const stored = await readStored();
+  return Object.fromEntries(
+    FIELDS.map((f) => {
+      const secret = (SECRET_FIELDS as readonly string[]).includes(f);
+      const fromApp = !!stored[f];
+      const fromEnv = !fromApp && !!process.env[ENV[f]]?.trim();
+      return [f, { source: fromApp ? "app" : fromEnv ? "plesk" : "mancante", value: secret ? null : fromApp ? stored[f] : fromEnv ? process.env[ENV[f]] : "", env: ENV[f] }];
+    }),
+  ) as Record<keyof IntegrationKeys, { source: "app" | "plesk" | "mancante"; value: string | null; env: string }>;
+}
+
+/** Salva: i campi segreti vuoti restano com'erano; "clear" li cancella (si torna alla variabile di Plesk). */
+export async function saveIntegrationKeys(input: Partial<IntegrationKeys>, clear: (keyof IntegrationKeys)[], userId: number) {
+  const prev = await readStored();
+  const next: Stored = { ...prev };
+  for (const f of FIELDS) {
+    if (clear.includes(f)) {
+      delete next[f];
+      continue;
+    }
+    const v = input[f]?.trim();
+    if (v === undefined) continue;
+    const secret = (SECRET_FIELDS as readonly string[]).includes(f);
+    if (secret) {
+      if (v) next[f] = encryptSecret(v, PURPOSE);
+    } else if (v) next[f] = v;
+    else delete next[f];
+  }
+  await db.insert(appSettings).values({ key: KEY, value: next, updatedBy: userId }).onDuplicateKeyUpdate({ set: { value: next, updatedBy: userId } });
+  await loadIntegrationKeys();
+  return FIELDS.filter((f) => (prev[f] ?? null) !== (next[f] ?? null));
+}
+
+/** Carica le chiavi se non sono ancora in memoria (es. primo uso dopo un riavvio). */
+export async function ensureIntegrationKeys() {
+  if (!g.__integrationKeys) await loadIntegrationKeys().catch(() => undefined);
+}

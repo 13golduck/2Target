@@ -1,4 +1,5 @@
 import "server-only";
+import { ensureIntegrationKeys } from "@/lib/integrations/keys";
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 
 import { db } from "@/db";
@@ -49,6 +50,7 @@ async function savePosts(channelId: number, posts: PostData[]) {
 
 /** Sincronizza un canale. Restituisce un messaggio leggibile (o lancia l'errore). */
 export async function syncChannel(channel: Channel) {
+  await ensureIntegrationKeys();
   try {
     if (channel.platform === "website") {
       const result = await google.pageSpeed(channel.handle, "mobile");

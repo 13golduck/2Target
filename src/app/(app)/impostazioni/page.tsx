@@ -5,6 +5,8 @@ import { isAdminRole } from "@/lib/roles";
 import { getLimits } from "@/lib/ai/budget";
 import { getMethodology } from "@/lib/ai/metodologia";
 import { getMailSettingsForForm, getMailTest } from "@/lib/mail";
+import { integrationStatus } from "@/lib/integrations/keys";
+import { appUrl } from "@/lib/integrations/config";
 import { SETTINGS_TTL_MIN, settingsUnlocked } from "@/lib/settings-access";
 import { SettingsGate } from "./settings-gate";
 import { SettingsView } from "./settings-view";
@@ -17,7 +19,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const { primo } = await searchParams;
   // Seconda verifica: anche da collegato serve un codice nuovo ricevuto via email
   if (!(await settingsUnlocked(me.id))) return <SettingsGate minutes={SETTINGS_TTL_MIN} />;
-  const [mail, lastTest, limits, method] = await Promise.all([getMailSettingsForForm(), getMailTest(), getLimits(), getMethodology()]);
+  const [mail, lastTest, limits, method, integrations] = await Promise.all([getMailSettingsForForm(), getMailTest(), getLimits(), getMethodology(), integrationStatus()]);
   return (
     <SettingsView
       mail={mail}
@@ -25,6 +27,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       limits={limits}
       method={{ version: method.version, text: method.text, at: method.at, isDefault: method.isDefault }}
       firstAccess={primo === "1"}
+      integrations={{ status: integrations, appUrl: appUrl() }}
     />
   );
 }

@@ -23,6 +23,7 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { MethodCard } from './method-card';
 import { AiLimitsCard } from './ai-limits-card';
+import { IntegrationsCard } from './integrations-card';
 import { saveMail, testMail, lockSettings } from './actions';
 
 // ----------------------------------------------------------------------
@@ -55,7 +56,7 @@ const HELP = {
   smtp: <>Server, porta, utente e password li trovi nelle istruzioni del tuo provider di posta (porta 587 con STARTTLS oppure 465 con TLS).</>,
 };
 
-export function SettingsView({ mail, lastTest, limits, method, firstAccess }) {
+export function SettingsView({ mail, lastTest, limits, method, firstAccess, integrations }) {
   const [preset, setPreset] = useState(mail.preset ?? (mail.provider === 'smtp' ? 'smtp' : 'microsoft'));
   const [host, setHost] = useState(mail.host);
   const [port, setPort] = useState(mail.port);
@@ -254,6 +255,12 @@ export function SettingsView({ mail, lastTest, limits, method, firstAccess }) {
           Il primo accesso senza codice si chiude da solo dopo il primo ingresso. Da quel momento tutti entrano con il codice via email.
         </Typography>
       </Card>
+
+      {integrations && (
+        <Box sx={{ mt: 3 }}>
+          <IntegrationsCard status={integrations.status} appUrl={integrations.appUrl} />
+        </Box>
+      )}
 
       <Box sx={{ mt: 3, maxWidth: 720 }}>
         <AiLimitsCard limits={limits} />

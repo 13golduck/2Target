@@ -1,4 +1,5 @@
 import "server-only";
+import { ensureIntegrationKeys } from "@/lib/integrations/keys";
 
 import { GOOGLE, callbackUrl } from "./config";
 import { getJson, qs } from "./http";
@@ -161,6 +162,7 @@ export async function syncAnalytics(token: string, property: string) {
 // ── PageSpeed Insights (non serve l'accesso Google, solo una chiave facoltativa) ──
 
 export async function pageSpeed(url: string, strategy: "mobile" | "desktop" = "mobile") {
+  await ensureIntegrationKeys();
   type Psi = {
     lighthouseResult?: { categories?: Record<string, { score: number | null }>; audits?: Record<string, { numericValue?: number; displayValue?: string }> };
     loadingExperience?: { overall_category?: string };

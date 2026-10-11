@@ -1,4 +1,5 @@
 import { and, eq } from "drizzle-orm";
+import { ensureIntegrationKeys } from "@/lib/integrations/keys";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { audit } from "@/lib/audit";
@@ -16,6 +17,7 @@ import * as meta from "@/lib/integrations/meta";
 type State = { provider: string; clientId: number; uid: string; nonce: string };
 
 export async function GET(request: Request, { params }: { params: Promise<{ provider: string }> }) {
+  await ensureIntegrationKeys();
   const { provider } = await params;
   const url = new URL(request.url);
   const base = appUrl(request);

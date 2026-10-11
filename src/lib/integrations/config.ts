@@ -1,14 +1,24 @@
 import "server-only";
 
-// Chiavi delle app sviluppatore (in .env.local in locale, nelle variabili Node.js su Plesk).
-// Ogni piattaforma si attiva da sola quando le sue chiavi sono presenti. Guida: docs/COLLEGAMENTI-API.md
+// Chiavi delle app sviluppatore di Golduck: si inseriscono in 2Target (Impostazioni → Integrazioni);
+// le variabili d'ambiente (.env.local, Plesk) restano come riserva. Ogni piattaforma si attiva da sola
+// quando le sue chiavi sono presenti. Guida: docs/COLLEGAMENTI-API.md
+
+import { integrationKey } from "./keys";
 
 export const META = {
-  appId: process.env.META_APP_ID ?? "",
-  appSecret: process.env.META_APP_SECRET ?? "",
+  // Chiavi: da Impostazioni → Integrazioni (o, in riserva, dalle variabili di Plesk)
+  get appId() {
+    return integrationKey("metaAppId");
+  },
+  get appSecret() {
+    return integrationKey("metaAppSecret");
+  },
   version: process.env.META_GRAPH_VERSION ?? "v25.0",
   /** Configurazione di "Facebook Login for Business" (Meta for Developers → Configurazioni): elenca i permessi chiesti. */
-  configId: process.env.META_CONFIG_ID ?? "",
+  get configId() {
+    return integrationKey("metaConfigId");
+  },
   // Lettura di profili, post e statistiche + pubblicazione su Pagine e Instagram.
   // Con META_CONFIG_ID i permessi li decide la configurazione; questo elenco serve senza configurazione.
   scopes: [
@@ -25,9 +35,15 @@ export const META = {
 };
 
 export const GOOGLE = {
-  clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-  pageSpeedKey: process.env.GOOGLE_PAGESPEED_KEY ?? "",
+  get clientId() {
+    return integrationKey("googleClientId");
+  },
+  get clientSecret() {
+    return integrationKey("googleClientSecret");
+  },
+  get pageSpeedKey() {
+    return integrationKey("googlePageSpeedKey");
+  },
   scopes: [
     "openid",
     "email",
