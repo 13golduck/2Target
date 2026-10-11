@@ -10,7 +10,7 @@ Mai nel repository, mai in chat.
 |---|---|
 | `APP_URL` | indirizzo dell'app: `http://localhost:3070` in locale, `https://2target.it` online |
 | `META_APP_ID`, `META_APP_SECRET` | Meta for Developers → la tua app → Impostazioni app → Di base |
-| `META_GRAPH_VERSION` | facoltativa, predefinita `v23.0`; si aggiorna quando Meta ritira la versione |
+| `META_GRAPH_VERSION` | facoltativa, predefinita `v25.0`; si aggiorna quando Meta ritira la versione |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google Cloud → API e servizi → Credenziali |
 | `GOOGLE_PAGESPEED_KEY` | Google Cloud → Credenziali → Chiave API (gratuita) |
 | `CRON_SECRET` | stringa casuale per la sincronizzazione notturna (`openssl rand -base64 33`) |

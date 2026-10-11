@@ -6,7 +6,7 @@ import "server-only";
 export const META = {
   appId: process.env.META_APP_ID ?? "",
   appSecret: process.env.META_APP_SECRET ?? "",
-  version: process.env.META_GRAPH_VERSION ?? "v23.0",
+  version: process.env.META_GRAPH_VERSION ?? "v25.0",
   // Lettura di profili, post e statistiche. Pubblicazione e inserzioni si aggiungono più avanti.
   scopes: [
     "pages_show_list",
