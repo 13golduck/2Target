@@ -83,8 +83,8 @@ export function CheckupView({ aiConfigured, history, isLatest, previous, client,
 
   const readOnly = checkup.status === 'consegnato';
   const reportLink = Object.keys(content ?? {}).length > 0 && (!ai || checkup.aiState === 'pronto') && (
-    <Card sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2, bgcolor: 'primary.lighter' }}>
-      <Iconify icon="solar:document-text-bold" width={32} sx={{ color: 'primary.darker' }} />
+    <Card sx={{ p: 2.5, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'stretch', sm: 'center' }, gap: 2, bgcolor: 'primary.lighter' }}>
+      <Iconify icon="solar:document-text-bold" width={32} sx={{ color: 'primary.darker', display: { xs: 'none', sm: 'block' } }} />
       <Box sx={{ flex: 1 }}>
         <Typography variant="subtitle1">Report per il cliente</Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
@@ -154,6 +154,40 @@ const REGISTER_OPTIONS = [
   { key: 'istituzionale', title: 'Istituzionale', text: 'Formale: enti pubblici, associazioni nazionali' },
   { key: 'commerciale', title: 'Commerciale', text: 'Dinamico: startup, aziende di prodotto' },
 ];
+
+/** Scelta a schede: compatta su smartphone (riga con radio e titolo, descrizione breve sotto). */
+function OptionGroup({ title, options, value, onChange, columns }) {
+  return (
+    <>
+      <Typography variant="subtitle1" sx={{ mt: 3, mb: 1.5 }}>{title}</Typography>
+      <Grid container spacing={{ xs: 1, md: 2 }}>
+        {options.map((o) => {
+          const on = value === o.key;
+          return (
+            <Grid key={o.key} size={{ xs: 12, md: 12 / columns }}>
+              <Card
+                variant="outlined"
+                role="radio"
+                aria-checked={on}
+                onClick={() => onChange(o.key)}
+                sx={{ p: { xs: 1.25, md: 2 }, height: 1, cursor: 'pointer', borderWidth: 2, borderColor: on ? 'primary.main' : 'divider', bgcolor: on ? 'primary.lighter' : 'transparent' }}
+              >
+                <Stack direction="row" sx={{ alignItems: 'center' }}>
+                  <Radio checked={on} size="small" sx={{ ml: -1, py: 0.5 }} />
+                  {o.icon && <Iconify icon={o.icon} width={18} sx={{ mr: 0.75, color: 'primary.main' }} />}
+                  <Typography variant="subtitle2" sx={{ flex: 1 }}>{o.title}</Typography>
+                  {o.badge && <Label color="default" sx={{ display: { xs: 'inline-flex', md: 'none' } }}>{o.badge}</Label>}
+                </Stack>
+                <Typography variant="body2" sx={{ color: 'text.secondary', pl: { xs: 4, md: 0 }, fontSize: { xs: 13, md: 14 } }}>{o.text}</Typography>
+                {o.badge && <Label color="default" sx={{ mt: 1, display: { xs: 'none', md: 'inline-flex' } }}>{o.badge} (stima)</Label>}
+              </Card>
+            </Grid>
+          );
+        })}
+      </Grid>
+    </>
+  );
+}
 
 const REASONING_OPTIONS = [
   { key: 'avanzato', title: 'Avanzato', text: 'Ragiona più a fondo in ogni fase: analisi più ricca, qualche minuto in più', icon: 'solar:atom-bold-duotone' },
@@ -231,71 +265,22 @@ function StartWizard({ aiConfigured, client, previous }) {
               </Grid>
             </Grid>
 
-            <Typography variant="subtitle1" sx={{ mt: 3, mb: 1.5 }}>Modello per questo check-up</Typography>
-            <Grid container spacing={2}>
-              {MODES.map((m) => (
-                <Grid key={m.key} size={{ xs: 12, md: 4 }}>
-                  <Card
-                    variant="outlined"
-                    onClick={() => setMode(m.key)}
-                    sx={{ p: 2, height: 1, cursor: 'pointer', borderWidth: 2, borderColor: mode === m.key ? 'primary.main' : 'divider', bgcolor: mode === m.key ? 'primary.lighter' : 'transparent' }}
-                  >
-                    <Stack direction="row" sx={{ alignItems: 'center' }}>
-                      <Radio checked={mode === m.key} size="small" sx={{ ml: -1 }} />
-                      <Typography variant="subtitle2" sx={{ flex: 1 }}>{m.title}</Typography>
-                    </Stack>
-                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>{m.text}</Typography>
-                    <Label color="default">{m.cost} a check-up (stima)</Label>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-
-            <Typography variant="subtitle1" sx={{ mt: 3, mb: 1.5 }}>Livello di ragionamento dell’AI</Typography>
-            <Grid container spacing={2}>
-              {REASONING_OPTIONS.map((r) => (
-                <Grid key={r.key} size={{ xs: 12, md: 6 }}>
-                  <Card
-                    variant="outlined"
-                    onClick={() => setReasoning(r.key)}
-                    sx={{ p: 2, height: 1, cursor: 'pointer', borderWidth: 2, borderColor: reasoning === r.key ? 'primary.main' : 'divider', bgcolor: reasoning === r.key ? 'primary.lighter' : 'transparent' }}
-                  >
-                    <Stack direction="row" sx={{ alignItems: 'center' }}>
-                      <Radio checked={reasoning === r.key} size="small" sx={{ ml: -1 }} />
-                      <Iconify icon={r.icon} width={18} sx={{ mr: 0.75, color: 'primary.main' }} />
-                      <Typography variant="subtitle2" sx={{ flex: 1 }}>{r.title}</Typography>
-                    </Stack>
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>{r.text}</Typography>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-
-            <Typography variant="subtitle1" sx={{ mt: 3, mb: 1.5 }}>Registro del report</Typography>
-            <Grid container spacing={2}>
-              {REGISTER_OPTIONS.map((r) => (
-                <Grid key={r.key} size={{ xs: 12, md: 4 }}>
-                  <Card
-                    variant="outlined"
-                    onClick={() => setRegister(r.key)}
-                    sx={{ p: 2, height: 1, cursor: 'pointer', borderWidth: 2, borderColor: register === r.key ? 'primary.main' : 'divider', bgcolor: register === r.key ? 'primary.lighter' : 'transparent' }}
-                  >
-                    <Stack direction="row" sx={{ alignItems: 'center' }}>
-                      <Radio checked={register === r.key} size="small" sx={{ ml: -1 }} />
-                      <Typography variant="subtitle2" sx={{ flex: 1 }}>{r.title}</Typography>
-                    </Stack>
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>{r.text}</Typography>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
+            <OptionGroup
+              title="Modello per questo check-up"
+              value={mode}
+              onChange={setMode}
+              columns={3}
+              options={MODES.map((m) => ({ key: m.key, title: m.title, text: m.text, badge: `${m.cost} a check-up` }))}
+            />
+            <OptionGroup title="Livello di ragionamento dell’AI" value={reasoning} onChange={setReasoning} columns={2} options={REASONING_OPTIONS} />
+            <OptionGroup title="Registro del report" value={register} onChange={setRegister} columns={3} options={REGISTER_OPTIONS} />
 
             {!aiConfigured && (
               <Alert severity="warning" sx={{ mt: 3 }}>
                 Manca la chiave API di Anthropic: segui docs/AI-ANTHROPIC.md e inserisci ANTHROPIC_API_KEY in .env.local, poi riavvia.
               </Alert>
             )}
-            <Stack direction="row" spacing={2} sx={{ mt: 3, alignItems: 'center' }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1, sm: 2 }} sx={{ mt: 3, alignItems: { xs: 'stretch', sm: 'center' } }}>
               <Button type="submit" variant="contained" size="large" loading={pending || started} disabled={!aiConfigured || started} startIcon={<Iconify icon="solar:atom-bold-duotone" />}>
                 {started ? 'Avvio in corso…' : 'Avvia la ricognizione'}
               </Button>

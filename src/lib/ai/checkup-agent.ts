@@ -12,7 +12,8 @@ import { assertBudget, PHASE_ESTIMATE_USD } from "./budget";
 import { callClaude, MODELS, modelFor, type AiMode, type Task } from "./claude";
 import { ESEMPIO_CHECKUP } from "./esempio-checkup";
 import { methodologyText } from "./metodologia";
-import { REGISTER_LABELS, ReportSchema, type Register } from "@/lib/checkup-report";
+import { REGISTER_LABELS, ReportPartA, ReportPartB, type CheckupReport, type Register } from "@/lib/checkup-report";
+import { currentJobSignal } from "./jobs";
 
 // Check-up a quattro mani: l'AI cerca online, fa domande al consulente su ciò che non trova,
 // approfondisce e scrive le 8 sezioni del modello Golduck. Il consulente rivede e approva.
@@ -291,9 +292,11 @@ const sectionSchema = (key: string) => {
   return z.object(Object.fromEntries(sec.fields.map((f) => [f.key, z.string()])) as Record<string, z.ZodString>);
 };
 
+// Lo schema della risposta deve restare piccolo (l'API rifiuta grammatiche troppo grandi):
+// il testo arriva come elenco piatto "sezione, campo, testo" e i dati dei grafici in una seconda chiamata.
+const SECTION_KEYS = CHECKUP_SECTIONS.map((s) => s.key) as [string, ...string[]];
 const DocumentSchema = z.object({
-  sections: z.object(Object.fromEntries(CHECKUP_SECTIONS.map((s) => [s.key, sectionSchema(s.key)]))),
-  report: ReportSchema,
+  fields: z.array(z.object({ section: z.enum(SECTION_KEYS), field: z.string(), text: z.string() })),
   personas: z.array(
     z.object({ name: z.string(), priority: z.number(), segment: z.enum(["b2b", "b2c"]), ageRange: z.string(), needs: z.string(), interests: z.string(), channels: z.string(), values: z.string(), lever: z.string() }),
   ),
@@ -301,6 +304,39 @@ const DocumentSchema = z.object({
     z.object({ stage: z.enum(["awareness", "consideration", "conversion", "retention"]), microObjectives: z.string(), strategicGoal: z.string(), strategies: z.array(z.string()), kpis: z.array(z.string()) }),
   ),
 });
+
+/** Dati strutturati per il report web (grafici, tabelle, matrici), a partire dal testo già scritto. Due metà in parallelo. */
+async function buildReportData(checkup: Checkup, client: Client, sections: Record<string, Record<string, string>>, mode: AiMode): Promise<CheckupReport> {
+  const text = `Check-up di ${client.name} appena scritto (JSON per sezione e campo):
+${JSON.stringify(sections, null, 1)}
+
+Estrai i dati per la pagina web e il PDF del report, coerenti con il testo. Non aggiungere fatti che non sono nel testo.`;
+  const ask = async <T extends z.ZodTypeAny>(schema: T, what: string, step: string): Promise<z.infer<T>> => {
+    const r = await callClaude({
+      model: modelFor(mode, "ricerca"),
+      system: await systemFor(checkup),
+      effort: effortFor(checkup, "medium"),
+      maxTokens: 16_000,
+      outputFormat: betaZodOutputFormat(schema),
+      messages: [{ role: "user", content: `${text}\n\n${what}` }],
+      log: { step, clientId: client.id, checkupId: checkup.id },
+    });
+    return schema.parse(JSON.parse(r.text));
+  };
+  const [a, b] = await Promise.all([
+    ask(
+      ReportPartA,
+      "Dati richiesti: executive (gli stessi 3 problemi e 3 azioni della sintesi), storybrand (cliente come guida, buyer persona come eroe), channels (tutti i canali attuali e potenziali, efficacia attuale e potenziale da 0 a 5, verdetto), funnel See-Think-Do-Care con KPI.",
+      "Dati del report (1/2)",
+    ),
+    ask(
+      ReportPartB,
+      'Dati richiesti: competitors (3-5: canali, community, ER solo se calcolabile e con la fonte, inserzioni attive "non_verificato" se non controllate, strengths, weaknesses, leva strategica), clientEr, swot, quickWins (5-8 con impatto, sforzo e chi le fa), evidence (criticità da documentare con screenshot).',
+      "Dati del report (2/2)",
+    ),
+  ]);
+  return { ...a, ...b };
+}
 
 export async function runWriting(checkupId: number) {
   const { checkup, client, mode } = await load(checkupId);
@@ -318,16 +354,12 @@ export async function runWriting(checkupId: number) {
         content: `${await clientContext(client, checkup, { withAnswers: true })}
 
 Scrivi il Communication Check-Up completo di ${client.name}, allo stesso livello di profondità dell'esempio.
-- sections: tutte le sezioni e tutti i campi, testo pronto per il cliente (gli elenchi una voce per riga, senza
-  trattini iniziali). Nel campo "canali" della sezione strumenti metti i numeri per canale. Nella sezione obiettivi,
-  "fasi" riassume obiettivo, strategie e KPI di ogni fase del funnel.
-- sections.sintesi: l'Executive Summary (diagnosi, 3 problemi con impatto, 3 azioni prioritarie).
-- report: i dati per la pagina web e il PDF del report, coerenti con le sezioni:
-  executive (stessi 3 problemi e 3 azioni), storybrand (cliente come guida, persona come eroe), channels (tutti i
-  canali attuali e potenziali con efficacia attuale e potenziale da 0 a 5 e verdetto), funnel See-Think-Do-Care,
-  competitors (3-5, con dati chiave, ER solo se calcolabile e con la fonte, inserzioni attive "non_verificato" se non
-  hai potuto controllare, strengths, weaknesses e leva strategica), clientEr, swot, quickWins (5-8 con impatto,
-  sforzo e chi le fa), evidence (criticità da documentare con screenshot).
+- fields: una voce per OGNI campo di OGNI sezione della struttura (section = chiave della sezione, field = chiave
+  del campo, text = testo pronto per il cliente; gli elenchi una voce per riga, senza trattini iniziali). Nel campo
+  "canali" della sezione strumenti metti i numeri per canale. Nella sezione obiettivi, "fasi" riassume obiettivo,
+  strategie e KPI di ogni fase del funnel. La sezione sintesi è l'Executive Summary (diagnosi, 3 problemi con
+  impatto, 3 azioni prioritarie). Nella sezione benchmark, "competitor" contiene 3-5 schede con dati chiave,
+  strengths, weaknesses e leva strategica.
 - personas: almeno 3 buyer persona in ordine di valore strategico (priority 1 = più importante).
 - objectives: una voce per ciascuna delle 4 fasi del funnel, con 3-6 strategie operative e 3-5 KPI misurabili.
 - Campo "confronto" (sezione best_practice): se c'è un check-up precedente, cosa è cambiato da allora (numeri dei
@@ -340,11 +372,28 @@ Dove un dato non è verificato dichiaralo. Niente frasi generiche valide per qua
   });
   const doc = DocumentSchema.parse(JSON.parse(r.text));
 
-  for (const [sectionKey, content] of Object.entries(doc.sections)) {
+  // Elenco piatto → un oggetto per sezione, con tutti i campi del modello (vuoti se mancanti)
+  const sections = Object.fromEntries(
+    CHECKUP_SECTIONS.map((sec) => [sec.key, Object.fromEntries(sec.fields.map((f) => [f.key, ""]))]),
+  ) as Record<string, Record<string, string>>;
+  for (const f of doc.fields) if (sections[f.section] && f.field in sections[f.section]) sections[f.section][f.field] = f.text;
+  for (const [sectionKey, content] of Object.entries(sections)) {
     await db.insert(checkupSections).values({ checkupId, sectionKey, content }).onDuplicateKeyUpdate({ set: { content } });
   }
+
+  // Seconda chiamata: i dati per i grafici del report. Se non riesce il check-up resta valido (il report usa il testo).
+  let report: CheckupReport | null = null;
+  try {
+    await progress(checkupId, "Preparo i dati per i grafici del report");
+    report = await buildReportData(checkup, client, sections, mode);
+  } catch (e) {
+    if (currentJobSignal()?.aborted) throw e;
+    console.error(`[ai] dati del report ${checkupId}:`, e);
+    await progress(checkupId, "Dati dei grafici non disponibili: il report userà il testo delle sezioni");
+  }
+
   // Concorrenti, persona e obiettivi restano legati a questo check-up (storico)
-  for (const c of doc.report.competitors) {
+  for (const c of report?.competitors ?? []) {
     await db.insert(competitors).values({
       clientId: client.id,
       checkupId,
@@ -374,7 +423,7 @@ Dove un dato non è verificato dichiaralo. Niente frasi generiche valide per qua
   }
   await db
     .update(checkups)
-    .set({ aiState: "pronto", aiError: null, status: "in_revisione", completedAt: new Date(), report: doc.report, kpiSnapshot: await kpiSnapshot(client.id) })
+    .set({ aiState: "pronto", aiError: null, status: "in_revisione", completedAt: new Date(), report, kpiSnapshot: await kpiSnapshot(client.id) })
     .where(eq(checkups.id, checkupId));
   await progress(checkupId, "Check-up pronto per la revisione");
 }

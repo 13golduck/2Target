@@ -102,6 +102,7 @@ export function BrandView({ clientId, aiConfigured, kit, reviews }) {
       <Grid size={{ xs: 12, lg: 7 }}>
         <Card>
           <CardHeader
+            sx={{ flexWrap: 'wrap', gap: 1.5, '& .MuiCardHeader-action': { m: 0, alignSelf: 'center' } }}
             title="Brand kit"
             subheader={kit ? `Aggiornato il ${fmtDateTime(new Date(kit.updatedAt))}` : 'Colori, font e regole visive del cliente: li usa l’AI per brief e revisioni'}
             action={
@@ -139,15 +140,26 @@ export function BrandView({ clientId, aiConfigured, kit, reviews }) {
               <Typography variant="subtitle2" sx={{ mb: 1 }}>Palette</Typography>
               <Stack spacing={1}>
                 {data.palette.map((c, i) => (
-                  <Stack key={i} direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                  <Box
+                    key={i}
+                    sx={{
+                      display: 'grid',
+                      gap: 1,
+                      alignItems: 'center',
+                      gridTemplateColumns: { xs: '44px 1fr 36px', sm: '44px 120px 1fr 1fr 36px' },
+                      pb: { xs: 1.5, sm: 0 },
+                      borderBottom: { xs: 1, sm: 0 },
+                      borderColor: 'divider',
+                    }}
+                  >
                     <Box component="input" type="color" value={/^#[0-9a-f]{6}$/i.test(c.hex) ? c.hex : '#000000'} onChange={(e) => setColor(i, { hex: e.target.value.toUpperCase() })} sx={{ width: 44, height: 40, p: 0, border: 0, bgcolor: 'transparent', cursor: 'pointer' }} />
-                    <TextField size="small" label="HEX" value={c.hex} onChange={(e) => setColor(i, { hex: e.target.value })} sx={{ width: 120 }} />
-                    <TextField size="small" label="Nome" value={c.name} onChange={(e) => setColor(i, { name: e.target.value })} sx={{ flex: 1 }} />
-                    <TextField size="small" label="Ruolo" value={c.role} onChange={(e) => setColor(i, { role: e.target.value })} placeholder="primario, accento, sfondo, testo" sx={{ flex: 1 }} />
-                    <IconButton size="small" onClick={() => set({ palette: data.palette.filter((_, j) => j !== i) })}>
+                    <TextField size="small" label="HEX" value={c.hex} onChange={(e) => setColor(i, { hex: e.target.value })} />
+                    <IconButton size="small" onClick={() => set({ palette: data.palette.filter((_, j) => j !== i) })} sx={{ order: { xs: 0, sm: 5 } }}>
                       <Iconify icon="mingcute:close-line" />
                     </IconButton>
-                  </Stack>
+                    <TextField size="small" label="Nome" value={c.name} onChange={(e) => setColor(i, { name: e.target.value })} sx={{ gridColumn: { xs: '1 / -1', sm: 'auto' }, order: { xs: 1, sm: 3 } }} />
+                    <TextField size="small" label="Ruolo" value={c.role} onChange={(e) => setColor(i, { role: e.target.value })} placeholder="primario, accento, sfondo, testo" sx={{ gridColumn: { xs: '1 / -1', sm: 'auto' }, order: { xs: 2, sm: 4 } }} />
+                  </Box>
                 ))}
                 <Button size="small" sx={{ alignSelf: 'flex-start' }} startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => set({ palette: [...data.palette, { name: '', hex: '#CDA434', role: '' }] })}>
                   Aggiungi colore
@@ -159,14 +171,25 @@ export function BrandView({ clientId, aiConfigured, kit, reviews }) {
               <Typography variant="subtitle2" sx={{ mb: 1 }}>Font</Typography>
               <Stack spacing={1}>
                 {data.fonts.map((f, i) => (
-                  <Stack key={i} direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                    <TextField size="small" label="Font (Google Fonts)" value={f.name} onChange={(e) => setFont(i, { name: e.target.value })} sx={{ flex: 1 }} />
-                    <TextField size="small" label="Uso" value={f.use} onChange={(e) => setFont(i, { use: e.target.value })} sx={{ flex: 1 }} />
-                    <TextField size="small" label="Alternativa Canva" value={f.alternative} onChange={(e) => setFont(i, { alternative: e.target.value })} sx={{ flex: 1 }} />
-                    <IconButton size="small" onClick={() => set({ fonts: data.fonts.filter((_, j) => j !== i) })}>
+                  <Box
+                    key={i}
+                    sx={{
+                      display: 'grid',
+                      gap: 1,
+                      alignItems: 'center',
+                      gridTemplateColumns: { xs: '1fr 36px', sm: '1fr 1fr 1fr 36px' },
+                      pb: { xs: 1.5, sm: 0 },
+                      borderBottom: { xs: 1, sm: 0 },
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <TextField size="small" label="Font (Google Fonts)" value={f.name} onChange={(e) => setFont(i, { name: e.target.value })} />
+                    <IconButton size="small" onClick={() => set({ fonts: data.fonts.filter((_, j) => j !== i) })} sx={{ order: { xs: 0, sm: 5 } }}>
                       <Iconify icon="mingcute:close-line" />
                     </IconButton>
-                  </Stack>
+                    <TextField size="small" label="Uso" value={f.use} onChange={(e) => setFont(i, { use: e.target.value })} sx={{ gridColumn: { xs: '1 / -1', sm: 'auto' }, order: { xs: 1, sm: 2 } }} />
+                    <TextField size="small" label="Alternativa Canva" value={f.alternative} onChange={(e) => setFont(i, { alternative: e.target.value })} sx={{ gridColumn: { xs: '1 / -1', sm: 'auto' }, order: { xs: 2, sm: 3 } }} />
+                  </Box>
                 ))}
                 <Button size="small" sx={{ alignSelf: 'flex-start' }} startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => set({ fonts: [...data.fonts, { name: '', use: '', alternative: '' }] })}>
                   Aggiungi font

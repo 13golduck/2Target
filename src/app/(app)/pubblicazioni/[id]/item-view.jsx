@@ -266,6 +266,29 @@ export function ItemView({ saved, client, item, issues, series, personas, option
             </Stack>
           </Grid>
         </Grid>
+
+        {/* Su smartphone e tablet il salvataggio resta sempre a portata di dito */}
+        <Box
+          sx={{
+            display: { xs: 'flex', md: 'none' },
+            position: 'fixed',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 1100,
+            gap: 1,
+            p: 1.5,
+            pb: 'calc(12px + env(safe-area-inset-bottom))',
+            bgcolor: 'background.paper',
+            borderTop: 1,
+            borderColor: 'divider',
+            boxShadow: (t) => t.vars.customShadows.z16,
+          }}
+        >
+          <Button type="submit" variant="contained" size="large" fullWidth startIcon={<Iconify icon="eva:checkmark-fill" />}>
+            Salva scheda
+          </Button>
+        </Box>
       </Box>
 
       {/* Studio grafico: fuori dal modulo della scheda (ha i suoi pulsanti) */}
@@ -277,6 +300,8 @@ export function ItemView({ saved, client, item, issues, series, personas, option
           <DesignReviewPanel clientId={client.id} itemId={item.id} reviews={design.reviews} aiConfigured={design.aiConfigured} />
         </Grid>
       </Grid>
+      {/* spazio per la barra di salvataggio fissa su smartphone */}
+      <Box sx={{ display: { xs: 'block', md: 'none' }, height: 88 }} />
     </DashboardContent>
   );
 }

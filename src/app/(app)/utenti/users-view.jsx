@@ -78,7 +78,54 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
             lavora sui clienti · <b>Viewer</b> cliente: vede solo grafici e risultati dei suoi clienti
           </Typography>
         </Stack>
-        <Scrollbar>
+        {/* Smartphone: una scheda per utente */}
+        <Stack spacing={1.5} sx={{ p: 2, display: { xs: 'flex', md: 'none' } }}>
+          {users.map((u) => {
+            const locked = u.role === 'superadmin';
+            return (
+              <Box key={u.id} sx={{ p: 2, borderRadius: 1.5, border: 1, borderColor: 'divider' }}>
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5 }}>
+                  <Typography variant="subtitle2" sx={{ flex: 1, minWidth: 0 }} noWrap>
+                    {u.name} {u.id === meId && <Label sx={{ ml: 0.5 }}>tu</Label>}
+                  </Typography>
+                  <Label color={ROLE_COLORS[u.role]} startIcon={locked ? <Iconify icon="solar:lock-password-outline" /> : null}>
+                    {roleLabels[u.role]}
+                  </Label>
+                </Stack>
+                <Typography variant="body2" sx={{ color: 'text.secondary', wordBreak: 'break-all' }}>{u.email}</Typography>
+                {u.role === 'viewer' && (
+                  <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                    {u.clientIds.map((id) => (
+                      <Chip key={id} size="small" label={clientName(id)} />
+                    ))}
+                  </Stack>
+                )}
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mt: 1.5 }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', flex: 1 }}>
+                    Ultimo accesso: {u.lastLoginAt ? fmtDateTime(new Date(u.lastLoginAt)) : 'mai'}
+                    {!u.active && ' · disattivato'}
+                  </Typography>
+                  {locked ? (
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>Non modificabile</Typography>
+                  ) : (
+                    <>
+                      <Button size="small" color="inherit" disabled={pending} onClick={() => setEditing(u)}>
+                        Modifica
+                      </Button>
+                      {u.id !== meId && (
+                        <Button size="small" color={u.active ? 'inherit' : 'success'} disabled={pending} onClick={() => toggleActive(u)}>
+                          {u.active ? 'Disattiva' : 'Riattiva'}
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </Stack>
+              </Box>
+            );
+          })}
+        </Stack>
+
+        <Scrollbar sx={{ display: { xs: 'none', md: 'block' } }}>
           <Table sx={{ minWidth: 820 }}>
             <TableHead>
               <TableRow>

@@ -4,6 +4,7 @@ import { useState, useOptimistic, useTransition } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
+import Menu from '@mui/material/Menu';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
@@ -50,7 +51,11 @@ export function IdeasBoard({ clientId, ideas, plans, formats, stages }) {
   const onDrop = (status, e) => {
     e.preventDefault();
     setOver(null);
-    const id = Number(e.dataTransfer.getData('text/idea'));
+    moveTo(Number(e.dataTransfer.getData('text/idea')), status);
+  };
+
+  /** Sposta un'idea in un'altra colonna (trascinando o dal menu «Sposta», che funziona anche col dito). */
+  const moveTo = (id, status) => {
     const idea = list.find((i) => i.id === id);
     if (!idea || idea.status === status) return;
     if (status === 'pianificata') {
@@ -67,7 +72,7 @@ export function IdeasBoard({ clientId, ideas, plans, formats, stages }) {
     <>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3, alignItems: { sm: 'center' } }}>
         <Typography variant="body2" sx={{ color: 'text.secondary', flex: 1 }}>
-          Trascina le schede da una colonna all&apos;altra. Portandole in «Nel piano» diventano una pubblicazione.
+          Trascina le schede da una colonna all&apos;altra, oppure usa «Sposta» sulla scheda. Portandole in «Nel piano» diventano una pubblicazione.
         </Typography>
         <TextField
           select
@@ -91,7 +96,7 @@ export function IdeasBoard({ clientId, ideas, plans, formats, stages }) {
       </Stack>
 
       <Scrollbar sx={{ pb: 2 }}>
-        <Stack direction="row" spacing={2.5} sx={{ alignItems: 'flex-start', minWidth: 1100 }}>
+        <Stack direction="row" spacing={{ xs: 1.5, md: 2.5 }} sx={{ alignItems: 'flex-start', minWidth: { md: 1100 } }}>
           {COLUMNS.map((col) => {
             const items = visible.filter((i) => i.status === col.key).sort((a, b) => b.score - a.score);
             return (
@@ -106,7 +111,8 @@ export function IdeasBoard({ clientId, ideas, plans, formats, stages }) {
                 onDrop={(e) => onDrop(col.key, e)}
                 sx={{
                   flex: 1,
-                  minWidth: 260,
+                  minWidth: { xs: '82vw', sm: 300, md: 260 },
+                  scrollSnapAlign: 'start',
                   p: 1.5,
                   borderRadius: 2,
                   bgcolor: over === col.key ? 'primary.lighter' : 'background.neutral',
@@ -123,7 +129,7 @@ export function IdeasBoard({ clientId, ideas, plans, formats, stages }) {
                 </Stack>
                 <Stack spacing={1.5} sx={{ minHeight: 120 }}>
                   {items.map((i) => (
-                    <IdeaCard key={i.id} idea={i} onPlan={() => setPlanning(i)} canPlan={plans.length > 0} />
+                    <IdeaCard key={i.id} idea={i} onPlan={() => setPlanning(i)} onMove={(status) => moveTo(i.id, status)} canPlan={plans.length > 0} />
                   ))}
                 </Stack>
               </Paper>
@@ -194,7 +200,8 @@ export function IdeasBoard({ clientId, ideas, plans, formats, stages }) {
 
 // ----------------------------------------------------------------------
 
-function IdeaCard({ idea, onPlan, canPlan }) {
+function IdeaCard({ idea, onPlan, onMove, canPlan }) {
+  const [menu, setMenu] = useState(null);
   return (
     <Card
       draggable={idea.status !== 'pianificata'}
@@ -236,6 +243,28 @@ function IdeaCard({ idea, onPlan, canPlan }) {
         </Box>
         <Box sx={{ flex: 1 }} />
         <Stack direction="row" className="idea-actions" sx={{ opacity: { xs: 1, md: 0 }, transition: 'opacity 120ms' }}>
+          {idea.status !== 'pianificata' && (
+            <>
+              <Tooltip title="Sposta in un'altra colonna">
+                <IconButton size="small" onClick={(e) => setMenu(e.currentTarget)}>
+                  <Iconify icon="eva:more-horizontal-fill" width={18} />
+                </IconButton>
+              </Tooltip>
+              <Menu anchorEl={menu} open={!!menu} onClose={() => setMenu(null)}>
+                {COLUMNS.filter((c) => c.key !== idea.status && (c.key !== 'pianificata' || canPlan)).map((c) => (
+                  <MenuItem
+                    key={c.key}
+                    onClick={() => {
+                      setMenu(null);
+                      onMove(c.key);
+                    }}
+                  >
+                    Sposta in «{c.label}»
+                  </MenuItem>
+                ))}
+              </Menu>
+            </>
+          )}
           {idea.status === 'approvata' && canPlan && (
             <Tooltip title="Metti nel piano">
               <IconButton size="small" color="primary" onClick={onPlan}>

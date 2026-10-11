@@ -69,6 +69,11 @@ export const ReportSchema = z.object({
 
 export type CheckupReport = z.infer<typeof ReportSchema>;
 
+// L'API rifiuta schemi di risposta troppo grandi: i dati del report si chiedono in due metà (verificato).
+const sh = ReportSchema.shape;
+export const ReportPartA = z.object({ executive: sh.executive, storybrand: sh.storybrand, channels: sh.channels, funnel: sh.funnel });
+export const ReportPartB = z.object({ competitors: sh.competitors, clientEr: sh.clientEr, swot: sh.swot, quickWins: sh.quickWins, evidence: sh.evidence });
+
 export const REGISTERS = ["auto", "istituzionale", "commerciale"] as const;
 export type Register = (typeof REGISTERS)[number];
 

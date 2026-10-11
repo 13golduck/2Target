@@ -4,7 +4,9 @@ import { useMemo, useState, useEffect } from 'react';
 
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
+import Menu from '@mui/material/Menu';
 import Button from '@mui/material/Button';
+import MenuItem from '@mui/material/MenuItem';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
@@ -96,8 +98,16 @@ export function ReportView({ staff, client, checkup, template, content, personas
       >
         <Stack direction="row" spacing={2} sx={{ maxWidth: 1240, mx: 'auto', px: { xs: 2, md: 3 }, py: 1.25, alignItems: 'center' }}>
           {staff && (
-            <Button component={RouterLink} href={`/clienti/${client.id}/checkup?id=${checkup.id}`} size="small" color="inherit" startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}>
-              Torna al check-up
+            <Button
+              component={RouterLink}
+              href={`/clienti/${client.id}/checkup?id=${checkup.id}`}
+              size="small"
+              color="inherit"
+              startIcon={<Iconify icon="eva:arrow-ios-back-fill" />}
+              sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}
+            >
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Torna al check-up</Box>
+              <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>Indietro</Box>
             </Button>
           )}
           <Typography variant="subtitle2" sx={{ flex: 1, color: C.muted }} noWrap>
@@ -106,8 +116,14 @@ export function ReportView({ staff, client, checkup, template, content, personas
           {checkup.status !== 'consegnato' && (
             <Box sx={{ px: 1.25, py: 0.5, borderRadius: 1, bgcolor: C.orangeSoft, color: C.orange, typography: 'caption', fontWeight: 700 }}>Bozza</Box>
           )}
-          <Button variant="contained" onClick={() => window.print()} startIcon={<Iconify icon="solar:download-bold" />} sx={{ bgcolor: C.ink, '&:hover': { bgcolor: '#000' } }}>
-            Scarica PDF
+          <MobileToc toc={toc} active={active} />
+          <Button
+            variant="contained"
+            onClick={() => window.print()}
+            startIcon={<Iconify icon="solar:download-bold" />}
+            sx={{ bgcolor: C.ink, '&:hover': { bgcolor: '#000' }, flexShrink: 0, whiteSpace: 'nowrap' }}
+          >
+            PDF
           </Button>
         </Stack>
       </Box>
@@ -270,6 +286,35 @@ export function ReportView({ staff, client, checkup, template, content, personas
           </Stack>
         </Box>
       </Box>
+    </Box>
+  );
+}
+
+// ----------------------------------------------------------------------
+// Indice su smartphone e tablet (sul desktop c'è la colonna a sinistra)
+
+function MobileToc({ toc, active }) {
+  const [open, setOpen] = useState(null);
+  return (
+    <Box sx={{ display: { xs: 'block', lg: 'none' }, flexShrink: 0 }}>
+      <Button size="small" color="inherit" variant="outlined" onClick={(e) => setOpen(e.currentTarget)} startIcon={<Iconify icon="solar:list-bold" />}>
+        Indice
+      </Button>
+      <Menu anchorEl={open} open={!!open} onClose={() => setOpen(null)} slotProps={{ paper: { sx: { maxHeight: '70vh' } } }}>
+        {toc.map((t) => (
+          <MenuItem
+            key={t.id}
+            selected={active === t.id}
+            onClick={() => {
+              setOpen(null);
+              document.getElementById(t.id)?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            sx={{ whiteSpace: 'normal', maxWidth: 320 }}
+          >
+            {t.label}
+          </MenuItem>
+        ))}
+      </Menu>
     </Box>
   );
 }

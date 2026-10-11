@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
+import { useRef, useState, useEffect, useTransition } from 'react';
 import Calendar from '@fullcalendar/react';
 import listPlugin from '@fullcalendar/list';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -8,6 +8,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 
 import Box from '@mui/material/Box';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import Tab from '@mui/material/Tab';
 import Card from '@mui/material/Card';
 import Grid from '@mui/material/Grid';
@@ -207,10 +208,18 @@ function PlanCalendar({ plan, items, onSelectDay }) {
   const ref = useRef(null);
   const router = useRouter();
   const [, start] = useTransition();
-  const [view, setView] = useState('dayGridMonth');
+  // Su smartphone e tablet piccoli il mese è illeggibile: si parte dall'elenco
+  const small = useMediaQuery((theme) => theme.breakpoints.down('md'));
+  const [chosen, setView] = useState(null); // vista scelta dall'utente, altrimenti quella adatta allo schermo
+  const view = chosen ?? (small ? 'listMonth' : 'dayGridMonth');
   const [title, setTitle] = useState('');
 
   const api = () => ref.current?.getApi();
+  // Il calendario è un componente esterno: gli si comunica la vista quando cambia lo schermo
+  useEffect(() => {
+    const cal = ref.current?.getApi();
+    if (cal && cal.view.type !== view) cal.changeView(view);
+  }, [view]);
   const events = items
     .filter((i) => i.scheduledAt)
     .map((i) => ({
@@ -228,7 +237,7 @@ function PlanCalendar({ plan, items, onSelectDay }) {
     <Box>
       <Stack direction="row" spacing={1} sx={{ p: 2, alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
         <IconButton onClick={() => api()?.prev()}><Iconify icon="eva:arrow-ios-back-fill" /></IconButton>
-        <Typography variant="h6" sx={{ minWidth: 180, textTransform: 'capitalize' }}>{title}</Typography>
+        <Typography variant="h6" sx={{ minWidth: { xs: 0, sm: 180 }, flex: { xs: 1, sm: 'none' }, textTransform: 'capitalize' }}>{title}</Typography>
         <IconButton onClick={() => api()?.next()}><Iconify icon="eva:arrow-ios-forward-fill" /></IconButton>
         <Button size="small" variant="outlined" color="inherit" onClick={() => api()?.today()}>Oggi</Button>
         <Box sx={{ flex: 1 }} />
@@ -243,6 +252,7 @@ function PlanCalendar({ plan, items, onSelectDay }) {
         <ToggleButtonGroup
           size="small"
           exclusive
+          fullWidth={small}
           value={view}
           onChange={(_, v) => {
             if (!v) return;
@@ -264,7 +274,7 @@ function PlanCalendar({ plan, items, onSelectDay }) {
           locale="it"
           firstDay={1}
           headerToolbar={false}
-          height={720}
+          height={small ? 'auto' : 720}
           editable
           selectable
           dayMaxEvents={3}

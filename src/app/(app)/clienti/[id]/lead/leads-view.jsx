@@ -297,10 +297,10 @@ function Pipeline({ leads, onOpen, readOnly = false }) {
     <Box>
       <Typography variant="h6" sx={{ mb: 0.5 }}>Pipeline</Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-        Trascina i lead da una fase all&apos;altra; clic per aprire la scheda. Lead aperti e quelli chiusi nel periodo.
+        Trascina i lead da una fase all&apos;altra oppure tocca una scheda per aprirla e cambiarne la fase. Lead aperti e quelli chiusi nel periodo.
       </Typography>
       <Scrollbar sx={{ pb: 2 }}>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'flex-start', minWidth: 1300 }}>
+        <Stack direction="row" spacing={{ xs: 1.5, md: 2 }} sx={{ alignItems: 'flex-start', minWidth: { md: 1300 } }}>
           {STAGES.map((col) => {
             const items = list.filter((l) => l.stage === col.key);
             const value = items.reduce((t, l) => t + ((col.key === 'vinto' ? l.wonValue : l.estimatedValue) ?? 0), 0);
@@ -311,7 +311,7 @@ function Pipeline({ leads, onOpen, readOnly = false }) {
                 onDragOver={(e) => { e.preventDefault(); setOver(col.key); }}
                 onDragLeave={() => setOver((o) => (o === col.key ? null : o))}
                 onDrop={(e) => !readOnly && drop(col.key, e)}
-                sx={{ flex: 1, minWidth: 200, p: 1.25, borderRadius: 2, bgcolor: over === col.key ? 'primary.lighter' : 'background.neutral', borderStyle: over === col.key ? 'dashed' : 'solid' }}
+                sx={{ flex: 1, minWidth: { xs: '78vw', sm: 220, md: 200 }, scrollSnapAlign: 'start', p: 1.25, borderRadius: 2, bgcolor: over === col.key ? 'primary.lighter' : 'background.neutral', borderStyle: over === col.key ? 'dashed' : 'solid' }}
               >
                 <Stack direction="row" spacing={1} sx={{ alignItems: 'center', px: 0.5, py: 0.75 }}>
                   <Typography variant="subtitle1" sx={{ flex: 1 }}>{col.label}</Typography>

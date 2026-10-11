@@ -207,9 +207,9 @@ function InsightsCard({ insights, limits, isAdmin }) {
         subheader="Dove va la spesa e come si sta comportando questo mese"
         action={
           isAdmin ? (
-            <Label component={RouterLink} href="/impostazioni" sx={{ cursor: 'pointer' }}>
-              Limiti in Impostazioni
-            </Label>
+            <Box component={RouterLink} href="/impostazioni" sx={{ textDecoration: 'none' }}>
+              <Label sx={{ cursor: 'pointer' }}>Limiti in Impostazioni</Label>
+            </Box>
           ) : null
         }
       />
