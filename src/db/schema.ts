@@ -703,6 +703,10 @@ export const auditLogs = mysqlTable(
     /** Dettagli (valori prima/dopo). Mai segreti. */
     meta: json("meta").$type<Record<string, unknown>>(),
     ip: varchar("ip", { length: 64 }),
+    /** Browser e sistema operativo. */
+    userAgent: varchar("user_agent", { length: 300 }),
+    /** Pagina da cui è partita l'azione. */
+    path: varchar("path", { length: 300 }),
     createdAt: created(),
   },
   (t) => [

@@ -1,5 +1,5 @@
 import "server-only";
-import { logError } from "@/lib/error-log";
+import { errorDetail, logError } from "@/lib/error-log";
 import { audit } from "@/lib/audit";
 import { z } from "zod";
 import { asc, eq } from "drizzle-orm";
@@ -394,7 +394,7 @@ Dove un dato non è verificato dichiaralo. Niente frasi generiche valide per qua
     await logError({
       area: "Check-up AI",
       message: `Dati dei grafici del report non generati: ${e instanceof Error ? e.message : String(e)}`,
-      detail: `Check-up ${checkupId}, fase scrittura (dati del report)\n${e instanceof Error ? (e.stack ?? "") : ""}`,
+      detail: errorDetail(e, { "Check-up": checkupId, Cliente: client.id, Fase: "scrittura, dati dei grafici del report", Pagina: `/clienti/${client.id}/checkup?id=${checkupId}` }),
       path: `/clienti/${client.id}/checkup?id=${checkupId}`,
     });
     await progress(checkupId, "Dati dei grafici non disponibili: il report userà il testo delle sezioni");

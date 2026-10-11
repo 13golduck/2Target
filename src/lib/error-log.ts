@@ -14,6 +14,37 @@ const clean = (t: string) =>
     .replace(/(password|pass|secret|token|apikey|api_key)=([^&\s]+)/gi, "$1=***")
     .replace(/mysql:\/\/[^@\s]+@/g, "mysql://***@");
 
+/**
+ * Dettaglio tecnico di un errore: tipo, codice HTTP, tipo di errore dell'API, request-id (per il supporto Anthropic),
+ * contesto della chiamata AI (modello, passo) e stack. Senza segreti.
+ */
+export function errorDetail(e: unknown, context: Record<string, unknown> = {}) {
+  const err = e as {
+    name?: string;
+    message?: string;
+    status?: number;
+    requestID?: string | null;
+    error?: { error?: { type?: string; message?: string }; type?: string };
+    aiContext?: Record<string, unknown>;
+    cause?: unknown;
+    stack?: string;
+  } | null;
+  const lines: string[] = [];
+  const add = (k: string, v: unknown) => {
+    if (v != null && v !== "") lines.push(`${k}: ${typeof v === "string" ? v : JSON.stringify(v)}`);
+  };
+  add("Tipo", err?.name ?? typeof e);
+  add("Messaggio", err?.message ?? String(e));
+  add("Codice HTTP", err?.status);
+  add("Tipo errore API", err?.error?.error?.type ?? err?.error?.type);
+  add("Request ID", err?.requestID);
+  for (const [k, v] of Object.entries({ ...(err?.aiContext ?? {}), ...context })) add(k, v);
+  if (err?.cause) add("Causa", err.cause instanceof Error ? err.cause.message : err.cause);
+  add("Quando (UTC)", new Date().toISOString());
+  if (err?.stack) lines.push("", err.stack);
+  return lines.join("\n");
+}
+
 export async function logError(o: { userId?: number | null; area: string; message: string; detail?: string | null; path?: string | null }) {
   try {
     await db.insert(errorLogs).values({

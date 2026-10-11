@@ -113,6 +113,13 @@
       "when": 1791707511661,
       "tag": "0015_audit_trail",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1791708642231,
+      "tag": "0016_audit_dettagli",
+      "breakpoints": true
     }
   ]
 }

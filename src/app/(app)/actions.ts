@@ -10,7 +10,7 @@ import { requireWriter } from "@/lib/auth";
 import { fromRomeInput, parseMetricInput } from "@/lib/format";
 import { METRIC_BY_KEY } from "@/lib/kpi-catalog";
 import { kpiSnapshot } from "@/lib/queries";
-import { audit } from "@/lib/audit";
+import { audit, diff } from "@/lib/audit";
 
 const str = (f: FormData, k: string) => {
   const v = String(f.get(k) ?? "").trim();
@@ -188,7 +188,8 @@ export async function voteIdea(f: FormData) {
   const ideaId = int(f, "ideaId")!;
   const value = int(f, "value") === -1 ? -1 : 1;
   await db.insert(s.ideaVotes).values({ ideaId, userId: user.id, value }).onDuplicateKeyUpdate({ set: { value } });
-  const [idea] = await db.select({ clientId: s.ideas.clientId }).from(s.ideas).where(eq(s.ideas.id, ideaId));
+  const [idea] = await db.select({ clientId: s.ideas.clientId, title: s.ideas.title }).from(s.ideas).where(eq(s.ideas.id, ideaId));
+  await audit({ userId: user.id, category: "contenuti", action: "idea.voto", description: `Voto ${value > 0 ? "positivo" : "negativo"} all'idea «${idea.title}»`, clientId: idea.clientId, target: `idea:${ideaId}` });
   revalidatePath(`/clienti/${idea.clientId}/idee`);
 }
 
@@ -258,6 +259,15 @@ export async function createItem(f: FormData) {
   redirect(`/pubblicazioni/${r.insertId}`);
 }
 
+const ITEM_LABELS: Record<string, string> = {
+  title: "Titolo", platform: "Piattaforma", crossPost: "Pubblica anche su", format: "Formato", stage: "Fase del funnel", seriesId: "Rubrica",
+  personaId: "Buyer persona", scheduledAt: "Data di pubblicazione", hook: "Gancio", layoutNotes: "Layout", script: "Script", shotList: "Scene",
+  onScreenText: "Testo a schermo", audioNotes: "Audio", caption: "Didascalia", hashtags: "Hashtag", cta: "CTA", ctaDestination: "Destinazione CTA",
+  ctaUrl: "Link CTA", referencesUrls: "Riferimenti", needsClientMaterial: "Serve materiale del cliente", productionNotes: "Note di produzione",
+  productionStatus: "Stato produzione", isPaid: "Sponsorizzata", adObjective: "Obiettivo inserzione", adButton: "Pulsante inserzione", adBudget: "Budget",
+  adDays: "Giorni", adAudience: "Pubblico", status: "Stato", internalNotes: "Note interne", publishedUrl: "Link pubblicato",
+};
+
 export async function saveItem(f: FormData) {
   const me = await requireWriter();
   const id = int(f, "id")!;
@@ -278,45 +288,43 @@ export async function saveItem(f: FormData) {
   });
 
   const isPaid = f.get("isPaid") === "on";
-  const [before] = await db.select({ clientId: s.editorialItems.clientId, status: s.editorialItems.status }).from(s.editorialItems).where(eq(s.editorialItems.id, id));
+  const [before] = await db.select().from(s.editorialItems).where(eq(s.editorialItems.id, id));
   const newStatus = oneOf(s.ITEM_STATUSES, str(f, "status")) ?? "bozza";
-  await db
-    .update(s.editorialItems)
-    .set({
-      title: str(f, "title") ?? "Senza titolo",
-      platform: oneOf(s.PLATFORMS, str(f, "platform")) ?? "instagram",
-      crossPost: f.getAll("crossPost").map(String),
-      format: oneOf(s.FORMATS, str(f, "format")) ?? "post",
-      stage: oneOf(s.FUNNEL, str(f, "stage")),
-      seriesId: int(f, "seriesId"),
-      personaId: int(f, "personaId"),
-      scheduledAt: fromRomeInput(str(f, "scheduledAt")),
-      hook: str(f, "hook"),
-      layoutNotes: str(f, "layoutNotes"),
-      script: str(f, "script"),
-      shotList,
-      onScreenText: str(f, "onScreenText"),
-      audioNotes: str(f, "audioNotes"),
-      caption: str(f, "caption"),
-      hashtags: str(f, "hashtags"),
-      cta: str(f, "cta"),
-      ctaDestination: oneOf(s.CTA_DESTINATIONS, str(f, "ctaDestination")),
-      ctaUrl: str(f, "ctaUrl"),
-      referencesUrls: str(f, "referencesUrls"),
-      needsClientMaterial: f.get("needsClientMaterial") === "on",
-      productionNotes: str(f, "productionNotes"),
-      productionStatus: oneOf(s.PRODUCTION_STATUSES, str(f, "productionStatus")) ?? "da_fare",
-      isPaid,
-      adObjective: isPaid ? oneOf(s.AD_OBJECTIVES, str(f, "adObjective")) : null,
-      adButton: isPaid ? str(f, "adButton") : null,
-      adBudget: isPaid ? int(f, "adBudget") : null,
-      adDays: isPaid ? int(f, "adDays") : null,
-      adAudience: isPaid ? str(f, "adAudience") : null,
-      status: newStatus,
-      internalNotes: str(f, "internalNotes"),
-      publishedUrl: str(f, "publishedUrl"),
-    })
-    .where(eq(s.editorialItems.id, id));
+  const values = {
+    title: str(f, "title") ?? "Senza titolo",
+    platform: oneOf(s.PLATFORMS, str(f, "platform")) ?? "instagram",
+    crossPost: f.getAll("crossPost").map(String),
+    format: oneOf(s.FORMATS, str(f, "format")) ?? "post",
+    stage: oneOf(s.FUNNEL, str(f, "stage")),
+    seriesId: int(f, "seriesId"),
+    personaId: int(f, "personaId"),
+    scheduledAt: fromRomeInput(str(f, "scheduledAt")),
+    hook: str(f, "hook"),
+    layoutNotes: str(f, "layoutNotes"),
+    script: str(f, "script"),
+    shotList,
+    onScreenText: str(f, "onScreenText"),
+    audioNotes: str(f, "audioNotes"),
+    caption: str(f, "caption"),
+    hashtags: str(f, "hashtags"),
+    cta: str(f, "cta"),
+    ctaDestination: oneOf(s.CTA_DESTINATIONS, str(f, "ctaDestination")),
+    ctaUrl: str(f, "ctaUrl"),
+    referencesUrls: str(f, "referencesUrls"),
+    needsClientMaterial: f.get("needsClientMaterial") === "on",
+    productionNotes: str(f, "productionNotes"),
+    productionStatus: oneOf(s.PRODUCTION_STATUSES, str(f, "productionStatus")) ?? "da_fare",
+    isPaid,
+    adObjective: isPaid ? oneOf(s.AD_OBJECTIVES, str(f, "adObjective")) : null,
+    adButton: isPaid ? str(f, "adButton") : null,
+    adBudget: isPaid ? int(f, "adBudget") : null,
+    adDays: isPaid ? int(f, "adDays") : null,
+    adAudience: isPaid ? str(f, "adAudience") : null,
+    status: newStatus,
+    internalNotes: str(f, "internalNotes"),
+    publishedUrl: str(f, "publishedUrl"),
+  };
+  await db.update(s.editorialItems).set(values).where(eq(s.editorialItems.id, id));
   await audit({
     userId: me.id,
     category: "contenuti",
@@ -324,6 +332,7 @@ export async function saveItem(f: FormData) {
     description: before && before.status !== newStatus ? `Pubblicazione «${str(f, "title") ?? "Senza titolo"}»: stato ${before.status} → ${newStatus}` : `Modificata la pubblicazione «${str(f, "title") ?? "Senza titolo"}»`,
     clientId: before?.clientId,
     target: `pubblicazione:${id}`,
+    meta: diff(before, values, ITEM_LABELS),
   });
   revalidatePath(`/pubblicazioni/${id}`);
   redirect(`/pubblicazioni/${id}?salvato=1`);

@@ -84,9 +84,10 @@ async function upsertChannel(clientId: number, connectionId: number, kind: strin
 }
 
 export async function syncChannelNow(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   const [ch] = await db.select().from(socialAccounts).where(eq(socialAccounts.id, Number(f.get("channelId"))));
   if (!ch) return { error: "Canale non trovato" };
+  await audit({ userId: me.id, category: "canali", action: "canale.sincronizza", description: `Aggiornati a mano i dati del canale ${ch.platform} «${ch.name ?? ch.handle}»`, clientId: ch.clientId });
   try {
     await syncChannel(ch);
     await updateKpisFromData(ch.clientId);
@@ -99,9 +100,10 @@ export async function syncChannelNow(f: FormData) {
 }
 
 export async function syncClientNow(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   const clientId = Number(f.get("clientId"));
   const errors = await syncClient(clientId);
+  await audit({ userId: me.id, category: "canali", action: "canali.sincronizza", description: `Aggiornati a mano i dati di tutti i canali${errors.length ? ` (${errors.length} con errori)` : ""}`, clientId, meta: errors.length ? { errori: errors } : null });
   revalidatePath(path(clientId));
   return { errors };
 }

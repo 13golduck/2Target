@@ -126,7 +126,24 @@ export async function callClaude(o: CallOptions): Promise<CallResult> {
       }
     });
 
-    const msg = await stream.finalMessage();
+    let msg: Anthropic.Beta.BetaMessage;
+    try {
+      msg = await stream.finalMessage();
+    } catch (e) {
+      // Contesto per il registro errori: quale chiamata è fallita
+      if (e && typeof e === "object") {
+        (e as { aiContext?: Record<string, unknown> }).aiContext = {
+          Modello: o.model,
+          Passo: o.log.step,
+          Giro: round + 1,
+          "Output strutturato": o.outputFormat ? "sì" : "no",
+          "Ricerca web": o.web ? `${o.web.searches} ricerche` : "no",
+          "Max token": o.maxTokens ?? 32_000,
+          Effort: o.effort ?? "high",
+        };
+      }
+      throw e;
+    }
     final = msg;
     usage.input += msg.usage.input_tokens;
     usage.output += msg.usage.output_tokens;

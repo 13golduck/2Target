@@ -13,7 +13,7 @@ import { isAiConfigured } from "@/lib/ai/claude";
 import { askQuestions, rewriteSection, runDeepResearch, runRecon, runWriting } from "@/lib/ai/checkup-agent";
 import { cancelJob, isRunning, runningCount, startJob } from "@/lib/ai/jobs";
 import { assertBudget, getLimits, BudgetError } from "@/lib/ai/budget";
-import { audit } from "@/lib/audit";
+import { audit, diff } from "@/lib/audit";
 
 const str = (f: FormData, k: string) => {
   const v = String(f.get(k) ?? "").trim();
@@ -84,19 +84,19 @@ async function startAiCheckupLocked(f: FormData, clientId: number, userId: numbe
   let website = str(f, "website");
   if (website && !/^https?:\/\//i.test(website)) website = `https://${website}`;
 
-  await db
-    .update(clients)
-    .set({
-      name: str(f, "name") ?? undefined,
-      sector: str(f, "sector"),
-      website,
-      vatNumber: str(f, "vatNumber"),
-      city: str(f, "city"),
-      contactName: str(f, "contactName"),
-      socialLinks: str(f, "socialLinks"),
-      notes: str(f, "notes"),
-    })
-    .where(eq(clients.id, clientId));
+  const [clientBefore] = await db.select().from(clients).where(eq(clients.id, clientId));
+  const clientData = {
+    name: str(f, "name") ?? clientBefore?.name,
+    sector: str(f, "sector"),
+    website,
+    vatNumber: str(f, "vatNumber"),
+    city: str(f, "city"),
+    contactName: str(f, "contactName"),
+    socialLinks: str(f, "socialLinks"),
+    notes: str(f, "notes"),
+  };
+  await db.update(clients).set(clientData).where(eq(clients.id, clientId));
+  const clientChanges = diff(clientBefore, clientData, { name: "Nome", sector: "Settore", website: "Sito", vatNumber: "P. IVA", city: "Città", contactName: "Referente", socialLinks: "Profili social", notes: "Note" });
 
   // Check-up periodico: si parte dal precedente (confronto e storico)
   const [prev] = await db.select({ id: checkups.id }).from(checkups).where(eq(checkups.clientId, clientId)).orderBy(desc(checkups.id)).limit(1);
@@ -107,13 +107,13 @@ async function startAiCheckupLocked(f: FormData, clientId: number, userId: numbe
     .insert(checkups)
     .values({ clientId, period: monthLabel(), aiMode: mode, aiState: "ricognizione", aiLog: [], previousId: prev?.id ?? null, register, reasoning, methodVersion });
   startJob(r.insertId, "ricognizione", () => runRecon(r.insertId), userId);
-  await audit({ userId, category: "checkup", action: "checkup.avvio", description: `Avviato il check-up AI (modello ${mode}, ragionamento ${reasoning}, registro ${register}, metodologia v${methodVersion})`, clientId, target: `checkup:${r.insertId}` });
+  await audit({ userId, category: "checkup", action: "checkup.avvio", description: `Avviato il check-up AI (modello ${mode}, ragionamento ${reasoning}, registro ${register}, metodologia v${methodVersion})`, clientId, target: `checkup:${r.insertId}`, meta: Object.keys(clientChanges).length ? { "Dati del cliente aggiornati": clientChanges } : null });
   revalidatePath(path(clientId));
   return { ok: true, checkupId: r.insertId };
 }
 
 export async function saveAnswers(f: FormData) {
-  await requireWriter();
+  const me = await requireWriter();
   const checkupId = Number(f.get("checkupId"));
   const c = await checkupOf(checkupId);
   const now = new Date();
@@ -126,6 +126,8 @@ export async function saveAnswers(f: FormData) {
       .set({ answer: answer || null, answeredAt: answer ? now : null })
       .where(and(eq(checkupQuestions.id, id), eq(checkupQuestions.checkupId, checkupId)));
   }
+  const filled = [...f.entries()].filter(([k, v]) => k.startsWith("q:") && String(v).trim()).length;
+  await audit({ userId: me.id, category: "checkup", action: "checkup.risposte_salvate", description: `Salvate le risposte alle domande dell'AI (${filled} compilate)`, clientId: c.clientId, target: `checkup:${checkupId}` });
   revalidatePath(path(c.clientId));
   return { ok: true };
 }

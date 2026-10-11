@@ -13,6 +13,18 @@ import { reportClientError } from './error-actions';
 let patched = false;
 let currentPath = '/';
 
+/** Contesto tecnico del browser: indirizzo completo, browser, schermo, ora. */
+const browserContext = () =>
+  [
+    `URL: ${window.location.href}`,
+    `Browser: ${navigator.userAgent}`,
+    `Schermo: ${window.innerWidth}×${window.innerHeight} (dpr ${window.devicePixelRatio})`,
+    `Lingua: ${navigator.language} · Online: ${navigator.onLine ? 'sì' : 'no'}`,
+    `Ora del browser: ${new Date().toISOString()}`,
+  ].join('\n');
+
+const fullPath = () => `${window.location.pathname}${window.location.search}`;
+
 export function ErrorReporter() {
   const pathname = usePathname();
   currentPath = pathname;
@@ -23,14 +35,14 @@ export function ErrorReporter() {
       const original = toast.error;
       toast.error = (message, ...rest) => {
         const text = typeof message === 'string' ? message : String(message?.props?.children ?? message ?? '');
-        reportClientError(text, currentPath).catch(() => {});
+        reportClientError(text, fullPath() || currentPath, browserContext()).catch(() => {});
         return original(message, ...rest);
       };
     }
-    const onError = (e) => reportClientError(e.message || 'Errore JavaScript', currentPath, `${e.filename ?? ''}:${e.lineno ?? ''}\n${e.error?.stack ?? ''}`).catch(() => {});
+    const onError = (e) => reportClientError(e.message || 'Errore JavaScript', fullPath(), `File: ${e.filename ?? ''}:${e.lineno ?? ''}:${e.colno ?? ''}\n${browserContext()}\n\n${e.error?.stack ?? ''}`).catch(() => {});
     const onRejection = (e) => {
       const r = e.reason;
-      reportClientError(r?.message || String(r) || 'Promessa rifiutata', currentPath, r?.stack ?? '').catch(() => {});
+      reportClientError(r?.message || String(r) || 'Promessa rifiutata', fullPath(), `File: promessa rifiutata\n${browserContext()}\n\n${r?.stack ?? ''}`).catch(() => {});
     };
     window.addEventListener('error', onError);
     window.addEventListener('unhandledrejection', onRejection);

@@ -9,7 +9,7 @@ import { clients, COST_KINDS, LEAD_SOURCES, LEAD_STAGES, leadEvents, leads, mark
 import { requireWriter } from "@/lib/auth";
 import { fromRomeInput } from "@/lib/format";
 import { updateKpisFromData } from "@/lib/integrations/sync";
-import { audit } from "@/lib/audit";
+import { audit, diff } from "@/lib/audit";
 
 const str = (f: FormData, k: string) => {
   const v = String(f.get(k) ?? "").trim();
@@ -23,6 +23,11 @@ const num = (f: FormData, k: string) => {
 const oneOf = <T extends readonly string[]>(list: T, v: string | null): T[number] | null =>
   v && (list as readonly string[]).includes(v) ? (v as T[number]) : null;
 const path = (clientId: number) => `/clienti/${clientId}/lead`;
+
+const LEAD_LABELS: Record<string, string> = {
+  name: "Nome", company: "Azienda", email: "Email", phone: "Telefono", message: "Messaggio", source: "Fonte", utmCampaign: "Campagna",
+  estimatedValue: "Valore stimato", wonValue: "Valore vinto", lostReason: "Motivo perdita", notes: "Note", receivedAt: "Ricevuto il", stage: "Fase",
+};
 
 async function afterChange(clientId: number) {
   await updateKpisFromData(clientId).catch(() => undefined);
@@ -53,7 +58,7 @@ export async function saveLead(f: FormData) {
     if (!old) return { error: "Lead non trovato" };
     await db.update(leads).set(data).where(eq(leads.id, id));
     if (old.stage !== stage) await changeStage(id, old.stage, stage, user.id);
-    await audit({ userId: user.id, category: "lead", action: "lead.modifica", description: `Modificato il lead «${data.name ?? data.email ?? data.phone ?? id}»${old.stage !== stage ? `: ${old.stage} → ${stage}` : ""}`, clientId: old.clientId, target: `lead:${id}` });
+    await audit({ userId: user.id, category: "lead", action: "lead.modifica", description: `Modificato il lead «${data.name ?? data.email ?? data.phone ?? id}»${old.stage !== stage ? `: ${old.stage} → ${stage}` : ""}`, clientId: old.clientId, target: `lead:${id}`, meta: diff(old, { ...data, stage }, LEAD_LABELS) });
     await afterChange(old.clientId);
   } else {
     const [r] = await db.insert(leads).values({ ...data, clientId, stage: "nuovo", stageChangedAt: data.receivedAt });

@@ -26,9 +26,9 @@ export async function GET(request: Request) {
 
   const fmt = new Intl.DateTimeFormat("it-IT", { timeZone: "Europe/Rome", dateStyle: "short", timeStyle: "medium" });
   const lines = [
-    ["Data e ora", "Chi", "Categoria", "Azione", "Descrizione", "Cliente", "Oggetto", "IP", "Dettagli"].map(cell).join(";"),
+    ["Data e ora", "Chi", "Categoria", "Azione", "Descrizione", "Cliente", "Oggetto", "Pagina", "IP", "Browser", "Dettagli"].map(cell).join(";"),
     ...rows.map((r) =>
-      [fmt.format(r.createdAt), r.actor ?? "Sistema", r.category, r.action, r.description, r.clientName ?? "", r.target ?? "", r.ip ?? "", r.meta ?? ""].map(cell).join(";"),
+      [fmt.format(r.createdAt), r.actor ?? "Sistema", r.category, r.action, r.description, r.clientName ?? "", r.target ?? "", r.path ?? "", r.ip ?? "", r.userAgent ?? "", r.meta ?? ""].map(cell).join(";"),
     ),
   ];
   const day = new Date().toISOString().slice(0, 10);

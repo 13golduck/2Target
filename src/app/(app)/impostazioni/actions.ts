@@ -35,6 +35,7 @@ export async function requestSettingsCode() {
   try {
     const sent = await requestLoginCode(me.email, ip, "settings");
     if (!sent) return { error: "Hai chiesto troppi codici: riprova tra 15 minuti." };
+    await audit({ userId: me.id, category: "impostazioni", action: "impostazioni.codice_richiesto", description: `Richiesto il codice per entrare in Impostazioni (inviato a ${me.email})` });
   } catch (e) {
     return { error: explainMailError(e) };
   }

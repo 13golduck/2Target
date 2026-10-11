@@ -1,5 +1,9 @@
 "use server";
 
+import { and, desc, gte, ne } from "drizzle-orm";
+
+import { db } from "@/db";
+import { errorLogs } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { logError } from "@/lib/error-log";
 
@@ -16,5 +20,15 @@ export async function reportClientError(message: string, path: string, detail?: 
   if ((recent.get(key) ?? 0) > now - 10_000) return;
   recent.set(key, now);
   if (recent.size > 500) recent.clear();
-  await logError({ userId: me.id, area: detail ? "Pagina (JavaScript)" : "Pagina", message: msg, detail: detail?.slice(0, 4000), path: String(path ?? "").slice(0, 300) });
+  // Se il messaggio mostrato viene da un errore già registrato dal server, si collega la voce con il dettaglio tecnico
+  const server = await db
+    .select({ id: errorLogs.id, message: errorLogs.message, detail: errorLogs.detail })
+    .from(errorLogs)
+    .where(and(gte(errorLogs.createdAt, new Date(now - 86_400_000)), ne(errorLogs.area, "Pagina")))
+    .orderBy(desc(errorLogs.id))
+    .limit(50);
+  const twin = server.find((r) => r.message.length > 10 && (msg.includes(r.message.slice(0, 200)) || r.message.includes(msg)));
+  const full = [detail?.slice(0, 4000), twin && `\n— Dettaglio tecnico dal server (voce #${twin.id}) —\n${twin.detail ?? ""}`].filter(Boolean).join("\n");
+  const isJs = !!detail?.startsWith("File:");
+  await logError({ userId: me.id, area: isJs ? "Pagina (JavaScript)" : "Pagina", message: msg, detail: full || null, path: String(path ?? "").slice(0, 300) });
 }

@@ -51,7 +51,8 @@ export async function loginStep(prev: LoginState, formData: FormData): Promise<L
     const ip = (h.get("x-forwarded-for") ?? "").split(",")[0].trim() || "?";
     if (tooMany(ip)) return { step: "email", email, error: "Troppe richieste: riprova tra qualche minuto." };
     try {
-      await requestLoginCode(email, ip);
+      const sent = await requestLoginCode(email, ip);
+      await audit({ userId: null, actorLabel: email.slice(0, 200), category: "accesso", action: "accesso.codice_richiesto", description: sent ? `Richiesto il codice di accesso per ${email}` : `Richiesta di codice non soddisfatta per ${email} (utente inesistente, disattivato o troppe richieste)` });
     } catch (e) {
       console.error("[login] invio codice:", e);
       await logError({ area: "Accesso", message: `Invio del codice non riuscito: ${e instanceof Error ? e.message : String(e)}`, detail: `Email: ${email}`, path: "/login" });

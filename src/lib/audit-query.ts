@@ -41,6 +41,8 @@ export async function queryAudit(f: ReturnType<typeof parseAuditFilters>, limit 
       target: auditLogs.target,
       meta: auditLogs.meta,
       ip: auditLogs.ip,
+      userAgent: auditLogs.userAgent,
+      path: auditLogs.path,
     })
     .from(auditLogs)
     .leftJoin(clients, eq(clients.id, auditLogs.clientId))

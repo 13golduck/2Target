@@ -10,15 +10,15 @@ import { BudgetError } from "@/lib/ai/budget";
 import { isAiConfigured } from "@/lib/ai/claude";
 import { draftBrandKit, generateBrief, reviewDesign } from "@/lib/ai/designer";
 import { BrandKitSchema } from "@/lib/design-types";
-import { logError } from "@/lib/error-log";
-import { audit } from "@/lib/audit";
+import { errorDetail, logError } from "@/lib/error-log";
+import { audit, diff } from "@/lib/audit";
 
 // Studio grafico: brand kit, brief grafici e revisioni (Senior Graphic Designer AI).
 
 const NO_AI = { error: "Manca la chiave API di Anthropic: l'AI è spenta (vedi Consumi AI)." };
 async function aiError(e: unknown, userId: number, what: string) {
   const error = e instanceof BudgetError ? e.message : `L'AI non ha risposto: ${e instanceof Error ? e.message : "errore"}`;
-  await logError({ userId, area: `Studio grafico: ${what}`, message: error, detail: e instanceof Error ? e.stack : null });
+  await logError({ userId, area: `Studio grafico: ${what}`, message: error, detail: errorDetail(e, { Funzione: what }) });
   return { error };
 }
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -41,8 +41,9 @@ export async function saveBrandKit(f: FormData) {
     if (logoField.length > 450_000) return { error: "Logo troppo pesante: massimo circa 300 KB" };
     set.logo = logoField;
   }
+  const [kitBefore] = await db.select({ data: brandKits.data }).from(brandKits).where(eq(brandKits.clientId, clientId));
   await db.insert(brandKits).values({ clientId, ...set }).onDuplicateKeyUpdate({ set });
-  await audit({ userId: me.id, category: "grafica", action: "brandkit.salvato", description: `Salvato il brand kit${logoField === "" ? " (logo rimosso)" : logoField !== "keep" ? " con un nuovo logo" : ""}`, clientId });
+  await audit({ userId: me.id, category: "grafica", action: "brandkit.salvato", description: `Salvato il brand kit${logoField === "" ? " (logo rimosso)" : logoField !== "keep" ? " con un nuovo logo" : ""}`, clientId, meta: diff(kitBefore?.data as Record<string, unknown> | undefined, data as Record<string, unknown>) });
   revalidatePath(`/clienti/${clientId}/brand`);
   return { ok: true };
 }

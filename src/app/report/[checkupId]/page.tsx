@@ -6,6 +6,7 @@ import { buyerPersonas, checkupSections, checkups, clients, objectives } from "@
 import { requireClientAccess } from "@/lib/auth";
 import { CHECKUP_SECTIONS } from "@/lib/checkup-template";
 import { canWrite } from "@/lib/roles";
+import { audit } from "@/lib/audit";
 import { ReportView } from "./report-view";
 
 // Report del check-up: pagina dedicata, consultabile sul web (grafici e indice) e scaricabile in PDF (stampa A4).
@@ -35,6 +36,7 @@ export default async function ReportPage({ params }: { params: Promise<{ checkup
     db.select().from(objectives).where(eq(objectives.checkupId, id)),
   ]);
   if (!sections.length) notFound();
+  await audit({ userId: me.id, category: "checkup", action: "report.visto", description: `Aperto il report del check-up${checkup.period ? ` (${checkup.period})` : ""}`, clientId: checkup.clientId, target: `checkup:${id}` });
 
   return (
     <ReportView

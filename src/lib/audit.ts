@@ -26,17 +26,60 @@ type AuditInput = {
   actorLabel?: string;
 };
 
-async function requestIp() {
+/** Da dove arriva l'azione: IP, browser e pagina (fuori da una richiesta, es. lavori in background, è tutto vuoto). */
+async function requestContext() {
   try {
     const h = await headers();
-    return (h.get("x-forwarded-for") ?? "").split(",")[0].trim() || h.get("x-real-ip") || null;
+    let path = h.get("x-pathname");
+    const ref = h.get("referer");
+    if (ref) {
+      try {
+        const u = new URL(ref);
+        path = `${u.pathname}${u.search}`;
+      } catch {
+        /* referer non valido */
+      }
+    }
+    return {
+      ip: (h.get("x-forwarded-for") ?? "").split(",")[0].trim() || h.get("x-real-ip") || null,
+      userAgent: h.get("user-agent"),
+      path,
+    };
   } catch {
-    return null; // fuori da una richiesta (lavori in background)
+    return { ip: null, userAgent: null, path: null };
   }
+}
+
+const short = (v: unknown) => {
+  if (v instanceof Date) return v.toISOString();
+  if (typeof v === "string" && v.length > 300) return `${v.slice(0, 300)}… (${v.length} caratteri)`;
+  return v ?? null;
+};
+
+// Vuoto è vuoto: null, "", [] e {} non contano come modifica
+const norm = (v: unknown) => {
+  if (v instanceof Date) return v.toISOString();
+  if (v == null || v === "" || (Array.isArray(v) && !v.length) || (typeof v === "object" && !Array.isArray(v) && !Object.keys(v).length)) return null;
+  return v;
+};
+
+/**
+ * Campi cambiati tra prima e dopo, per i dettagli dell'audit: { campo: { prima, dopo } }.
+ * I testi lunghi vengono accorciati; con `labels` si danno nomi leggibili ai campi.
+ */
+export function diff(before: Record<string, unknown> | null | undefined, after: Record<string, unknown>, labels: Record<string, string> = {}) {
+  const out: Record<string, { prima: unknown; dopo: unknown }> = {};
+  for (const [k, v] of Object.entries(after)) {
+    const old = before?.[k];
+    const same = JSON.stringify(norm(old)) === JSON.stringify(norm(v));
+    if (!same) out[labels[k] ?? k] = { prima: short(old), dopo: short(v) };
+  }
+  return out;
 }
 
 export async function audit(o: AuditInput) {
   try {
+    const ctx = await requestContext();
     let actor = o.actorLabel ?? null;
     if (o.userId && !actor) {
       const [u] = await db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, o.userId)).limit(1);
@@ -51,7 +94,9 @@ export async function audit(o: AuditInput) {
       clientId: o.clientId ?? null,
       target: o.target?.slice(0, 80) ?? null,
       meta: o.meta ?? null,
-      ip: (await requestIp())?.slice(0, 64) ?? null,
+      ip: ctx.ip?.slice(0, 64) ?? null,
+      userAgent: ctx.userAgent?.slice(0, 300) ?? null,
+      path: ctx.path?.slice(0, 300) ?? null,
     });
     if (Math.random() < 0.01) {
       await db.delete(auditLogs).where(lt(auditLogs.createdAt, new Date(Date.now() - RETENTION_DAYS * 86_400_000)));

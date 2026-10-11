@@ -56,6 +56,57 @@ function targetHref(r) {
   return null;
 }
 
+/** Browser e sistema in breve, dallo user agent. */
+function shortAgent(ua) {
+  if (!ua) return null;
+  const os = /iPhone|iPad/.test(ua) ? 'iOS' : /Android/.test(ua) ? 'Android' : /Mac OS X/.test(ua) ? 'macOS' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : 'altro';
+  const browser = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'altro';
+  return `${browser} su ${os}${/Mobile/.test(ua) ? ' (smartphone)' : ''}`;
+}
+
+const show = (v) => (v == null || v === '' ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v));
+const isChange = (v) => v && typeof v === 'object' && !Array.isArray(v) && 'prima' in v && 'dopo' in v;
+
+/** Dettagli: le modifiche «prima → dopo» in tabella, il resto come elenco. */
+function MetaDetails({ meta }) {
+  const entries = Object.entries(meta ?? {});
+  if (!entries.length) return null;
+  const changes = [];
+  const other = [];
+  for (const [k, v] of entries) {
+    if (isChange(v)) changes.push([k, v]);
+    else if (v && typeof v === 'object' && !Array.isArray(v) && Object.values(v).some(isChange)) Object.entries(v).forEach(([kk, vv]) => changes.push([`${k} · ${kk}`, vv]));
+    else other.push([k, v]);
+  }
+  return (
+    <>
+      {changes.length > 0 && (
+        <Box sx={{ mt: 1.5, overflowX: 'auto' }}>
+          <Box component="table" sx={{ borderCollapse: 'collapse', width: 1, typography: 'caption', '& td, & th': { p: 0.75, borderBottom: 1, borderColor: 'divider', textAlign: 'left', verticalAlign: 'top', wordBreak: 'break-word' }, '& th': { color: 'text.secondary', fontWeight: 600 } }}>
+            <thead>
+              <tr><th>Campo</th><th>Prima</th><th>Dopo</th></tr>
+            </thead>
+            <tbody>
+              {changes.map(([k, v]) => (
+                <tr key={k}>
+                  <td style={{ whiteSpace: 'nowrap' }}>{k}</td>
+                  <td><Box component="span" sx={{ color: 'error.dark', textDecoration: 'line-through', textDecorationColor: 'rgba(0,0,0,0.25)' }}>{show(v.prima)}</Box></td>
+                  <td><Box component="span" sx={{ color: 'success.dark' }}>{show(v.dopo)}</Box></td>
+                </tr>
+              ))}
+            </tbody>
+          </Box>
+        </Box>
+      )}
+      {other.length > 0 && (
+        <Box component="pre" sx={{ m: 0, mt: 1.5, p: 1.5, borderRadius: 1, bgcolor: 'background.neutral', fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 280, overflow: 'auto' }}>
+          {JSON.stringify(Object.fromEntries(other), null, 2)}
+        </Box>
+      )}
+    </>
+  );
+}
+
 export function AuditView({ filters, people, clients, rows }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -178,6 +229,9 @@ export function AuditView({ filters, people, clients, rows }) {
                       {r.clientName && (
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>· {r.clientName}</Typography>
                       )}
+                      {r.meta && Object.values(r.meta).some(isChange) && (
+                        <Label variant="soft" color="default">{Object.values(r.meta).filter(isChange).length} campi modificati</Label>
+                      )}
                     </Stack>
                   </Box>
                   <Iconify icon={open === r.id ? 'eva:arrow-ios-upward-fill' : 'eva:arrow-ios-downward-fill'} sx={{ flexShrink: 0 }} />
@@ -215,17 +269,28 @@ export function AuditView({ filters, people, clients, rows }) {
                           </dd>
                         </>
                       )}
+                      {r.path && (
+                        <>
+                          <dt>Pagina</dt>
+                          <dd>
+                            <Box component={RouterLink} href={r.path} sx={{ color: 'primary.main' }}>
+                              {r.path}
+                            </Box>
+                          </dd>
+                        </>
+                      )}
                       <dt>IP</dt>
                       <dd>{r.ip ?? '—'}</dd>
+                      {r.userAgent && (
+                        <>
+                          <dt>Dispositivo</dt>
+                          <dd title={r.userAgent}>{shortAgent(r.userAgent)}</dd>
+                        </>
+                      )}
+                      <dt>Voce</dt>
+                      <dd>#{r.id}</dd>
                     </Box>
-                    {r.meta && (
-                      <Box
-                        component="pre"
-                        sx={{ m: 0, mt: 1, p: 1.5, borderRadius: 1, bgcolor: 'background.neutral', fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 280, overflow: 'auto' }}
-                      >
-                        {JSON.stringify(r.meta, null, 2)}
-                      </Box>
-                    )}
+                    <MetaDetails meta={r.meta} />
                   </Box>
                 </Collapse>
               </Box>
