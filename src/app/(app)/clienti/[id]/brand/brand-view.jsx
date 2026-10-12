@@ -132,9 +132,10 @@ export function BrandView({ clientId, aiConfigured, kit, reviews }) {
             <Box>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>Logo</Typography>
               <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                <Box sx={{ width: 96, height: 96, borderRadius: 2, border: 1, borderColor: 'divider', display: 'grid', placeItems: 'center', bgcolor: 'background.neutral', overflow: 'hidden' }}>
-                  {logo ? <Box component="img" src={logo} alt="Logo" sx={{ maxWidth: '90%', maxHeight: '90%' }} /> : <Iconify icon="solar:gallery-bold" width={28} sx={{ color: 'text.disabled' }} />}
+                <Box sx={{ width: 200, height: 112, p: 1.5, borderRadius: 2, border: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.neutral', overflow: 'hidden', flexShrink: 0 }}>
+                  {logo ? <Box component="img" src={logo} alt="Logo" sx={{ display: 'block', width: '100%', height: '100%', objectFit: 'contain' }} /> : <Iconify icon="solar:gallery-bold" width={28} sx={{ color: 'text.disabled' }} />}
                 </Box>
+                {icon && <Box component="img" src={icon} alt="Icona" title="Icona per menu ed elenchi" sx={{ width: 56, height: 56, borderRadius: 1.5, border: 1, borderColor: 'divider', bgcolor: '#fff', flexShrink: 0 }} />}
                 <Button component="label" variant="outlined" color="inherit" size="small">
                   Carica logo
                   <input

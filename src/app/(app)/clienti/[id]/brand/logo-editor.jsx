@@ -7,6 +7,7 @@ import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
+import Slider from '@mui/material/Slider';
 import Switch from '@mui/material/Switch';
 import Typography from '@mui/material/Typography';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -21,7 +22,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 // - accetta immagini grandi (fino a 20 MB) e le comprime;
 // - rifila i margini vuoti (trasparenti o del colore di sfondo);
 // - ridimensiona il logo (lato lungo massimo 1000 px) mantenendo le proporzioni;
-// - ricava un'icona quadrata 256×256 per menu ed elenchi, scegliendo quale parte usare se il logo è molto allungato.
+// - ricava un'icona quadrata 256×256 per menu ed elenchi: si sceglie la parte del logo trascinando un riquadro e con lo zoom.
 
 export const LOGO_MAX_FILE = 20 * 1024 * 1024;
 const LOGO_MAX_SIDE = 1000;
@@ -110,19 +111,28 @@ function renderLogo(src, box) {
   return exportCanvas(c);
 }
 
-/** Icona quadrata: la parte scelta del logo, centrata con margine, su sfondo trasparente o pieno. */
-function renderIcon(src, box, part, background) {
-  let { x, y, w, h } = box;
-  if (part !== 'intero') {
-    const side = Math.min(w, h);
-    if (w > h) {
-      x = part === 'inizio' ? x : x + Math.round((w - side) / 2);
-      w = side;
-    } else {
-      y = part === 'inizio' ? y : y + Math.round((h - side) / 2);
-      h = side;
-    }
-  }
+// ── Inquadratura dell'icona ──────────────────────────────────────────
+// Il logo (rifilato) sta al centro di un'area quadrata di lato FULL = lato lungo / 0,84 (zoom 1 = logo intero
+// con margine). Il riquadro dell'icona ha lato FULL / zoom e centro (cx, cy) in coordinate del logo.
+
+const fullSide = (box) => Math.max(box.w, box.h) / 0.84;
+const MAX_ZOOM = 8;
+
+/** Tiene il riquadro dentro l'area quadrata attorno al logo. */
+function clampFrame(box, f) {
+  const full = fullSide(box);
+  const side = full / f.zoom;
+  const minX = box.w / 2 - full / 2 + side / 2;
+  const maxX = box.w / 2 + full / 2 - side / 2;
+  const minY = box.h / 2 - full / 2 + side / 2;
+  const maxY = box.h / 2 + full / 2 - side / 2;
+  return { zoom: f.zoom, cx: Math.min(maxX, Math.max(minX, f.cx)), cy: Math.min(maxY, Math.max(minY, f.cy)) };
+}
+
+const wholeFrame = (box) => ({ zoom: 1, cx: box.w / 2, cy: box.h / 2 });
+
+/** Icona quadrata 256×256: la parte del logo dentro il riquadro, su sfondo trasparente o pieno. */
+function renderIcon(src, box, frame, background) {
   const c = document.createElement('canvas');
   c.width = ICON_SIZE;
   c.height = ICON_SIZE;
@@ -131,19 +141,78 @@ function renderIcon(src, box, part, background) {
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, ICON_SIZE, ICON_SIZE);
   }
-  const inner = ICON_SIZE * 0.84;
-  const scale = Math.min(inner / w, inner / h);
-  const dw = w * scale;
-  const dh = h * scale;
-  ctx.drawImage(src, x, y, w, h, (ICON_SIZE - dw) / 2, (ICON_SIZE - dh) / 2, dw, dh);
+  const side = fullSide(box) / frame.zoom;
+  const scale = ICON_SIZE / side;
+  const left = frame.cx - side / 2;
+  const top = frame.cy - side / 2;
+  ctx.drawImage(src, box.x, box.y, box.w, box.h, -left * scale, -top * scale, box.w * scale, box.h * scale);
   return exportCanvas(c);
+}
+
+/** Area di inquadratura: il logo con sopra il riquadro dorato da trascinare. */
+function FrameStage({ logo, box, frame, onChange }) {
+  const STAGE = 300;
+  const full = fullSide(box);
+  const k = STAGE / full; // px dello schermo per px del logo
+  const imgW = box.w * k;
+  const imgH = box.h * k;
+  const side = (full / frame.zoom) * k;
+  const left = STAGE / 2 + (frame.cx - box.w / 2) * k - side / 2;
+  const top = STAGE / 2 + (frame.cy - box.h / 2) * k - side / 2;
+
+  const startDrag = (e) => {
+    e.preventDefault();
+    const start = { x: e.clientX, y: e.clientY, cx: frame.cx, cy: frame.cy };
+    const move = (ev) => onChange(clampFrame(box, { zoom: frame.zoom, cx: start.cx + (ev.clientX - start.x) / k, cy: start.cy + (ev.clientY - start.y) / k }));
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+
+  return (
+    <Box
+      sx={{
+        position: 'relative',
+        width: STAGE,
+        height: STAGE,
+        maxWidth: '100%',
+        borderRadius: 2,
+        overflow: 'hidden',
+        border: 1,
+        borderColor: 'divider',
+        touchAction: 'none',
+        backgroundImage: 'repeating-conic-gradient(#F4F6F8 0% 25%, #fff 0% 50%)',
+        backgroundSize: '16px 16px',
+      }}
+    >
+      <Box component="img" src={logo} alt="" draggable={false} sx={{ position: 'absolute', left: (STAGE - imgW) / 2, top: (STAGE - imgH) / 2, width: imgW, height: imgH, userSelect: 'none', pointerEvents: 'none' }} />
+      {/* Fuori dal riquadro si scurisce: si vede subito cosa finisce nell'icona */}
+      <Box
+        onPointerDown={startDrag}
+        sx={{
+          position: 'absolute',
+          left,
+          top,
+          width: side,
+          height: side,
+          border: '2px solid #CDA434',
+          borderRadius: 1,
+          boxShadow: '0 0 0 9999px rgba(28,37,46,0.45)',
+          cursor: 'move',
+        }}
+      />
+    </Box>
+  );
 }
 
 export function LogoEditor({ file, onClose, onConfirm }) {
   const [state, setState] = useState(null);
   const [error, setError] = useState(null);
   const [trim, setTrim] = useState(true);
-  const [part, setPart] = useState('intero');
+  const [frame, setFrame] = useState(null);
   const [iconBg, setIconBg] = useState('trasparente');
 
   // Lettura del file
@@ -157,10 +226,8 @@ export function LogoEditor({ file, onClose, onConfirm }) {
         if (!alive) return;
         const canvas = toCanvas(img);
         const box = contentBox(canvas);
-        const ratio = box.w / box.h;
         setState({ canvas, box, full: { x: 0, y: 0, w: canvas.width, h: canvas.height, bg: box.bg }, original: { w: img.naturalWidth, h: img.naturalHeight, size: file.size } });
-        // Logo molto allungato: per l'icona si propone il simbolo all'inizio (di solito a sinistra o in alto)
-        setPart(ratio > 2.2 || ratio < 0.45 ? 'inizio' : 'intero');
+        setFrame(wholeFrame(box));
       })
       .catch((e) => setError(e.message));
     return () => {
@@ -172,7 +239,7 @@ export function LogoEditor({ file, onClose, onConfirm }) {
   const box = state ? (trim ? state.box : state.full) : null;
   const background = iconBg === 'bianco' ? '#FFFFFF' : iconBg === 'sfondo' && box?.bg && box.bg !== 'transparent' ? box.bg : null;
   const logo = state ? renderLogo(state.canvas, box) : null;
-  const icon = state ? renderIcon(state.canvas, box, part, background) : null;
+  const icon = state && frame ? renderIcon(state.canvas, box, frame, background) : null;
   const ratio = box ? box.w / box.h : 1;
   const stretched = ratio > 2.2 || ratio < 0.45;
   const kb = (dataUrl) => Math.round((dataUrl.length * 3) / 4 / 1024);
@@ -210,23 +277,52 @@ export function LogoEditor({ file, onClose, onConfirm }) {
                 >
                   <Box component="img" src={logo} alt="Logo" sx={{ display: 'block', width: '100%', height: '100%', objectFit: 'contain' }} />
                 </Box>
-                <FormControlLabel sx={{ mt: 1.5, display: 'flex' }} control={<Switch checked={trim} onChange={(e) => setTrim(e.target.checked)} />} label="Togli i margini vuoti" />
+                <FormControlLabel sx={{ mt: 1.5, display: 'flex' }} control={
+                    <Switch
+                      checked={trim}
+                      onChange={(e) => {
+                        // Cambia il logo: il riquadro dell'icona riparte dal logo intero
+                        setTrim(e.target.checked);
+                        setFrame(wholeFrame(e.target.checked ? state.box : state.full));
+                      }}
+                    />
+                  } label="Togli i margini vuoti" />
               </Box>
               <Box sx={{ flex: 1 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>Icona</Typography>
-                <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                  <Box component="img" src={icon} alt="Icona" sx={{ width: 120, height: 120, borderRadius: 2, border: 1, borderColor: 'divider', backgroundImage: 'repeating-conic-gradient(#F4F6F8 0% 25%, #fff 0% 50%)', backgroundSize: '16px 16px' }} />
+                <Typography variant="subtitle2">Icona per menu ed elenchi</Typography>
+                <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mb: 1 }}>
+                  Trascina il riquadro dorato sulla parte del logo da usare e ingrandiscila con lo zoom.
+                </Typography>
+                {frame && <FrameStage logo={logo} box={box} frame={frame} onChange={setFrame} />}
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mt: 1, maxWidth: 300 }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>Zoom</Typography>
+                  <Slider
+                    size="small"
+                    min={1}
+                    max={MAX_ZOOM}
+                    step={0.05}
+                    value={frame?.zoom ?? 1}
+                    onChange={(_, v) => setFrame((f) => clampFrame(box, { ...f, zoom: v }))}
+                    aria-label="Zoom dell'icona"
+                  />
+                  <Button size="small" color="inherit" onClick={() => setFrame(wholeFrame(box))} sx={{ flexShrink: 0 }}>
+                    Logo intero
+                  </Button>
+                </Stack>
+                <Stack direction="row" spacing={2} sx={{ alignItems: 'flex-end', mt: 1.5 }}>
+                  <Stack spacing={0.5} sx={{ alignItems: 'center' }}>
+                    <Box component="img" src={icon} alt="Icona" sx={{ width: 96, height: 96, borderRadius: 2, border: 1, borderColor: 'divider', backgroundImage: 'repeating-conic-gradient(#F4F6F8 0% 25%, #fff 0% 50%)', backgroundSize: '16px 16px' }} />
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>icona</Typography>
+                  </Stack>
+                  <Stack spacing={0.5} sx={{ alignItems: 'center' }}>
+                    <Box component="img" src={icon} alt="" sx={{ width: 40, height: 40, borderRadius: 1, bgcolor: '#fff', border: 1, borderColor: 'divider' }} />
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>elenco</Typography>
+                  </Stack>
                   <Stack spacing={0.5} sx={{ alignItems: 'center' }}>
                     <Box component="img" src={icon} alt="" sx={{ width: 24, height: 24, borderRadius: 0.5, bgcolor: '#fff' }} />
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>nel menu</Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>menu</Typography>
                   </Stack>
                 </Stack>
-                <Typography variant="caption" sx={{ display: 'block', mt: 1.5, mb: 0.5, color: 'text.secondary' }}>Parte del logo da usare</Typography>
-                <ToggleButtonGroup size="small" exclusive value={part} onChange={(_, v) => v && setPart(v)}>
-                  <ToggleButton value="intero">Intero</ToggleButton>
-                  <ToggleButton value="inizio">{ratio >= 1 ? 'Simbolo a sinistra' : 'Simbolo in alto'}</ToggleButton>
-                  <ToggleButton value="centro">Centro</ToggleButton>
-                </ToggleButtonGroup>
                 <Typography variant="caption" sx={{ display: 'block', mt: 1.5, mb: 0.5, color: 'text.secondary' }}>Sfondo dell&apos;icona</Typography>
                 <ToggleButtonGroup size="small" exclusive value={iconBg} onChange={(_, v) => v && setIconBg(v)}>
                   <ToggleButton value="trasparente">Trasparente</ToggleButton>
@@ -238,7 +334,7 @@ export function LogoEditor({ file, onClose, onConfirm }) {
 
             {stretched && (
               <Alert severity="info">
-                Il logo è molto {ratio > 1 ? 'largo' : 'alto'}: intero diventerebbe illeggibile in un quadrato piccolo. Per l&apos;icona conviene usare solo il simbolo.
+                Il logo è molto {ratio > 1 ? 'largo' : 'alto'}: intero, nel menu diventa piccolo e poco leggibile. Sposta il riquadro sul simbolo (o sulle iniziali) e alza lo zoom finché riempie l&apos;icona.
               </Alert>
             )}
           </Stack>
