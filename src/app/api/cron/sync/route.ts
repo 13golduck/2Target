@@ -2,13 +2,14 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { db } from "@/db";
-import { clients } from "@/db/schema";
+import { appSettings, clients } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { syncClient } from "@/lib/integrations/sync";
 import { audit } from "@/lib/audit";
 
-// Sincronizzazione notturna di tutti i clienti. Su Plesk: Operazioni pianificate →
-//   curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://DOMINIO/api/cron/sync
-// Senza CRON_SECRET impostato l'indirizzo è disattivato.
+// Sincronizzazione notturna di tutti i clienti (canali, KPI). Su Plesk: Operazioni pianificate →
+// «Recupera un URL» https://2target.it/api/cron/sync ogni notte (es. alle 3:00).
+// Senza chiave vale al massimo una volta ogni 20 ore; con "Authorization: Bearer $CRON_SECRET" sempre.
 
 export const maxDuration = 300;
 
@@ -23,7 +24,15 @@ async function run(request: Request) {
   const secret = process.env.CRON_SECRET;
   const given = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
   const ok = !!secret && given.length === secret.length && timingSafeEqual(Buffer.from(given), Buffer.from(secret));
-  if (!ok) return NextResponse.json({ message: "Non autorizzato" }, { status: 401 });
+  // Senza chiave (operazione pianificata di Plesk «Recupera un URL») si esegue al massimo una volta ogni 20 ore:
+  // chiunque chiami l'indirizzo non può fare altro che anticipare l'aggiornamento del giorno
+  if (!ok) {
+    const [last] = await db.select().from(appSettings).where(eq(appSettings.key, "sync_last_run")).limit(1);
+    const at = Date.parse((last?.value as { at?: string } | undefined)?.at ?? "");
+    if (Number.isFinite(at) && Date.now() - at < 20 * 3_600_000) return NextResponse.json({ ok: true, skipped: true, lastRun: new Date(at).toISOString() });
+  }
+  const runAt = { at: new Date().toISOString() };
+  await db.insert(appSettings).values({ key: "sync_last_run", value: runAt }).onDuplicateKeyUpdate({ set: { value: runAt } });
 
   const list = await db.select({ id: clients.id, name: clients.name }).from(clients);
   const report: Record<string, string[]> = {};

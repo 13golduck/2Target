@@ -35,6 +35,7 @@ const CATEGORIES = {
   canali: { label: 'Canali', color: 'secondary', icon: 'solar:link-round-bold' },
   grafica: { label: 'Studio grafico', color: 'primary', icon: 'solar:pallete-2-bold' },
   errori: { label: 'Errori', color: 'error', icon: 'solar:danger-triangle-bold' },
+  avvisi: { label: 'Avvisi', color: 'warning', icon: 'solar:bell-bing-bold' },
   sistema: { label: 'Sistema', color: 'default', icon: 'solar:server-bold' },
 };
 

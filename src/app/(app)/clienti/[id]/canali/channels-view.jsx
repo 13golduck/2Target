@@ -63,7 +63,7 @@ const PROVIDERS = [
   { key: 'linkedin', name: 'LinkedIn', what: 'Pagina aziendale · richiede l\'approvazione di LinkedIn', icons: ['socials:linkedin'], soon: true },
 ];
 
-export function ChannelsView({ clientId, error, configured, connections, channels, picker }) {
+export function ChannelsView({ clientId, error, configured, connections, channels, picker, canConnect }) {
   const router = useRouter();
   const [syncing, startSync] = useTransition();
   const [manual, setManual] = useState(false);
@@ -125,12 +125,16 @@ export function ChannelsView({ clientId, error, configured, connections, channel
                       </Box>
                     </Stack>
                   ))}
-                  {p.soon ? null : ready ? (
+                  {p.soon ? null : !canConnect ? (
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Collegano gli account solo gli amministratori e chi è abilitato a pubblicare.
+                    </Typography>
+                  ) : ready ? (
                     <Button component="a" href={`/api/connect/${p.key}/start?clientId=${clientId}`} variant={mine.length ? 'outlined' : 'contained'} startIcon={<Iconify icon="eva:link-2-fill" />}>
                       {mine.length ? 'Collega un altro account' : `Collega ${p.name}`}
                     </Button>
                   ) : (
-                    <Tooltip title="Mancano le chiavi dell'app: vedi docs/COLLEGAMENTI-API.md">
+                    <Tooltip title="Mancano le chiavi dell'app: un amministratore le inserisce in Impostazioni → Integrazioni">
                       <span>
                         <Button fullWidth disabled variant="outlined">Da configurare</Button>
                       </span>
@@ -313,7 +317,22 @@ function PickerDialog({ picker, onClose }) {
           <DialogActions><Button onClick={onClose}>Chiudi</Button></DialogActions>
         </>
       ) : (
-        <Box component="form" action={attachChannels}>
+        <Box
+          component="form"
+          action={attachChannels}
+          onSubmit={(e) => {
+            // Profili il cui nome non somiglia al cliente: si chiede conferma (è qui che si può sbagliare cliente)
+            const checked = new Set(new FormData(e.currentTarget).getAll('asset').map(String));
+            const odd = picker.assets.filter((a) => checked.has(a.key) && !a.matches);
+            if (!odd.length) return;
+            confirmSubmit(e, {
+              tone: 'warning',
+              title: `Sono davvero profili di ${picker.clientName}?`,
+              content: `Il nome di ${odd.map((a) => `«${a.name}»`).join(', ')} non somiglia a «${picker.clientName}». Collegali solo se appartengono a questo cliente: da qui in poi si pubblicherà su di loro per suo conto.`,
+              confirmText: 'Sì, sono suoi',
+            });
+          }}
+        >
           <input type="hidden" name="connectionId" value={picker.connectionId} />
           <DialogTitle>Quali canali sono di questo cliente?</DialogTitle>
           <DialogContent>
@@ -331,7 +350,8 @@ function PickerDialog({ picker, onClose }) {
                 {picker.assets.map((a) => (
                   <FormControlLabel
                     key={a.key}
-                    control={<Checkbox name="asset" value={a.key} defaultChecked={a.selected} />}
+                    disabled={!!a.owner}
+                    control={<Checkbox name="asset" value={a.key} defaultChecked={a.selected && !a.owner} />}
                     label={
                       <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', py: 0.5 }}>
                         <Avatar src={a.pictureUrl} sx={{ width: 32, height: 32 }}><Iconify icon={CHANNEL[a.kind]?.icon} width={18} /></Avatar>
@@ -340,6 +360,11 @@ function PickerDialog({ picker, onClose }) {
                           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                             {CHANNEL[a.kind]?.label}{a.kind === 'instagram' ? ` · @${a.handle}` : ''}
                           </Typography>
+                          {a.owner ? (
+                            <Typography variant="caption" sx={{ display: 'block', color: 'error.main' }}>Già collegato al cliente {a.owner}</Typography>
+                          ) : !a.matches ? (
+                            <Typography variant="caption" sx={{ display: 'block', color: 'warning.dark' }}>Il nome non somiglia a {picker.clientName}: verifica che sia suo</Typography>
+                          ) : null}
                         </Box>
                       </Stack>
                     }

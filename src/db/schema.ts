@@ -69,9 +69,11 @@ export const loginCodes = mysqlTable(
     attempts: int("attempts").notNull().default(0),
     usedAt: datetime("used_at"),
     requestIp: varchar("request_ip", { length: 64 }),
+    /** Accesso o sblocco delle Impostazioni: i due tipi di codice non sono intercambiabili. */
+    purpose: mysqlEnum("purpose", ["login", "settings"]).notNull().default("login"),
     createdAt: created(),
   },
-  (t) => [index("login_codes_user").on(t.userId, t.createdAt)],
+  (t) => [index("login_codes_user_purpose").on(t.userId, t.purpose, t.createdAt)],
 );
 
 // ── Clienti ──────────────────────────────────────────────────────────
@@ -673,7 +675,7 @@ export const designReviews = mysqlTable(
 );
 
 // Audit trail: unico registro di azioni, errori e messaggi di sistema. Chi ha fatto cosa, su quale cliente, quando e da dove. Le voci non si modificano né si cancellano dall'app.
-export const AUDIT_CATEGORIES = ["accesso", "utenti", "impostazioni", "clienti", "checkup", "contenuti", "lead", "canali", "grafica", "errori", "sistema"] as const;
+export const AUDIT_CATEGORIES = ["accesso", "utenti", "impostazioni", "clienti", "checkup", "contenuti", "lead", "canali", "grafica", "errori", "avvisi", "sistema"] as const;
 
 export const auditLogs = mysqlTable(
   "audit_logs",

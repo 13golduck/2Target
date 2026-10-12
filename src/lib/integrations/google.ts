@@ -175,7 +175,7 @@ export async function pageSpeed(url: string, strategy: "mobile" | "desktop" = "m
     r = await getJson<Psi>(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params}`, { signal: AbortSignal.timeout(90_000) });
   } catch (e) {
     if (/quota/i.test((e as Error).message) && !GOOGLE.pageSpeedKey) {
-      throw new Error("Google ha esaurito la quota gratuita condivisa: imposta GOOGLE_PAGESPEED_KEY (chiave gratuita, vedi docs/COLLEGAMENTI-API.md)");
+      throw new Error("Google ha esaurito la quota gratuita condivisa: inserisci la chiave API PageSpeed in Impostazioni → Integrazioni (è gratuita)");
     }
     throw e;
   }

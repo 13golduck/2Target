@@ -59,7 +59,7 @@ async function activeCheckup(clientId: number) {
 /** Dati del cliente + scelta del modello → ricognizione online e prime domande. Un solo check-up aperto per cliente. */
 export async function startAiCheckup(f: FormData) {
   const me = await requireWriter();
-  if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic (ANTHROPIC_API_KEY): vedi docs/AI-ANTHROPIC.md" };
+  if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic: inseriscila in Impostazioni → Integrazioni" };
   const clientId = Number(f.get("clientId"));
   if (starting.has(clientId)) return { error: "Il check-up sta già partendo", checkupId: null };
   const open = await activeCheckup(clientId);
@@ -135,7 +135,7 @@ export async function saveAnswers(f: FormData) {
 /** Dopo le risposte: altre domande (se servono) oppure ricerca approfondita + scrittura. */
 export async function continueAiCheckup(f: FormData) {
   const me = await requireWriter();
-  if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic (ANTHROPIC_API_KEY): vedi docs/AI-ANTHROPIC.md" };
+  if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic: inseriscila in Impostazioni → Integrazioni" };
   await saveAnswers(f);
   const checkupId = Number(f.get("checkupId"));
   const next = String(f.get("next"));
@@ -167,7 +167,7 @@ export async function continueAiCheckup(f: FormData) {
 /** Riprende dalla fase rimasta a metà (errore o riavvio dell'app). */
 export async function resumeAiCheckup(f: FormData) {
   const me = await requireWriter();
-  if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic (ANTHROPIC_API_KEY): vedi docs/AI-ANTHROPIC.md" };
+  if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic: inseriscila in Impostazioni → Integrazioni" };
   const checkupId = Number(f.get("checkupId"));
   const c = await checkupOf(checkupId);
   if (isRunning(checkupId)) return { error: "L'AI sta già lavorando su questo check-up" };

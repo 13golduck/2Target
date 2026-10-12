@@ -20,9 +20,12 @@ export type IntegrationKeys = {
   googleClientId: string;
   googleClientSecret: string;
   googlePageSpeedKey: string;
+  anthropicApiKey: string;
+  /** Dominio su cui la pubblicazione reale è attiva (vuoto = simulazione). Si imposta con l'interruttore in Impostazioni. */
+  publishLiveHost: string;
 };
 
-export const SECRET_FIELDS = ["metaAppSecret", "googleClientSecret", "googlePageSpeedKey"] as const;
+export const SECRET_FIELDS = ["metaAppSecret", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey"] as const;
 const ENV: Record<keyof IntegrationKeys, string> = {
   metaAppId: "META_APP_ID",
   metaAppSecret: "META_APP_SECRET",
@@ -30,6 +33,8 @@ const ENV: Record<keyof IntegrationKeys, string> = {
   googleClientId: "GOOGLE_CLIENT_ID",
   googleClientSecret: "GOOGLE_CLIENT_SECRET",
   googlePageSpeedKey: "GOOGLE_PAGESPEED_KEY",
+  anthropicApiKey: "ANTHROPIC_API_KEY",
+  publishLiveHost: "PUBLISH_LIVE_HOST",
 };
 export const FIELDS = Object.keys(ENV) as (keyof IntegrationKeys)[];
 

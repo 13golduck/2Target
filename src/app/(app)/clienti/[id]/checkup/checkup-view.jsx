@@ -296,7 +296,7 @@ function StartWizard({ aiConfigured, client, previous }) {
 
             {!aiConfigured && (
               <Alert severity="warning" sx={{ mt: 3 }}>
-                Manca la chiave API di Anthropic: segui docs/AI-ANTHROPIC.md e inserisci ANTHROPIC_API_KEY in .env.local, poi riavvia.
+                Manca la chiave API di Anthropic: un amministratore la inserisce in Impostazioni → Integrazioni.
               </Alert>
             )}
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1, sm: 2 }} sx={{ mt: 3, alignItems: { xs: 'stretch', sm: 'center' } }}>

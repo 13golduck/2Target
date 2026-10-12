@@ -6,7 +6,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { db } from "@/db";
 import { userClients, users } from "@/db/schema";
-import { canWrite, isAdminRole, isViewer } from "./roles";
+import { canPublishWith, canWrite, isAdminRole, isViewer } from "./roles";
 import { authConfig } from "./auth.config";
 import { claimFirstAccess } from "./first-access";
 import { checkLoginCode, consumeLoginCode, failLoginAttempt } from "./login-codes";
@@ -94,4 +94,11 @@ export async function requireClientAccess(clientId: number) {
   const ids = await visibleClientIds(user);
   if (ids && !ids.includes(clientId)) notFound();
   return user;
+}
+
+/** Può pubblicare (e quindi collegare profili ai clienti): admin sempre, User solo se abilitato. */
+export async function userCanPublish(user: { id: number; role: string }) {
+  if (isAdminRole(user.role)) return true;
+  const [u] = await db.select({ canPublish: users.canPublish }).from(users).where(eq(users.id, user.id)).limit(1);
+  return canPublishWith(user.role, u?.canPublish);
 }

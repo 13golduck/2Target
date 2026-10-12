@@ -9,7 +9,12 @@ import { runDuePublications } from "@/lib/publishing/scheduler";
 
 export const maxDuration = 300;
 
+const g = globalThis as unknown as { __publishCronAt?: number };
+
 export async function GET() {
+  // Al massimo una volta ogni 30 secondi: chiamarlo di continuo non serve a nulla
+  if (Date.now() - (g.__publishCronAt ?? 0) < 30_000) return NextResponse.json({ ok: true, skipped: true }, { headers: { "cache-control": "no-store" } });
+  g.__publishCronAt = Date.now();
   const r = await runDuePublications();
   return NextResponse.json({ ok: true, ...r }, { headers: { "cache-control": "no-store" } });
 }

@@ -1,4 +1,5 @@
 import "server-only";
+import { integrationKey } from "@/lib/integrations/keys";
 import Anthropic from "@anthropic-ai/sdk";
 
 import { db } from "@/db";
@@ -51,12 +52,19 @@ export function estimateCostUsd(model: string, u: Usage) {
   );
 }
 
-export const isAiConfigured = () => !!process.env.ANTHROPIC_API_KEY;
+// Chiave: Impostazioni → Integrazioni (o, in riserva, la variabile ANTHROPIC_API_KEY)
+export const isAiConfigured = () => !!integrationKey("anthropicApiKey");
 
 let client: Anthropic | null = null;
+let clientKey = "";
 function anthropic() {
-  if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY non impostata: vedi docs/AI-ANTHROPIC.md");
-  client ??= new Anthropic({ maxRetries: 3, timeout: 15 * 60_000 });
+  const apiKey = integrationKey("anthropicApiKey");
+  if (!apiKey) throw new Error("Chiave API di Anthropic mancante: inseriscila in Impostazioni → Integrazioni");
+  // Se la chiave cambia in Impostazioni si crea un nuovo client
+  if (!client || clientKey !== apiKey) {
+    client = new Anthropic({ apiKey, maxRetries: 3, timeout: 15 * 60_000 });
+    clientKey = apiKey;
+  }
   return client;
 }
 

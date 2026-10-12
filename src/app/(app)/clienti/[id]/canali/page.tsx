@@ -3,15 +3,35 @@ import { ensureIntegrationKeys } from "@/lib/integrations/keys";
 
 import { db } from "@/db";
 import { isoDaysAgo } from "@/lib/format";
-import { channelDaily, connections, seoSnapshots, socialAccounts, socialPosts } from "@/db/schema";
+import { channelDaily, clients, connections, seoSnapshots, socialAccounts, socialPosts } from "@/db/schema";
 import { isConfigured } from "@/lib/integrations/config";
+import { requireUser, userCanPublish } from "@/lib/auth";
 import { assetsFor } from "../../../channel-actions";
 import { ChannelsView } from "./channels-view";
 
 export const metadata = { title: "Canali" };
 
+/** Il nome del profilo somiglia a quello del cliente (o al dominio del suo sito)? Serve solo per un avviso. */
+function nameMatches(assetName: string, clientName: string, website: string | null) {
+  const norm = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  const a = norm(assetName).replace(/ /g, "");
+  const stop = new Set(["srl", "spa", "snc", "sas", "studio", "the", "italia", "group", "official", "shop", "store"]);
+  const tokens = norm(clientName).split(" ").filter((t) => t.length >= 4 && !stop.has(t));
+  let domain = "";
+  try {
+    domain = website ? new URL(/^https?:/i.test(website) ? website : `https://${website}`).hostname.replace(/^www\./, "").split(".")[0] : "";
+  } catch {
+    domain = "";
+  }
+  if (domain.length >= 4) tokens.push(domain);
+  const whole = norm(clientName).replace(/ /g, "");
+  return (whole.length >= 3 && a.includes(whole)) || tokens.some((t) => a.includes(t));
+}
+
 export default async function ChannelsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ scegli?: string; errore?: string }> }) {
   await ensureIntegrationKeys();
+  const me = await requireUser();
+  const canConnect = await userCanPublish(me);
   const clientId = Number((await params).id);
   const sp = await searchParams;
 
@@ -30,7 +50,23 @@ export default async function ChannelsPage({ params, searchParams }: { params: P
       const { conn, assets } = await assetsFor(Number(sp.scegli));
       if (conn && conn.clientId === clientId) {
         const taken = new Set(channels.filter((c) => c.connectionId === conn.id).map((c) => `${c.platform}|${c.externalId}`));
-        picker = { connectionId: conn.id, provider: conn.provider, accountName: conn.accountName, assets: assets.map((a) => ({ ...a, selected: taken.has(a.key) })) };
+        // Per ogni profilo: è già di un altro cliente? Il nome somiglia a quello del cliente?
+        const owners = await db
+          .select({ platform: socialAccounts.platform, externalId: socialAccounts.externalId, clientId: socialAccounts.clientId, name: clients.name })
+          .from(socialAccounts)
+          .innerJoin(clients, eq(clients.id, socialAccounts.clientId));
+        const [client] = await db.select({ name: clients.name, website: clients.website }).from(clients).where(eq(clients.id, clientId));
+        picker = {
+          connectionId: conn.id,
+          provider: conn.provider,
+          accountName: conn.accountName,
+          clientName: client?.name ?? "",
+          assets: assets.map((a) => {
+            const [kind, externalId] = a.key.split("|");
+            const owner = owners.find((o) => o.platform === kind && o.externalId === externalId && o.clientId !== clientId);
+            return { ...a, selected: taken.has(a.key), owner: owner?.name ?? null, matches: nameMatches(`${a.name} ${a.handle}`, client?.name ?? "", client?.website ?? null) };
+          }),
+        };
       }
     } catch (e) {
       picker = { error: (e as Error).message };
@@ -44,6 +80,7 @@ export default async function ChannelsPage({ params, searchParams }: { params: P
   return (
     <ChannelsView
       clientId={clientId}
+      canConnect={canConnect}
       error={sp.errore ?? null}
       configured={{ meta: isConfigured("meta"), google: isConfigured("google") }}
       connections={conns.map((c) => ({ id: c.id, provider: c.provider, accountName: c.accountName, status: c.status, lastError: c.lastError, expiresAt: c.expiresAt?.toISOString() ?? null }))}

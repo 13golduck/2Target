@@ -7,6 +7,8 @@ import Card from '@mui/material/Card';
 import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import Alert from '@mui/material/Alert';
+import Switch from '@mui/material/Switch';
 import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
 import TextField from '@mui/material/TextField';
@@ -18,8 +20,9 @@ import InputAdornment from '@mui/material/InputAdornment';
 import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
 import { Iconify } from 'src/components/iconify';
+import { askConfirm } from 'src/components/custom-dialog';
 
-import { saveIntegrations } from './actions';
+import { saveIntegrations, setPublishingLive } from './actions';
 
 // ----------------------------------------------------------------------
 // Chiavi delle app di Golduck su Meta e Google: si inseriscono qui (cifrate nel database), non su Plesk.
@@ -41,8 +44,19 @@ const GROUPS = [
     fields: [
       { name: 'metaAppId', label: 'ID app' },
       { name: 'metaAppSecret', label: 'Chiave segreta', secret: true },
-      { name: 'metaConfigId', label: 'ID configurazione (Facebook Login for Business)' },
+      {
+        name: 'metaConfigId',
+        label: 'ID configurazione (Facebook Login for Business)',
+      },
     ],
+  },
+  {
+    key: 'anthropic',
+    title: 'Anthropic (AI dei check-up e dello studio grafico)',
+    icon: 'solar:atom-bold-duotone',
+    where: 'console.anthropic.com → organizzazione Golduck → API Keys.',
+    callback: null,
+    fields: [{ name: 'anthropicApiKey', label: 'Chiave API Anthropic', secret: true }],
   },
   {
     key: 'google',
@@ -52,8 +66,16 @@ const GROUPS = [
     callback: '/api/connect/google/callback',
     fields: [
       { name: 'googleClientId', label: 'ID client OAuth' },
-      { name: 'googleClientSecret', label: 'Segreto client OAuth', secret: true },
-      { name: 'googlePageSpeedKey', label: 'Chiave API PageSpeed', secret: true },
+      {
+        name: 'googleClientSecret',
+        label: 'Segreto client OAuth',
+        secret: true,
+      },
+      {
+        name: 'googlePageSpeedKey',
+        label: 'Chiave API PageSpeed',
+        secret: true,
+      },
     ],
   },
 ];
@@ -70,7 +92,15 @@ function Field({ f, st, clear, onClear }) {
         type={f.secret ? 'password' : 'text'}
         autoComplete="off"
         defaultValue={f.secret ? '' : st.source === 'app' ? (st.value ?? '') : ''}
-        placeholder={f.secret ? (st.source === 'mancante' ? 'Incolla qui' : 'Già impostata: lascia vuoto per non cambiarla') : st.source === 'plesk' ? `Da Plesk: ${st.value}` : ''}
+        placeholder={
+          f.secret
+            ? st.source === 'mancante'
+              ? 'Incolla qui'
+              : 'Già impostata: lascia vuoto per non cambiarla'
+            : st.source === 'plesk'
+              ? `Da Plesk: ${st.value}`
+              : ''
+        }
         slotProps={{ inputLabel: { shrink: true } }}
         disabled={clear}
       />
@@ -90,6 +120,33 @@ function Field({ f, st, clear, onClear }) {
 export function IntegrationsCard({ status, appUrl }) {
   const [pending, start] = useTransition();
   const [cleared, setCleared] = useState([]);
+  const host = (() => {
+    try {
+      return new URL(appUrl).host;
+    } catch {
+      return '';
+    }
+  })();
+  const live = status.publishLiveHost?.source !== 'mancante' && status.publishLiveHost?.value === host;
+
+  const toggleLive = async (on) => {
+    const ok = await askConfirm(
+      on
+        ? {
+            tone: 'warning',
+            title: 'Attivare la pubblicazione reale?',
+            content: `Da ora i post programmati e «Pubblica ora» usciranno davvero sui profili dei clienti, solo da ${host}. Le copie di prova restano in simulazione.`,
+            confirmText: 'Attiva',
+          }
+        : { tone: 'primary', title: 'Spegnere la pubblicazione reale?', content: 'Da ora 2Target simula soltanto: nulla verrà inviato a Meta finché non la riattivi.', confirmText: 'Spegni' }
+    );
+    if (!ok) return;
+    start(async () => {
+      const r = await setPublishingLive(on);
+      if (r?.error) toast.error(r.error);
+      else toast.success(on ? 'Pubblicazione reale attiva' : 'Pubblicazione reale spenta');
+    });
+  };
 
   const copy = (text) => navigator.clipboard.writeText(text).then(() => toast.success('Copiato'));
 
@@ -114,6 +171,16 @@ export function IntegrationsCard({ status, appUrl }) {
         }
         sx={{ p: 3, pt: 1 }}
       >
+        <Alert
+          severity={live ? 'success' : 'info'}
+          sx={{ mb: 3, alignItems: 'center' }}
+          action={<Switch checked={live} disabled={pending} onChange={(e) => toggleLive(e.target.checked)} inputProps={{ 'aria-label': 'Pubblicazione reale' }} />}
+        >
+          <b>Pubblicazione reale sui social: {live ? `attiva su ${host}` : 'spenta (simulazione)'}</b>
+          <Box component="span" sx={{ display: 'block', typography: 'caption' }}>
+            Vale solo per questo indirizzo: una copia di 2Target su un altro indirizzo resta sempre in simulazione.
+          </Box>
+        </Alert>
         <Stack spacing={3} divider={<Divider flexItem />}>
           {GROUPS.map((gr) => (
             <Box key={gr.key}>
@@ -136,33 +203,36 @@ export function IntegrationsCard({ status, appUrl }) {
                   </Grid>
                 ))}
               </Grid>
-              <TextField
-                label="Indirizzo di ritorno da registrare nell'app"
-                value={`${appUrl}${gr.callback}`}
-                size="small"
-                fullWidth
-                sx={{ mt: 2 }}
-                slotProps={{
-                  input: {
-                    readOnly: true,
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Tooltip title="Copia">
-                          <IconButton size="small" onClick={() => copy(`${appUrl}${gr.callback}`)}>
-                            <Iconify icon="solar:copy-bold" width={18} />
-                          </IconButton>
-                        </Tooltip>
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
+              {gr.callback && (
+                <TextField
+                  label="Indirizzo di ritorno da registrare nell'app"
+                  value={`${appUrl}${gr.callback}`}
+                  size="small"
+                  fullWidth
+                  sx={{ mt: 2 }}
+                  slotProps={{
+                    input: {
+                      readOnly: true,
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Tooltip title="Copia">
+                            <IconButton size="small" onClick={() => copy(`${appUrl}${gr.callback}`)}>
+                              <Iconify icon="solar:copy-bold" width={18} />
+                            </IconButton>
+                          </Tooltip>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
+                />
+              )}
             </Box>
           ))}
         </Stack>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 3, alignItems: { sm: 'center' } }}>
           <Typography variant="caption" sx={{ color: 'text.secondary', flex: 1 }}>
-            Le chiavi segrete sono cifrate e non vengono più mostrate. Ogni modifica finisce nell&apos;audit trail (solo i nomi dei campi). Le variabili su Plesk restano valide come riserva.
+            Le chiavi segrete sono cifrate e non vengono più mostrate. Ogni modifica finisce nell&apos;audit trail (solo i nomi dei campi). Le variabili su
+            Plesk restano valide come riserva.
           </Typography>
           <Button type="submit" variant="contained" loading={pending} startIcon={<Iconify icon="eva:checkmark-fill" />}>
             Salva integrazioni

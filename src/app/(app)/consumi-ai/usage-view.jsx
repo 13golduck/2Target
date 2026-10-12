@@ -51,7 +51,7 @@ export function UsageView({ isAdmin, configured, running, status, tokens, monthl
       <CustomBreadcrumbs heading="Consumi AI" links={[{ name: 'Panoramica' }, { name: 'Consumi AI' }]} sx={{ mb: 3 }} />
 
       <Stack spacing={3}>
-        {!configured && <Alert severity="warning">Chiave API Anthropic non impostata: l&apos;AI è spenta. Guida in docs/AI-ANTHROPIC.md.</Alert>}
+        {!configured && <Alert severity="warning">Chiave API Anthropic non impostata: l&apos;AI è spenta. Un amministratore la inserisce in Impostazioni → Integrazioni.</Alert>}
         {!limits.enabled && <Alert severity="error">L&apos;AI è disattivata dall&apos;interruttore generale in Impostazioni.</Alert>}
         {ratio >= 1 && <Alert severity="error">Budget del mese esaurito: i nuovi lavori AI sono bloccati.</Alert>}
         {ratio < 1 && warning && <Alert severity="warning">Superato il {Math.round(limits.warnPct * 100)}% del budget mensile.</Alert>}

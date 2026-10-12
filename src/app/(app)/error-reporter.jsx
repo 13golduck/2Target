@@ -35,7 +35,8 @@ export function ErrorReporter() {
       const original = toast.error;
       toast.error = (message, ...rest) => {
         const text = typeof message === 'string' ? message : String(message?.props?.children ?? message ?? '');
-        reportClientError(text, fullPath() || currentPath, browserContext()).catch(() => {});
+        // I messaggi rossi mostrati all'utente sono avvisi (es. «compila il campo»); gli errori veri li registra il server
+        reportClientError(text, fullPath() || currentPath, browserContext(), 'avviso').catch(() => {});
         return original(message, ...rest);
       };
     }

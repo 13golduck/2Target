@@ -8,6 +8,10 @@ import { sendMail } from "./mail";
 
 // Accesso senza password: codice di 6 cifre via email, monouso, valido 10 minuti,
 // massimo 5 tentativi sbagliati, massimo 5 codici richiesti ogni 15 minuti per utente.
+// Codici di accesso e codici per le Impostazioni sono separati (scopo, annullamenti e limiti distinti):
+// chi chiede codici di accesso a ripetizione non può bloccare lo sblocco delle Impostazioni, e viceversa.
+
+type Purpose = "login" | "settings";
 
 export const CODE_TTL_MIN = 10;
 export const MAX_ATTEMPTS = 5;
@@ -36,7 +40,7 @@ export function codeMatches(input: string, storedHash: string) {
  * purpose "settings": stesso codice monouso, chiesto di nuovo per entrare in Impostazioni.
  * Restituisce false se non è stato inviato (utente sconosciuto o troppe richieste).
  */
-export async function requestLoginCode(emailRaw: string, ip: string | null, purpose: "login" | "settings" = "login") {
+export async function requestLoginCode(emailRaw: string, ip: string | null, purpose: Purpose = "login") {
   const email = emailRaw.trim().toLowerCase();
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (!user?.active) return false;
@@ -45,14 +49,15 @@ export async function requestLoginCode(emailRaw: string, ip: string | null, purp
   const [{ n }] = await db
     .select({ n: sql<number>`count(*)` })
     .from(loginCodes)
-    .where(and(eq(loginCodes.userId, user.id), gte(loginCodes.createdAt, since)));
+    .where(and(eq(loginCodes.userId, user.id), eq(loginCodes.purpose, purpose), gte(loginCodes.createdAt, since)));
   if (Number(n) >= MAX_REQUESTS) return false;
 
   const code = newCode();
   // Un solo codice valido alla volta: i precedenti non usati vengono annullati
-  await db.update(loginCodes).set({ usedAt: new Date() }).where(and(eq(loginCodes.userId, user.id), isNull(loginCodes.usedAt)));
+  await db.update(loginCodes).set({ usedAt: new Date() }).where(and(eq(loginCodes.userId, user.id), eq(loginCodes.purpose, purpose), isNull(loginCodes.usedAt)));
   await db.insert(loginCodes).values({
     userId: user.id,
+    purpose,
     codeHash: hashCode(code),
     expiresAt: new Date(Date.now() + CODE_TTL_MIN * 60_000),
     requestIp: ip?.slice(0, 64) ?? null,
@@ -77,7 +82,7 @@ export async function requestLoginCode(emailRaw: string, ip: string | null, purp
 }
 
 /** Verifica il codice: se valido lo consuma e restituisce l'utente. */
-export async function consumeLoginCode(emailRaw: string, codeRaw: string) {
+export async function consumeLoginCode(emailRaw: string, codeRaw: string, purpose: Purpose = "login") {
   const email = emailRaw.trim().toLowerCase();
   const code = normalizeCode(codeRaw);
   if (code.length !== 6) return null;
@@ -87,7 +92,7 @@ export async function consumeLoginCode(emailRaw: string, codeRaw: string) {
   const [row] = await db
     .select()
     .from(loginCodes)
-    .where(and(eq(loginCodes.userId, user.id), isNull(loginCodes.usedAt)))
+    .where(and(eq(loginCodes.userId, user.id), eq(loginCodes.purpose, purpose), isNull(loginCodes.usedAt)))
     .orderBy(desc(loginCodes.id))
     .limit(1);
   if (!row || row.expiresAt.getTime() < Date.now() || row.attempts >= MAX_ATTEMPTS) return null;
@@ -105,7 +110,7 @@ export async function consumeLoginCode(emailRaw: string, codeRaw: string) {
  * Controlla il codice senza consumarlo (serve a capire se chiedere anche il secondo fattore).
  * Un codice sbagliato conta come tentativo.
  */
-export async function checkLoginCode(emailRaw: string, codeRaw: string) {
+export async function checkLoginCode(emailRaw: string, codeRaw: string, purpose: Purpose = "login") {
   const email = emailRaw.trim().toLowerCase();
   const code = normalizeCode(codeRaw);
   if (code.length !== 6) return null;
@@ -114,7 +119,7 @@ export async function checkLoginCode(emailRaw: string, codeRaw: string) {
   const [row] = await db
     .select()
     .from(loginCodes)
-    .where(and(eq(loginCodes.userId, user.id), isNull(loginCodes.usedAt)))
+    .where(and(eq(loginCodes.userId, user.id), eq(loginCodes.purpose, purpose), isNull(loginCodes.usedAt)))
     .orderBy(desc(loginCodes.id))
     .limit(1);
   if (!row || row.expiresAt.getTime() < Date.now() || row.attempts >= MAX_ATTEMPTS) return null;
@@ -127,6 +132,6 @@ export async function checkLoginCode(emailRaw: string, codeRaw: string) {
 
 /** Secondo fattore sbagliato: conta come tentativo sul codice in corso (5 errori lo bloccano). */
 export async function failLoginAttempt(userId: number) {
-  const [row] = await db.select().from(loginCodes).where(and(eq(loginCodes.userId, userId), isNull(loginCodes.usedAt))).orderBy(desc(loginCodes.id)).limit(1);
+  const [row] = await db.select().from(loginCodes).where(and(eq(loginCodes.userId, userId), eq(loginCodes.purpose, "login"), isNull(loginCodes.usedAt))).orderBy(desc(loginCodes.id)).limit(1);
   if (row) await db.update(loginCodes).set({ attempts: row.attempts + 1 }).where(eq(loginCodes.id, row.id));
 }

@@ -134,6 +134,13 @@
       "when": 1791717047289,
       "tag": "0018_pubblicazione_social",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1791839023019,
+      "tag": "0019_codici_e_avvisi",
+      "breakpoints": true
     }
   ]
 }

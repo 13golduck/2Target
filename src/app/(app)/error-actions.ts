@@ -5,6 +5,7 @@ import { and, desc, eq, gte, notLike } from "drizzle-orm";
 import { db } from "@/db";
 import { auditLogs } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
+import { audit } from "@/lib/audit";
 import { logError } from "@/lib/error-log";
 
 // Errori mostrati nel browser (messaggi rossi, errori JavaScript): finiscono nell'audit trail, con l'utente che li ha visti.
@@ -13,7 +14,7 @@ const recent = new Map<string, number>();
 const perUser = new Map<number, { n: number; t: number }>();
 const PER_MINUTE = 20;
 
-export async function reportClientError(message: string, path: string, detail?: string) {
+export async function reportClientError(message: string, path: string, detail?: string, kind: "errore" | "avviso" = "errore") {
   const me = await requireUser();
   const msg = String(message ?? "").slice(0, 1000);
   if (!msg) return;
@@ -27,6 +28,11 @@ export async function reportClientError(message: string, path: string, detail?: 
   if ((recent.get(key) ?? 0) > now - 10_000) return;
   recent.set(key, now);
   if (recent.size > 500) recent.clear();
+  // Avvisi all'utente (messaggi rossi): categoria a parte, così tra gli errori restano solo i problemi veri
+  if (kind === "avviso") {
+    await audit({ userId: me.id, category: "avvisi", action: "avviso.pagina", description: msg.slice(0, 600), path: String(path ?? "").slice(0, 300) });
+    return;
+  }
   // Se il messaggio mostrato viene da un errore già registrato dal server PER LO STESSO UTENTE, si collega
   // la voce con il dettaglio tecnico. Mai voci di altri utenti: il dettaglio può contenere dati riservati.
   const server = msg.length < 20 ? [] : (

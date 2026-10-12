@@ -1,6 +1,7 @@
 import "server-only";
 
-import { META } from "@/lib/integrations/config";
+import { appUrl, META } from "@/lib/integrations/config";
+import { integrationKey } from "@/lib/integrations/keys";
 import { getJson, qs } from "@/lib/integrations/http";
 
 // Pubblicazione via Graph API su Pagine Facebook e profili Instagram professionali.
@@ -28,8 +29,22 @@ const post = <T>(p: string, params: Record<string, string | number | undefined>)
 const get = <T>(p: string, params: Record<string, string | number | undefined>) => getJson<T>(`${graph(p)}?${qs(params)}`);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Simulazione: in locale sempre, in produzione solo con PUBLISH_DRY_RUN=true. Non contatta Meta. */
-export const isDryRun = () => process.env.NODE_ENV !== "production" || process.env.PUBLISH_DRY_RUN === "true";
+/**
+ * Simulazione (non contatta Meta) salvo attivazione esplicita: la pubblicazione è reale solo se in Impostazioni
+ * l'interruttore «Pubblicazione reale» è acceso PER QUESTO dominio. Una copia del database usata su un altro
+ * indirizzo (prova, staging) resta quindi sempre in simulazione. In locale è sempre simulazione.
+ */
+export function isDryRun() {
+  if (process.env.NODE_ENV !== "production" || process.env.PUBLISH_DRY_RUN === "true") return true;
+  const liveHost = integrationKey("publishLiveHost");
+  let host = "";
+  try {
+    host = new URL(appUrl()).host;
+  } catch {
+    return true;
+  }
+  return !liveHost || liveHost !== host;
+}
 
 /** Controlli prima della programmazione: cosa si può pubblicare dove. Restituisce un messaggio d'errore o null. */
 export function checkPublishable(platform: string, format: string, media: { kind: string; mime: string }[], caption: string) {

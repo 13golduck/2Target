@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/db";
 import { CHANNEL_KINDS, clients, connections, socialAccounts } from "@/db/schema";
-import { requireWriter } from "@/lib/auth";
+import { requireWriter, userCanPublish } from "@/lib/auth";
 import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import * as google from "@/lib/integrations/google";
 import * as meta from "@/lib/integrations/meta";
@@ -30,6 +30,7 @@ export async function assetsFor(connectionId: number) {
 
 export async function attachChannels(f: FormData) {
   const me = await requireWriter();
+  if (!(await userCanPublish(me))) throw new Error("Solo gli amministratori e chi è abilitato a pubblicare possono collegare profili ai clienti");
   const connectionId = Number(f.get("connectionId"));
   const [conn] = await db.select().from(connections).where(eq(connections.id, connectionId));
   if (!conn) return;

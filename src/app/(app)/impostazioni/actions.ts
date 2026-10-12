@@ -9,6 +9,7 @@ import { isAdminRole } from "@/lib/roles";
 import { DEFAULT_LIMITS, getLimits, saveLimits } from "@/lib/ai/budget";
 import { audit } from "@/lib/audit";
 import { FIELDS, saveIntegrationKeys } from "@/lib/integrations/keys";
+import { appUrl } from "@/lib/integrations/config";
 import { DEFAULT_METHOD, saveMethodology } from "@/lib/ai/metodologia";
 import { consumeLoginCode, requestLoginCode } from "@/lib/login-codes";
 import { grantSettingsAccess, revokeSettingsAccess, settingsUnlocked } from "@/lib/settings-access";
@@ -47,7 +48,7 @@ export async function requestSettingsCode() {
 export async function verifySettingsCode(f: FormData) {
   const me = await adminEmail();
   if (!me) return { error: "Solo un amministratore può entrare in Impostazioni" };
-  const user = await consumeLoginCode(me.email, str(f, "code"));
+  const user = await consumeLoginCode(me.email, str(f, "code"), "settings");
   if (!user || user.id !== me.id) {
     await audit({ userId: me.id, category: "impostazioni", action: "impostazioni.codice_errato", description: "Codice errato per entrare in Impostazioni" });
     return { error: "Codice non valido o scaduto. Controlla o chiedine uno nuovo." };
@@ -184,10 +185,11 @@ export async function saveIntegrations(f: FormData) {
   if (!(await settingsUnlocked(me.id))) return LOCKED;
   const input: Record<string, string> = {};
   for (const field of FIELDS) {
+    if (field === "publishLiveHost") continue; // ha il suo interruttore
     const v = f.get(field);
     if (v !== null) input[field] = String(v);
   }
-  const clear = FIELDS.filter((field) => f.get(`clear:${field}`) === "1");
+  const clear = FIELDS.filter((field) => field !== "publishLiveHost" && f.get(`clear:${field}`) === "1");
   if (input.metaAppId && !/^\d{6,25}$/.test(input.metaAppId.trim())) return { error: "L'ID app di Meta è fatto solo di cifre" };
   if (input.metaConfigId && !/^\d{6,25}$/.test(input.metaConfigId.trim())) return { error: "L'ID configurazione di Meta è fatto solo di cifre" };
   if (input.googleClientId && !/\.apps\.googleusercontent\.com$/.test(input.googleClientId.trim())) return { error: "L'ID client di Google finisce con .apps.googleusercontent.com" };
@@ -196,4 +198,21 @@ export async function saveIntegrations(f: FormData) {
   if (changed.length) await audit({ userId: me.id, category: "impostazioni", action: "integrazioni.chiavi", description: `Aggiornate le chiavi delle integrazioni: ${changed.join(", ")}`, meta: { campi: changed } });
   revalidatePath("/impostazioni");
   return { ok: true, changed: changed.length };
+}
+
+/** Accende o spegne la pubblicazione reale sui social, legandola al dominio attuale. */
+export async function setPublishingLive(on: boolean) {
+  const me = await requireUser();
+  if (!isAdminRole(me.role)) return { error: "Solo un amministratore può attivare la pubblicazione reale" };
+  if (!(await settingsUnlocked(me.id))) return LOCKED;
+  const host = new URL(appUrl()).host;
+  await saveIntegrationKeys(on ? { publishLiveHost: host } : {}, on ? [] : ["publishLiveHost"], me.id);
+  await audit({
+    userId: me.id,
+    category: "impostazioni",
+    action: on ? "pubblicazione.reale_attiva" : "pubblicazione.reale_spenta",
+    description: on ? `Pubblicazione reale sui social ATTIVATA per ${host}` : "Pubblicazione reale sui social spenta: da ora solo simulazione",
+  });
+  revalidatePath("/impostazioni");
+  return { ok: true };
 }
