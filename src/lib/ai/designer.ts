@@ -64,9 +64,30 @@ async function clientContext(clientId: number) {
 }
 
 /** Proposta di brand kit dal posizionamento del cliente (il consulente la rivede e la salva). */
-export async function draftBrandKit(clientId: number): Promise<BrandKitData> {
+export type LogoColor = { hex: string; share: number };
+
+/**
+ * Proposta di brand kit. Se c'è un logo, la palette parte dai suoi colori: quelli misurati da 2Target
+ * (codici esatti) e l'immagine stessa, che l'AI guarda per capirne lo stile.
+ */
+export async function draftBrandKit(clientId: number, logoColors: LogoColor[] = [], unsavedLogo?: string | null): Promise<BrandKitData> {
   await assertBudget({ clientId, estimateUsd: 0.15 });
   const ctx = await clientContext(clientId);
+  const [kit] = await db.select({ logo: brandKits.logo }).from(brandKits).where(eq(brandKits.clientId, clientId));
+  // Il logo appena caricato (non ancora salvato) ha la precedenza su quello in archivio
+  const raster = (unsavedLogo || kit?.logo)?.match(/^data:(image\/(?:png|jpeg|webp|gif));base64,(.+)$/);
+  const logoImage = raster && raster[2].length < 4_000_000 ? { mediaType: raster[1], data: raster[2] } : null;
+  const colorsText = logoColors.length
+    ? `Colori misurati nel logo (codice esatto e quota dei pixel colorati):\n${logoColors.map((c) => `- ${c.hex} (${Math.round(c.share * 100)}%)`).join("\n")}`
+    : "";
+  const logoRule =
+    logoColors.length || logoImage
+      ? `\nIl logo è il punto di partenza: la palette DEVE includere i colori principali del logo con i loro codici esatti
+(ignora bianco e nero puri se sono solo sfondo o contorni), dando a ciascuno un ruolo (primario, secondario, accento…).
+Aggiungi solo colori di supporto coerenti con il logo (neutri per sfondi e testi, eventualmente un accento) e spiega
+nel ruolo da dove viene ogni colore ("dal logo" oppure "di supporto"). Anche tono visivo e stile delle immagini devono
+essere coerenti con il carattere del logo.`
+      : "";
   const r = await callClaude({
     model: MODELS.sonnet,
     system: SYSTEM,
@@ -76,11 +97,20 @@ export async function draftBrandKit(clientId: number): Promise<BrandKitData> {
     messages: [
       {
         role: "user",
-        content: `${ctx.text}
-
+        content: [
+          ...(logoImage
+            ? [{ type: "image" as const, source: { type: "base64" as const, media_type: logoImage.mediaType as "image/png", data: logoImage.data } }]
+            : []),
+          {
+            type: "text" as const,
+            text: `${ctx.text}
+${logoImage ? "\nL'immagine allegata è il logo attuale del cliente." : ""}
+${colorsText}
 Proponi il brand kit di ${ctx.client.name}: palette di 4-6 colori con ruolo, 2 font (titoli e testo) con alternativa
 Canva, tono visivo, stile delle immagini, 4-6 regole di composizione, 4-6 cose da fare e 4-6 da evitare.
-Se esiste già un brand kit, miglioralo senza stravolgerlo.`,
+Se esiste già un brand kit, miglioralo senza stravolgerlo.${logoRule}`,
+          },
+        ],
       },
     ],
     log: { step: "Studio grafico: brand kit", clientId },

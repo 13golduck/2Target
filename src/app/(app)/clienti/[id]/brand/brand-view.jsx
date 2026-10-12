@@ -42,6 +42,44 @@ function useGoogleFonts(fonts) {
   }, [fonts]);
 }
 
+/** Colori principali del logo: pixel visibili raggruppati per tinta simile, ordinati per quota. */
+async function logoColors(src) {
+  const img = await new Promise((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = reject;
+    i.src = src;
+  });
+  const size = 120;
+  const scale = Math.min(1, size / Math.max(img.naturalWidth || size, img.naturalHeight || size));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round((img.naturalWidth || size) * scale));
+  c.height = Math.max(1, Math.round((img.naturalHeight || size) * scale));
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  const d = ctx.getImageData(0, 0, c.width, c.height).data;
+  const buckets = new Map();
+  let total = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] < 128) continue; // trasparente
+    total += 1;
+    const key = `${d[i] >> 4},${d[i + 1] >> 4},${d[i + 2] >> 4}`;
+    const b = buckets.get(key) ?? { r: 0, g: 0, b: 0, n: 0 };
+    b.r += d[i];
+    b.g += d[i + 1];
+    b.b += d[i + 2];
+    b.n += 1;
+    buckets.set(key, b);
+  }
+  if (!total) return [];
+  const hex = (v) => Math.round(v).toString(16).padStart(2, '0');
+  return [...buckets.values()]
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 8)
+    .map((b) => ({ hex: `#${hex(b.r / b.n)}${hex(b.g / b.n)}${hex(b.b / b.n)}`.toUpperCase(), share: b.n / total }))
+    .filter((c) => c.share >= 0.02);
+}
+
 export function BrandView({ clientId, aiConfigured, kit, reviews }) {
   const [data, setData] = useState(kit?.data ?? EMPTY);
   const [logo, setLogo] = useState(kit?.logo ?? '');
@@ -73,7 +111,9 @@ export function BrandView({ clientId, aiConfigured, kit, reviews }) {
 
   const propose = () =>
     startPropose(async () => {
-      const r = await proposeBrandKit(clientId);
+      // I colori del logo si misurano qui (codici esatti), così l'AI parte da quelli
+      const colors = logo ? await logoColors(logo).catch(() => []) : [];
+      const r = await proposeBrandKit(clientId, { colors, image: logoChanged && logo && !logo.startsWith('data:image/svg') ? logo : null });
       if (r?.error) toast.error(r.error);
       else {
         setData(r.data);

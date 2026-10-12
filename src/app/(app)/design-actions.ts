@@ -54,11 +54,16 @@ export async function saveBrandKit(f: FormData) {
 }
 
 /** Proposta dell'AI: non viene salvata, il consulente la rivede nel modulo. */
-export async function proposeBrandKit(clientId: number) {
+export async function proposeBrandKit(clientId: number, logo?: { colors?: { hex: string; share: number }[]; image?: string | null }) {
   const me = await requireWriter();
   if (!isAiConfigured()) return NO_AI;
+  // Colori misurati nel browser sul logo attuale (anche se non ancora salvato)
+  const colors = (logo?.colors ?? [])
+    .filter((c) => HEX.test(c.hex) && Number.isFinite(c.share) && c.share > 0 && c.share <= 1)
+    .slice(0, 8);
+  const image = logo?.image && /^data:image\/(png|jpeg|webp|gif);base64,/.test(logo.image) && logo.image.length < 1_400_000 ? logo.image : null;
   try {
-    return { ok: true, data: await draftBrandKit(clientId) };
+    return { ok: true, data: await draftBrandKit(clientId, colors, image) };
   } catch (e) {
     return aiError(e, me.id, "brand kit");
   }
