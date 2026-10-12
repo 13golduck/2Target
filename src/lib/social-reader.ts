@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { socialAccounts } from "@/db/schema";
 import { META } from "@/lib/integrations/config";
 import { decryptSecret } from "@/lib/secret-box";
+import { safeFetch } from "@/lib/safe-fetch";
 
 // Lettura dei profili social del cliente fatta da 2Target nel check-up: i dati base non si chiedono al consulente.
 // - Instagram: API ufficiale "Business Discovery" di Meta (follower, post, ultimo post, reel, link in bio), che
@@ -46,7 +47,7 @@ export function extractProfiles(text: string, links: string[] = []): Profile[] {
     const host = u.hostname.replace(/^(www\.|m\.|it-it\.)/, "");
     const seg = u.pathname.split("/").filter(Boolean);
     let p: Profile | null = null;
-    if (host === "instagram.com" && seg[0] && !RESERVED.test(seg[0])) p = { platform: "instagram", handle: seg[0].toLowerCase(), url: `https://www.instagram.com/${seg[0]}/` };
+    if (host === "instagram.com" && seg[0] && !RESERVED.test(seg[0]) && /^[a-z0-9._]{1,30}$/i.test(seg[0])) p = { platform: "instagram", handle: seg[0].toLowerCase(), url: `https://www.instagram.com/${seg[0]}/` };
     else if ((host === "facebook.com" || host === "fb.com") && seg[0] && !RESERVED.test(seg[0])) p = { platform: "facebook", handle: seg[0], url: `https://www.facebook.com/${seg[0]}` };
     else if (host === "facebook.com" && seg[0] === "profile.php" && u.searchParams.get("id")) p = { platform: "facebook", handle: u.searchParams.get("id")!, url: `https://www.facebook.com/profile.php?id=${u.searchParams.get("id")}` };
     else if (host === "tiktok.com" && seg[0]?.startsWith("@")) p = { platform: "tiktok", handle: seg[0].slice(1).toLowerCase(), url: `https://www.tiktok.com/${seg[0]}` };
@@ -59,8 +60,8 @@ export function extractProfiles(text: string, links: string[] = []): Profile[] {
 }
 
 async function fetchMeta(url: string, ua = CRAWLER_UA) {
-  const res = await fetch(url, { headers: { "User-Agent": ua, "Accept-Language": "it-IT,it;q=0.9" }, redirect: "follow", signal: AbortSignal.timeout(20_000), cache: "no-store" });
-  const html = (await res.text()).slice(0, 2_000_000);
+  const res = await safeFetch(url, { userAgent: ua, maxBytes: 2_000_000, timeoutMs: 20_000 });
+  const html = res.body;
   const meta = (prop: string) =>
     decode(html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]*content=["']([^"']*)["']`, "i"))?.[1] ?? html.match(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]*(?:property|name)=["']${prop}["']`, "i"))?.[1] ?? "");
   return { status: res.status, html, title: meta("og:title"), description: meta("og:description") || meta("description") };
@@ -94,6 +95,8 @@ async function discoveryLens() {
 }
 
 async function instagramDiscovery(username: string, lens: { igId: string; token: string }) {
+  // Il nome entra nell'espressione dei campi dell'API: solo caratteri ammessi da Instagram
+  if (!/^[a-z0-9._]{1,30}$/.test(username)) throw new Error("nome del profilo non valido");
   const fields = `business_discovery.username(${username}){username,name,biography,website,followers_count,follows_count,media_count,media.limit(12){timestamp,media_type,media_product_type,like_count,comments_count,permalink}}`;
   const url = `https://graph.facebook.com/${META.version}/${lens.igId}?fields=${encodeURIComponent(fields)}&access_token=${encodeURIComponent(lens.token)}`;
   const res = await fetch(url, { signal: AbortSignal.timeout(20_000), cache: "no-store" });

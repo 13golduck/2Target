@@ -17,6 +17,8 @@ export type PublishInput = {
   format: string;
   caption: string;
   media: PublishMedia[];
+  /** Chiamata durante le attese (elaborazione video): segnala che l'invio è ancora vivo. */
+  heartbeat?: () => Promise<void>;
 };
 export type PublishResult = { externalId: string; permalink: string | null };
 
@@ -62,9 +64,10 @@ export async function publish(input: PublishInput): Promise<PublishResult> {
 
 // ── Instagram ─────────────────────────────────────────────────────────
 
-async function waitContainer(id: string, token: string) {
+async function waitContainer(id: string, token: string, heartbeat?: () => Promise<void>) {
   // I video richiedono l'elaborazione di Meta: si controlla ogni 5 secondi, fino a 5 minuti
   for (let i = 0; i < 60; i++) {
+    await heartbeat?.().catch(() => undefined);
     const s = await get<{ status_code?: string; status?: string }>(id, { fields: "status_code,status", access_token: token });
     if (s.status_code === "FINISHED") return;
     if (s.status_code === "ERROR" || s.status_code === "EXPIRED") throw new Error(`Instagram non ha accettato il file: ${s.status ?? s.status_code}`);
@@ -73,29 +76,29 @@ async function waitContainer(id: string, token: string) {
   throw new Error("Instagram sta ancora elaborando il video dopo 5 minuti: riprova più tardi");
 }
 
-async function igContainer(ig: string, token: string, m: PublishMedia, extra: Record<string, string | undefined>) {
+async function igContainer(ig: string, token: string, m: PublishMedia, extra: Record<string, string | undefined>, heartbeat?: () => Promise<void>) {
   const params =
     m.kind === "image"
       ? { image_url: m.url, ...extra, access_token: token }
       : { video_url: m.url, media_type: extra.media_type ?? "REELS", ...extra, access_token: token };
   const { id } = await post<{ id: string }>(`${ig}/media`, params);
-  await waitContainer(id, token);
+  await waitContainer(id, token, heartbeat);
   return id;
 }
 
-async function publishInstagram({ accountId: ig, token, format, caption, media }: PublishInput): Promise<PublishResult> {
+async function publishInstagram({ accountId: ig, token, format, caption, media, heartbeat }: PublishInput): Promise<PublishResult> {
   let creationId: string;
   if (format === "carosello") {
     const children: string[] = [];
-    for (const m of media) children.push(await igContainer(ig, token, m, { is_carousel_item: "true", ...(m.kind === "video" && { media_type: "VIDEO" }) }));
+    for (const m of media) children.push(await igContainer(ig, token, m, { is_carousel_item: "true", ...(m.kind === "video" && { media_type: "VIDEO" }) }, heartbeat));
     const { id } = await post<{ id: string }>(`${ig}/media`, { media_type: "CAROUSEL", children: children.join(","), caption, access_token: token });
-    await waitContainer(id, token);
+    await waitContainer(id, token, heartbeat);
     creationId = id;
   } else if (format === "storia") {
-    creationId = await igContainer(ig, token, media[0], { media_type: "STORIES" });
+    creationId = await igContainer(ig, token, media[0], { media_type: "STORIES" }, heartbeat);
   } else {
     // Post con foto, oppure video (su Instagram i video nel feed sono reel)
-    creationId = await igContainer(ig, token, media[0], { caption, ...(media[0].kind === "video" && { media_type: "REELS" }) });
+    creationId = await igContainer(ig, token, media[0], { caption, ...(media[0].kind === "video" && { media_type: "REELS" }) }, heartbeat);
   }
   const { id } = await post<{ id: string }>(`${ig}/media_publish`, { creation_id: creationId, access_token: token });
   const info = await get<{ permalink?: string }>(id, { fields: "permalink", access_token: token }).catch(() => ({}) as { permalink?: string });
@@ -125,4 +128,31 @@ async function publishFacebook({ accountId: page, token, caption, media }: Publi
   }
   const info = await get<{ permalink_url?: string }>(postId, { fields: "permalink_url", access_token: token }).catch(() => ({}) as { permalink_url?: string });
   return { externalId: postId, permalink: info.permalink_url ?? null };
+}
+
+// ── Controllo anti-doppione ───────────────────────────────────────────
+
+const norm = (t: string) => t.replace(/\s+/g, " ").trim().toLowerCase().slice(0, 300);
+
+/**
+ * Cerca sul profilo un post uscito dopo `since` con la stessa didascalia: prima di ripetere un invio
+ * dall'esito incerto, così non si pubblica due volte. Senza didascalia non si può confrontare (null).
+ */
+export async function findRecentTwin(o: { platform: "facebook" | "instagram"; accountId: string; token: string; caption: string; since: Date }): Promise<PublishResult | null> {
+  if (isDryRun() || !norm(o.caption)) return null;
+  const target = norm(o.caption);
+  if (o.platform === "instagram") {
+    const r = await get<{ data: { id: string; caption?: string; timestamp: string; permalink?: string }[] }>(`${o.accountId}/media`, { fields: "id,caption,timestamp,permalink", limit: 10, access_token: o.token });
+    const hit = r.data.find((m) => Date.parse(m.timestamp) >= o.since.getTime() - 60_000 && norm(m.caption ?? "") === target);
+    return hit ? { externalId: hit.id, permalink: hit.permalink ?? null } : null;
+  }
+  const r = await get<{ data: { id: string; message?: string; created_time: string; permalink_url?: string }[] }>(`${o.accountId}/posts`, { fields: "id,message,created_time,permalink_url", limit: 10, access_token: o.token });
+  const hit = r.data.find((p) => Date.parse(p.created_time) >= o.since.getTime() - 60_000 && norm(p.message ?? "") === target);
+  return hit ? { externalId: hit.id, permalink: hit.permalink_url ?? null } : null;
+}
+
+/** Errori di rete o di tempo: la richiesta potrebbe essere arrivata a Meta comunque. */
+export function isUncertain(e: unknown) {
+  const err = e as { name?: string; message?: string; cause?: { code?: string } };
+  return err?.name === "TimeoutError" || err?.name === "AbortError" || /fetch failed|ECONNRESET|socket hang up|network/i.test(err?.message ?? "") || !!err?.cause?.code;
 }

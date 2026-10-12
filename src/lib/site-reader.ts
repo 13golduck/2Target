@@ -1,6 +1,5 @@
 import "server-only";
-import { lookup } from "node:dns/promises";
-import { isIP } from "node:net";
+import { safeFetch } from "@/lib/safe-fetch";
 
 // Lettura diretta del sito del cliente, fatta da 2Target (non dall'AI) prima della ricognizione.
 // Serve quando il sito non è indicizzato o la ricerca web non lo trova: si entra nel sito e si leggono
@@ -29,25 +28,6 @@ export type SiteReading = { ok: boolean; markdown: string; pages: number; proble
 
 const SOCIAL = /^https?:\/\/(www\.|m\.|it-it\.)?(instagram\.com|facebook\.com|fb\.com|tiktok\.com|youtube\.com|youtu\.be|linkedin\.com|x\.com|twitter\.com|pinterest\.[a-z.]+|threads\.net)\//i;
 
-function isPrivate(ip: string) {
-  return (
-    /^(10\.|127\.|0\.|169\.254\.|192\.168\.)/.test(ip) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(ip) ||
-    ip === "::1" ||
-    /^f[cd][0-9a-f]{2}:/i.test(ip) ||
-    /^fe80:/i.test(ip)
-  );
-}
-
-/** Solo siti pubblici: niente indirizzi interni del server. */
-async function assertPublic(url: URL) {
-  if (!/^https?:$/.test(url.protocol)) throw new Error("indirizzo non web");
-  const host = url.hostname.replace(/^\[|\]$/g, "");
-  if (host === "localhost" || host.endsWith(".local")) throw new Error("indirizzo interno");
-  const ips = isIP(host) ? [host] : (await lookup(host, { all: true })).map((r) => r.address);
-  if (ips.some(isPrivate)) throw new Error("indirizzo interno");
-}
-
 const decode = (s: string) =>
   s
     .replace(/&nbsp;/g, " ")
@@ -61,20 +41,13 @@ const decode = (s: string) =>
 
 const clean = (s: string) => decode(s.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
 
-async function fetchText(url: string, accept = "text/html,application/xhtml+xml") {
-  const u = new URL(url);
-  await assertPublic(u);
-  const res = await fetch(u, {
-    headers: { "User-Agent": UA, Accept: accept, "Accept-Language": "it-IT,it;q=0.9,en;q=0.6" },
-    redirect: "follow",
-    signal: AbortSignal.timeout(20_000),
-    cache: "no-store",
-  });
-  // Anche dopo i reindirizzamenti si resta su indirizzi pubblici
-  if (res.url) await assertPublic(new URL(res.url));
-  const type = res.headers.get("content-type") ?? "";
-  const body = /html|xml|text/.test(type) || !type ? (await res.text()).slice(0, 1_500_000) : "";
-  return { status: res.status, finalUrl: res.url || url, body, headers: res.headers, type };
+// Tempo massimo per tutta la lettura: un sito lento non blocca il check-up per minuti
+async function fetchText(url: string, until: number, accept = "text/html,application/xhtml+xml") {
+  if (Date.now() > until) throw Object.assign(new Error("tempo complessivo esaurito"), { name: "TimeoutError" });
+  const r = await safeFetch(url, { userAgent: UA, accept, maxBytes: 1_500_000, timeoutMs: 20_000 });
+  const type = r.headers["content-type"] ?? "";
+  const body = /html|xml|text/.test(type) || !type ? r.body : "";
+  return { status: r.status, finalUrl: r.url, body, headers: r.headers, type };
 }
 
 function parsePage(url: string, status: number, html: string): Page {
@@ -113,11 +86,11 @@ function parsePage(url: string, status: number, html: string): Page {
 }
 
 /** Segnali tecnici utili al check-up (indicizzazione, CMS, sito solo JavaScript). */
-function technicalNotes(html: string, headers: Headers, page: Page) {
+function technicalNotes(html: string, headers: Record<string, string>, page: Page) {
   const notes: string[] = [];
   const robotsMeta = html.match(/<meta[^>]+name=["']robots["'][^>]*content=["']([^"']*)["']/i)?.[1];
   if (robotsMeta && /noindex/i.test(robotsMeta)) notes.push(`La homepage ha il meta robots «${robotsMeta}»: chiede a Google di NON indicizzarla (causa probabile della mancata indicizzazione).`);
-  const xRobots = headers.get("x-robots-tag");
+  const xRobots = headers["x-robots-tag"];
   if (xRobots && /noindex/i.test(xRobots)) notes.push(`Il server invia l'intestazione X-Robots-Tag «${xRobots}»: blocca l'indicizzazione.`);
   const canonical = html.match(/<link[^>]+rel=["']canonical["'][^>]*href=["']([^"']*)["']/i)?.[1];
   if (canonical) notes.push(`Canonical: ${canonical}`);
@@ -143,11 +116,11 @@ function technicalNotes(html: string, headers: Headers, page: Page) {
   return notes;
 }
 
-async function sitemapUrls(origin: string) {
+async function sitemapUrls(origin: string, until: number) {
   const out: string[] = [];
   let robots = "";
   try {
-    const r = await fetchText(`${origin}/robots.txt`, "text/plain");
+    const r = await fetchText(`${origin}/robots.txt`, until, "text/plain");
     if (r.status === 200) robots = r.body.slice(0, 5000);
   } catch {
     /* robots.txt assente */
@@ -156,12 +129,12 @@ async function sitemapUrls(origin: string) {
   if (!maps.length) maps.push(`${origin}/sitemap.xml`, `${origin}/sitemap_index.xml`);
   for (const map of maps.slice(0, 3)) {
     try {
-      const r = await fetchText(map, "application/xml,text/xml");
+      const r = await fetchText(map, until, "application/xml,text/xml");
       if (r.status !== 200) continue;
       const locs = [...r.body.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)].map((m) => decode(m[1]));
       // Indice di sitemap: si apre la prima sottosezione
       if (/<sitemapindex/i.test(r.body) && locs[0]) {
-        const sub = await fetchText(locs[0], "application/xml,text/xml").catch(() => null);
+        const sub = await fetchText(locs[0], until, "application/xml,text/xml").catch(() => null);
         if (sub?.status === 200) out.push(...[...sub.body.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)].map((m) => decode(m[1])));
       } else out.push(...locs);
       if (out.length) break;
@@ -189,6 +162,7 @@ const why = (e: unknown) => {
   const err = e as { name?: string; message?: string; code?: string; cause?: { code?: string } };
   if (err?.name === "TimeoutError" || err?.name === "AbortError") return "il sito non ha risposto entro 20 secondi";
   const code = err?.cause?.code ?? err?.code;
+  if (code === "BLOCKED_ADDRESS") return "indirizzo interno o riservato: per sicurezza 2Target legge solo siti pubblici";
   if (code === "ENOTFOUND" || code === "EAI_AGAIN") return "il dominio non esiste o non ha un indirizzo (DNS)";
   if (code === "ECONNREFUSED") return "il server del sito rifiuta la connessione";
   if (code && /CERT|SSL|TLS/.test(code)) return `certificato HTTPS non valido (${code})`;
@@ -197,6 +171,7 @@ const why = (e: unknown) => {
 
 /** Legge il sito del cliente. Non lancia mai: in caso di problemi spiega il motivo concreto. */
 export async function readSite(website: string): Promise<SiteReading> {
+  const until = Date.now() + 120_000;
   let start: URL;
   try {
     start = new URL(/^https?:\/\//i.test(website) ? website : `https://${website}`);
@@ -217,7 +192,7 @@ export async function readSite(website: string): Promise<SiteReading> {
   const errors: string[] = [];
   for (const v of variants) {
     try {
-      const r = await fetchText(v);
+      const r = await fetchText(v, until);
       if (r.status < 400 && r.body) {
         home = r;
         break;
@@ -240,7 +215,7 @@ export async function readSite(website: string): Promise<SiteReading> {
   const homePage = parsePage(home.finalUrl, home.status, home.body);
   const origin = new URL(home.finalUrl).origin;
   const notes = technicalNotes(home.body, home.headers, homePage);
-  const sitemap = await sitemapUrls(origin);
+  const sitemap = await sitemapUrls(origin, until);
   if (sitemap.blocksAll) notes.push("robots.txt blocca tutto il sito ai motori di ricerca (Disallow: /): causa diretta della mancata indicizzazione.");
   notes.push(sitemap.urls.length ? `Sitemap trovata: ${sitemap.urls.length} indirizzi.` : "Nessuna sitemap XML trovata (né in robots.txt né in /sitemap.xml).");
   if (start.origin !== origin) notes.push(`L'indirizzo ${start.origin} porta a ${origin}.`);
@@ -267,7 +242,7 @@ export async function readSite(website: string): Promise<SiteReading> {
   const pages: Page[] = [homePage];
   for (const u of chosen) {
     try {
-      const r = await fetchText(u);
+      const r = await fetchText(u, until);
       if (r.status < 400 && r.body) pages.push(parsePage(r.finalUrl, r.status, r.body));
     } catch {
       /* pagina saltata */
