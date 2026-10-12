@@ -192,10 +192,25 @@ export function LogoEditor({ file, onClose, onConfirm }) {
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
               <Box sx={{ flex: 2 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>Logo</Typography>
-                <Box sx={{ height: 200, borderRadius: 2, border: 1, borderColor: 'divider', display: 'grid', placeItems: 'center', p: 2, backgroundImage: 'repeating-conic-gradient(#F4F6F8 0% 25%, #fff 0% 50%)', backgroundSize: '16px 16px' }}>
-                  <Box component="img" src={logo} alt="Logo" sx={{ maxWidth: '100%', maxHeight: '100%' }} />
+                {/* Altezza fissa e immagine contenuta: anche un logo molto alto resta dentro il riquadro */}
+                <Box
+                  sx={{
+                    height: 200,
+                    borderRadius: 2,
+                    border: 1,
+                    borderColor: 'divider',
+                    p: 2,
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundImage: 'repeating-conic-gradient(#F4F6F8 0% 25%, #fff 0% 50%)',
+                    backgroundSize: '16px 16px',
+                  }}
+                >
+                  <Box component="img" src={logo} alt="Logo" sx={{ display: 'block', width: '100%', height: '100%', objectFit: 'contain' }} />
                 </Box>
-                <FormControlLabel sx={{ mt: 1 }} control={<Switch checked={trim} onChange={(e) => setTrim(e.target.checked)} />} label="Togli i margini vuoti" />
+                <FormControlLabel sx={{ mt: 1.5, display: 'flex' }} control={<Switch checked={trim} onChange={(e) => setTrim(e.target.checked)} />} label="Togli i margini vuoti" />
               </Box>
               <Box sx={{ flex: 1 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>Icona</Typography>
