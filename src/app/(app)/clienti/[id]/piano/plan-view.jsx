@@ -47,6 +47,8 @@ import { CalendarRoot } from 'src/components/calendar/styles';
 
 import { createItem, createPlan, rescheduleItem } from '../../../actions';
 
+import { PlanImportDialog } from './plan-import-dialog';
+
 // ----------------------------------------------------------------------
 
 // Colori per formato nel calendario (lo stile del kit li mostra in versione tenue)
@@ -62,6 +64,7 @@ const STATUS = {
 export function PlanView({ clientId, plans, plan, items, issues, formats, platforms }) {
   const [tab, setTab] = useState('calendario');
   const [newAt, setNewAt] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   return (
     <Stack spacing={3}>
@@ -80,6 +83,17 @@ export function PlanView({ clientId, plans, plan, items, issues, formats, platfo
         <Button component={RouterLink} href="?nuovo=1" startIcon={<Iconify icon="mingcute:add-line" />}>
           Nuovo piano
         </Button>
+        <Button color="inherit" startIcon={<Iconify icon="eva:cloud-upload-fill" />} onClick={() => setImportOpen(true)}>
+          Importa da file
+        </Button>
+        <PlanImportDialog
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          clientId={clientId}
+          plan={plan ? { id: plan.id, name: plan.name } : null}
+          formats={formats}
+          platforms={platforms}
+        />
         {plan && (
           <Button
             component="a"
