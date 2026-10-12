@@ -11,6 +11,7 @@ import { fromRomeInput, parseMetricInput } from "@/lib/format";
 import { METRIC_BY_KEY } from "@/lib/kpi-catalog";
 import { kpiSnapshot } from "@/lib/queries";
 import { audit, diff } from "@/lib/audit";
+import { ensureChannelsFromClient } from "@/lib/integrations/client-channels";
 import { syncPendingPublications } from "@/lib/publishing/sync";
 
 const str = (f: FormData, k: string) => {
@@ -33,6 +34,7 @@ export async function createClient(f: FormData) {
   if (website && !/^https?:\/\//i.test(website)) website = `https://${website}`;
   const [r] = await db.insert(s.clients).values({ name, sector: str(f, "sector"), website, vatNumber: str(f, "vatNumber"), city: str(f, "city"), status: "onboarding" });
   await audit({ userId: me.id, category: "clienti", action: "cliente.nuovo", description: `Creato il cliente «${name}»`, clientId: r.insertId, target: `cliente:${r.insertId}` });
+  await ensureChannelsFromClient(r.insertId, me.id).catch(() => undefined);
   // Il lavoro con un nuovo cliente parte dal check-up
   redirect(`/clienti/${r.insertId}/checkup`);
 }

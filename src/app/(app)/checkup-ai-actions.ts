@@ -14,6 +14,7 @@ import { askQuestions, rewriteSection, runDeepResearch, runRecon, runWriting } f
 import { cancelJob, isRunning, runningCount, startJob } from "@/lib/ai/jobs";
 import { assertBudget, getLimits, BudgetError } from "@/lib/ai/budget";
 import { audit, diff } from "@/lib/audit";
+import { ensureChannelsFromClient } from "@/lib/integrations/client-channels";
 
 const str = (f: FormData, k: string) => {
   const v = String(f.get(k) ?? "").trim();
@@ -97,6 +98,8 @@ async function startAiCheckupLocked(f: FormData, clientId: number, userId: numbe
   };
   await db.update(clients).set(clientData).where(eq(clients.id, clientId));
   const clientChanges = diff(clientBefore, clientData, { name: "Nome", sector: "Settore", website: "Sito", vatNumber: "P. IVA", city: "Città", contactName: "Referente", socialLinks: "Profili social", notes: "Note" });
+  // Sito e social indicati qui finiscono anche in Canali: non vanno inseriti due volte
+  await ensureChannelsFromClient(clientId, userId).catch(() => undefined);
 
   // Check-up periodico: si parte dal precedente (confronto e storico)
   const [prev] = await db.select({ id: checkups.id }).from(checkups).where(eq(checkups.clientId, clientId)).orderBy(desc(checkups.id)).limit(1);

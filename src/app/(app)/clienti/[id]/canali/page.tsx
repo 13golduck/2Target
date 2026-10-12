@@ -6,6 +6,7 @@ import { isoDaysAgo } from "@/lib/format";
 import { channelDaily, clients, connections, seoSnapshots, socialAccounts, socialPosts } from "@/db/schema";
 import { isConfigured } from "@/lib/integrations/config";
 import { requireUser, userCanPublish } from "@/lib/auth";
+import { ensureChannelsFromClient } from "@/lib/integrations/client-channels";
 import { assetsFor } from "../../../channel-actions";
 import { ChannelsView } from "./channels-view";
 
@@ -34,6 +35,8 @@ export default async function ChannelsPage({ params, searchParams }: { params: P
   const canConnect = await userCanPublish(me);
   const clientId = Number((await params).id);
   const sp = await searchParams;
+  // Clienti creati prima: sito e social della scheda diventano canali alla prima apertura
+  await ensureChannelsFromClient(clientId, me.id).catch(() => undefined);
 
   const conns = await db.select().from(connections).where(eq(connections.clientId, clientId));
   const channels = await db.select().from(socialAccounts).where(eq(socialAccounts.clientId, clientId));
