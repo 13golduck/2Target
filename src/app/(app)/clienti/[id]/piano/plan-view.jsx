@@ -47,6 +47,7 @@ import { CalendarRoot } from 'src/components/calendar/styles';
 
 import { createItem, createPlan, rescheduleItem } from '../../../actions';
 
+import { PlanAiDialog } from './plan-ai-dialog';
 import { PlanImportDialog } from './plan-import-dialog';
 
 // ----------------------------------------------------------------------
@@ -61,10 +62,11 @@ const STATUS = {
   annullato: { label: 'Annullato', color: 'error' },
 };
 
-export function PlanView({ clientId, plans, plan, items, issues, formats, platforms }) {
+export function PlanView({ clientId, plans, plan, items, issues, formats, platforms, checkups }) {
   const [tab, setTab] = useState('calendario');
   const [newAt, setNewAt] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   return (
     <Stack spacing={3}>
@@ -83,6 +85,10 @@ export function PlanView({ clientId, plans, plan, items, issues, formats, platfo
         <Button component={RouterLink} href="?nuovo=1" startIcon={<Iconify icon="mingcute:add-line" />}>
           Nuovo piano
         </Button>
+        <Button startIcon={<Iconify icon="solar:atom-bold-duotone" />} onClick={() => setAiOpen(true)}>
+          Genera con l&apos;AI
+        </Button>
+        <PlanAiDialog open={aiOpen} onClose={() => setAiOpen(false)} clientId={clientId} checkups={checkups} platforms={platforms} />
         <Button color="inherit" startIcon={<Iconify icon="eva:cloud-upload-fill" />} onClick={() => setImportOpen(true)}>
           Importa da file
         </Button>
@@ -142,6 +148,7 @@ export function PlanView({ clientId, plans, plan, items, issues, formats, platfo
 // ----------------------------------------------------------------------
 
 function Summary({ plan, items, issues }) {
+  const [briefOpen, setBriefOpen] = useState(false);
   const active = items.filter((i) => i.status !== 'annullato');
   const paid = active.filter((i) => i.isPaid);
   const paidTotal = paid.reduce((t, i) => t + (i.adBudget ?? 0), 0);
@@ -193,9 +200,19 @@ function Summary({ plan, items, issues }) {
               {plan.name} · {fmtDate(plan.startsOn)} → {fmtDate(plan.endsOn)} · minimo {plan.minPerWeek} a settimana
             </Typography>
             {plan.brief && (
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                <b>Brief del cliente.</b> {plan.brief}
-              </Typography>
+              <>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap', ...(!briefOpen && { maxHeight: 120, overflow: 'hidden', maskImage: plan.brief.length > 300 ? 'linear-gradient(#000 60%, transparent)' : 'none' }) }}
+                >
+                  <b>Brief e strategia.</b> {plan.brief}
+                </Typography>
+                {plan.brief.length > 300 && (
+                  <Button size="small" color="inherit" onClick={() => setBriefOpen((o) => !o)} sx={{ mt: 0.5, px: 0 }}>
+                    {briefOpen ? 'Riduci' : 'Leggi tutto'}
+                  </Button>
+                )}
+              </>
             )}
           </Box>
           {issues.length > 0 && (

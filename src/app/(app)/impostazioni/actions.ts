@@ -10,7 +10,7 @@ import { DEFAULT_LIMITS, getLimits, saveLimits } from "@/lib/ai/budget";
 import { audit } from "@/lib/audit";
 import { FIELDS, saveIntegrationKeys } from "@/lib/integrations/keys";
 import { appUrl } from "@/lib/integrations/config";
-import { DEFAULT_METHOD, saveMethodology } from "@/lib/ai/metodologia";
+import { DEFAULT_METHOD, DEFAULT_PLAN_METHOD, planMethod, saveMethodology } from "@/lib/ai/metodologia";
 import { consumeLoginCode, requestLoginCode } from "@/lib/login-codes";
 import { grantSettingsAccess, revokeSettingsAccess, settingsUnlocked } from "@/lib/settings-access";
 import { EMPTY_MAIL, explainMailError, isMailConfigured, type MailPreset, saveMailSettings, saveMailTest, sendMail } from "@/lib/mail";
@@ -168,11 +168,13 @@ export async function updateMethodology(f: FormData) {
   const me = await requireUser();
   if (!isAdminRole(me.role)) return { error: "Solo un amministratore può cambiare la metodologia" };
   if (!(await settingsUnlocked(me.id))) return LOCKED;
-  const text = f.get("reset") === "1" ? DEFAULT_METHOD : String(f.get("text") ?? "");
+  const plan = f.get("kind") === "piano";
+  const text = f.get("reset") === "1" ? (plan ? DEFAULT_PLAN_METHOD : DEFAULT_METHOD) : String(f.get("text") ?? "");
   if (text.trim().length < 200) return { error: "La metodologia è troppo corta: almeno qualche paragrafo" };
   if (text.length > 30_000) return { error: "La metodologia è troppo lunga (massimo 30.000 caratteri)" };
-  const version = await saveMethodology(text, me.id);
-  await audit({ userId: me.id, category: "impostazioni", action: "metodologia.versione", description: f.get("reset") === "1" ? `Metodologia riportata al testo Golduck originale (versione ${version})` : `Salvata la metodologia, versione ${version}` });
+  const version = plan ? await planMethod.save(text, me.id) : await saveMethodology(text, me.id);
+  const what = plan ? "del piano editoriale" : "del check-up";
+  await audit({ userId: me.id, category: "impostazioni", action: plan ? "metodologia_piano.versione" : "metodologia.versione", description: f.get("reset") === "1" ? `Metodologia ${what} riportata al testo Golduck originale (versione ${version})` : `Salvata la metodologia ${what}, versione ${version}` });
   revalidatePath("/impostazioni");
   return { ok: true, version };
 }

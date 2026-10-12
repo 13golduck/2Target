@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { db } from "@/db";
-import { clients, editorialItems, editorialPlans, FORMATS, PLATFORMS } from "@/db/schema";
+import { clients, contentPillars, editorialItems, editorialPlans, FORMATS, ideas, PLATFORMS } from "@/db/schema";
 import { requireWriter } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { isAiConfigured } from "@/lib/ai/claude";
@@ -108,11 +108,31 @@ export async function importPlanItems(input: z.infer<typeof ImportRequest>) {
     planId = r.insertId;
   }
 
+  // Pilastri del documento (riusa quelli con lo stesso nome) e una idea per ogni pubblicazione
+  const existing = await db.select().from(contentPillars).where(eq(contentPillars.clientId, clientId));
+  const pillarId = new Map(existing.map((x) => [x.name.trim().toLowerCase(), x.id]));
+  for (const name of new Set(items.map((i) => i.pillar.trim()).filter(Boolean))) {
+    if (pillarId.has(name.toLowerCase())) continue;
+    const [ins] = await db.insert(contentPillars).values({ clientId, name: name.slice(0, 160) });
+    pillarId.set(name.toLowerCase(), ins.insertId);
+  }
+
   for (const it of items) {
+    const [idea] = await db.insert(ideas).values({
+      clientId,
+      title: it.title.slice(0, 255),
+      body: it.notes || it.caption || null,
+      format: it.format,
+      pillarId: pillarId.get(it.pillar.trim().toLowerCase()) ?? null,
+      origin: "team",
+      status: "pianificata",
+      createdBy: me.id,
+    });
     const when = /^\d{4}-\d{2}-\d{2}$/.test(it.date) ? fromRomeInput(`${it.date}T${/^\d{2}:\d{2}$/.test(it.time) ? it.time : "09:00"}`) : null;
     await db.insert(editorialItems).values({
       clientId,
       planId,
+      ideaId: idea.insertId,
       title: it.title.slice(0, 255),
       platform: it.platform,
       crossPost: (() => {
@@ -143,5 +163,6 @@ export async function importPlanItems(input: z.infer<typeof ImportRequest>) {
     target: `piano:${planId}`,
   });
   revalidatePath(`/clienti/${clientId}/piano`);
+  revalidatePath(`/clienti/${clientId}/idee`);
   return { ok: true, planId };
 }

@@ -64,36 +64,87 @@ Confronta i numeri con quelli del cliente: un ER del 4% contro l'1% dà subito l
 - Se un'evidenza merita una prova visiva (es. link in bio rotto) segnalalo: il consulente allegherà lo screenshot.
 `;
 
+export const DEFAULT_PLAN_METHOD = `## Obiettivo
+Un piano editoriale social pronto da produrre e pubblicare: ogni contenuto ha data, formato, pilastro, layout,
+caption completa, hashtag e CTA. Nasce dal check-up (posizionamento, buyer persona, funnel, competitor, quick win)
+e dalle risposte del consulente; deve far capire al cliente perché è fatto così.
+
+## Parte introduttiva (va nel brief del piano)
+- Intestazione: cliente, periodo, numero totale di contenuti divisi per formato, frequenza (es. "min. 3 a settimana,
+  mai la domenica").
+- Legenda e criteri: giorni fissi di pubblicazione per formato e perché (es. Reel martedì e giovedì, Post/Carosello sabato).
+  Il primo contenuto presenta la pagina o il progetto, se il canale riparte o è nuovo.
+- Pilastri di contenuto (5-7) con una riga ciascuno: cosa sono e a cosa servono nel funnel. Il pilastro più frequente
+  è quello che il check-up indica come più efficace (anche sull'esempio dei competitor che funzionano).
+- "Perché questa distribuzione": confronto con i competitor del check-up (frequenza, formati) e i pilastri che loro
+  non presidiano, legati a un vantaggio reale del cliente.
+- Pulsanti e call to action: bottone fisso della pagina e logica della CTA per fase (awareness = CTA leggera
+  "salva / scrivici in DM"; fiducia = verso il sito o il portfolio; considerazione = DM o modulo; promo = CTA diretta
+  con una scadenza vera, mai urgenza finta). Evitare "link in bio" generico per i contenuti ad alto intento.
+- Budget sponsorizzate: cifra mensile indicativa (dichiarata come ipotesi se mancano dati storici), quanti contenuti
+  sponsorizzare al mese, quali sono candidati (★) e perché, obiettivo della campagna per tipo di contenuto, targeting
+  (raggio geografico, età, interessi), fasi di spesa nel periodo.
+- Strategia di produzione: giornate di ripresa/foto consigliate e cosa raccogliere in ciascuna, materiale da chiedere
+  al cliente con una scadenza.
+
+## Calendario
+- Ogni contenuto: data, formato (Reel, Post singolo, Carosello, Storia), pilastro, titolo, layout e produzione
+  (inquadrature, durata, slide del carosello, testo in overlay), caption completa pronta da pubblicare, hashtag
+  (8-10: brand + settore + località), CTA coerente con la fase.
+- Mix dei formati secondo il check-up: video verticali per la reach, caroselli per FAQ e contenuti da salvare.
+- Seguire la stagionalità reale del settore e le ricorrenze utili (non tutte: solo quelle sensate per il cliente).
+- Segnare con "candidato sponsorizzazione" i contenuti più forti per la pubblicità.
+- Segnalare la "criticità materiale" quando un contenuto richiede foto/video che potrebbero non esistere (es. prima/dopo),
+  con il livello di rischio e la data entro cui verificare; proporre l'alternativa se il materiale manca.
+
+## Regole di stile
+- Italiano, tono di voce del cliente (dal brand kit e dal check-up). Niente frasi fatte, niente emoji in eccesso.
+- Caption concrete e specifiche per il cliente: luoghi, servizi, prodotti, persone reali. Nessun dato inventato
+  (prezzi, premi, anni di attività) se non viene dal check-up o dal consulente: in quel caso scrivere [da verificare].
+- Ogni caption è una base di partenza che il team adatta; i consigli tecnici vanno verificati con il cliente.
+
+## Note per il team (in fondo al brief)
+- Reel sempre con sottotitoli in overlay. Coerenza cromatica con il brand kit. Rivedere il piano dopo le prime
+  4 settimane sostituendo i pilastri che rendono meno.
+`;
+
 type MethodVersion = { version: number; text: string; at: string; by?: number };
 type MethodStore = { current: number; versions: MethodVersion[] };
 
-const KEY = "checkup_method";
-
-async function store(): Promise<MethodStore> {
-  const [row] = await db.select().from(appSettings).where(eq(appSettings.key, KEY)).limit(1);
-  return (row?.value as MethodStore) ?? { current: 1, versions: [{ version: 1, text: DEFAULT_METHOD, at: "predefinita" }] };
+/** Testi di istruzioni versionati in app_settings: metodologia del check-up e del piano editoriale. */
+function versioned(key: string, fallback: string) {
+  async function store(): Promise<MethodStore> {
+    const [row] = await db.select().from(appSettings).where(eq(appSettings.key, key)).limit(1);
+    return (row?.value as MethodStore) ?? { current: 1, versions: [{ version: 1, text: fallback, at: "predefinita" }] };
+  }
+  return {
+    /** Versione in vigore (per i nuovi lavori). */
+    async get() {
+      const s = await store();
+      const v = s.versions.find((x) => x.version === s.current) ?? s.versions.at(-1)!;
+      return { ...v, isDefault: v.text === fallback };
+    },
+    /** Testo di una versione precisa (i lavori già avviati restano sulla loro). */
+    async text(version: number | null | undefined) {
+      const s = await store();
+      return (s.versions.find((x) => x.version === version) ?? s.versions.find((x) => x.version === s.current))?.text ?? fallback;
+    },
+    /** Salva una nuova versione (le ultime 30 restano nello storico). */
+    async save(text: string, userId: number) {
+      const s = await store();
+      const clean = text.trim();
+      if (clean === s.versions.find((x) => x.version === s.current)?.text) return s.current;
+      const version = Math.max(...s.versions.map((x) => x.version)) + 1;
+      const value: MethodStore = { current: version, versions: [...s.versions, { version, text: clean, at: new Date().toISOString(), by: userId }].slice(-30) };
+      await db.insert(appSettings).values({ key, value, updatedBy: userId }).onDuplicateKeyUpdate({ set: { value, updatedBy: userId } });
+      return version;
+    },
+  };
 }
 
-/** Metodologia in vigore (per i nuovi check-up). */
-export async function getMethodology() {
-  const s = await store();
-  const v = s.versions.find((x) => x.version === s.current) ?? s.versions.at(-1)!;
-  return { ...v, isDefault: v.text === DEFAULT_METHOD };
-}
+const checkupMethod = versioned("checkup_method", DEFAULT_METHOD);
+export const planMethod = versioned("plan_method", DEFAULT_PLAN_METHOD);
 
-/** Testo di una versione precisa (i check-up già avviati restano sulla loro). */
-export async function methodologyText(version: number | null | undefined) {
-  const s = await store();
-  return (s.versions.find((x) => x.version === version) ?? s.versions.find((x) => x.version === s.current))?.text ?? DEFAULT_METHOD;
-}
-
-/** Salva una nuova versione (le ultime 30 restano nello storico). */
-export async function saveMethodology(text: string, userId: number) {
-  const s = await store();
-  const clean = text.trim();
-  if (clean === s.versions.find((x) => x.version === s.current)?.text) return s.current;
-  const version = Math.max(...s.versions.map((x) => x.version)) + 1;
-  const value: MethodStore = { current: version, versions: [...s.versions, { version, text: clean, at: new Date().toISOString(), by: userId }].slice(-30) };
-  await db.insert(appSettings).values({ key: KEY, value, updatedBy: userId }).onDuplicateKeyUpdate({ set: { value, updatedBy: userId } });
-  return version;
-}
+export const getMethodology = checkupMethod.get;
+export const methodologyText = checkupMethod.text;
+export const saveMethodology = checkupMethod.save;
