@@ -5,13 +5,17 @@ import { requireUser } from "@/lib/auth";
 import { canWrite } from "@/lib/roles";
 import { isoDaysAgo } from "@/lib/format";
 import { channelDaily, seoSnapshots, socialAccounts } from "@/db/schema";
+import { ensureChannelsFromClient, isSiteSyncRunning, startSiteSync } from "@/lib/integrations/client-channels";
 import { SeoView } from "./seo-view";
 
 export const metadata = { title: "SEO" };
 
 export default async function SeoPage({ params }: { params: Promise<{ id: string }> }) {
-  const readOnly = !canWrite((await requireUser()).role);
+  const me = await requireUser();
+  const readOnly = !canWrite(me.role);
   const clientId = Number((await params).id);
+  // Il sito indicato nell'analisi iniziale compare anche qui, senza passare da Canali
+  await ensureChannelsFromClient(clientId, me.id).catch(() => undefined);
   const channels = (await db.select().from(socialAccounts).where(eq(socialAccounts.clientId, clientId))).filter((c) =>
     ["search_console", "ga4", "website"].includes(c.platform),
   );
@@ -55,7 +59,19 @@ export default async function SeoPage({ params }: { params: Promise<{ id: string
         }))}
       websites={channels
         .filter((c) => c.platform === "website")
-        .map((c) => ({ id: c.id, url: c.handle, result: (latest(c.id, "pagespeed")?.rows?.[0] as Record<string, unknown>) ?? null, at: latest(c.id, "pagespeed")?.createdAt?.toISOString() ?? null }))}
+        .map((c) => {
+          const result = (latest(c.id, "pagespeed")?.rows?.[0] as Record<string, unknown>) ?? null;
+          // Mai analizzato e senza errori: si avvia (o è già in corso) l'analisi in sottofondo
+          if (!result && !c.lastSyncError) startSiteSync(c);
+          return {
+            id: c.id,
+            url: c.handle,
+            result,
+            at: latest(c.id, "pagespeed")?.createdAt?.toISOString() ?? null,
+            pending: !result && (!c.lastSyncError || isSiteSyncRunning(c.id)),
+            error: !result && !isSiteSyncRunning(c.id) ? c.lastSyncError : null,
+          };
+        })}
     />
   );
 }

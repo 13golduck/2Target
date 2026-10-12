@@ -32,6 +32,7 @@ import { Iconify } from 'src/components/iconify';
 import { toast } from 'src/components/snackbar';
 import { EmptyContent } from 'src/components/empty-content';
 import { confirmSubmit } from 'src/components/custom-dialog';
+import { AutoRefresh } from 'src/components/auto-refresh';
 
 import {
   removeChannel,
@@ -67,6 +68,7 @@ export function ChannelsView({ clientId, error, configured, connections, channel
   const router = useRouter();
   const [syncing, startSync] = useTransition();
   const [manual, setManual] = useState(false);
+  const anyPending = channels.some((c) => c.pending);
 
   const syncAll = () =>
     startSync(async () => {
@@ -79,6 +81,7 @@ export function ChannelsView({ clientId, error, configured, connections, channel
 
   return (
     <Stack spacing={3}>
+      <AutoRefresh active={anyPending} />
       {error && <Alert severity="error" onClose={() => router.replace(`/clienti/${clientId}/canali`)}>{error}</Alert>}
 
       {/* Collegamenti */}
@@ -236,7 +239,9 @@ function ChannelCard({ channel: c }) {
           </Stack>
         }
         subheader={
-          c.lastSyncError ? (
+          c.pending ? (
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>Analisi PageSpeed in corso: la pagina si aggiorna da sola…</Typography>
+          ) : c.lastSyncError ? (
             <Typography variant="caption" sx={{ color: 'error.main' }}>{c.lastSyncError}</Typography>
           ) : c.lastSyncAt ? (
             `Aggiornato ${fmtDateTime(new Date(c.lastSyncAt))}`

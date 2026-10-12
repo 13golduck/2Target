@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { CHANNEL_KINDS, clients, connections, socialAccounts } from "@/db/schema";
 import { requireWriter, userCanPublish } from "@/lib/auth";
+import { siteKey } from "@/lib/integrations/client-channels";
 import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import * as google from "@/lib/integrations/google";
 import * as meta from "@/lib/integrations/meta";
@@ -166,6 +167,11 @@ export async function addManualChannel(f: FormData) {
     }
   } else {
     handle = handle.replace(/^@/, "");
+  }
+  if (platform === "website") {
+    const sites = await db.select({ handle: socialAccounts.handle }).from(socialAccounts).where(and(eq(socialAccounts.clientId, clientId), eq(socialAccounts.platform, "website")));
+    const twin = sites.find((x) => siteKey(x.handle) === siteKey(handle));
+    if (twin) return { error: `Il sito è già presente come ${twin.handle}` };
   }
   const [r] = await db
     .insert(socialAccounts)

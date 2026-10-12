@@ -24,6 +24,7 @@ import { RouterLink } from 'src/routes/components';
 import { fmtDate, fmtDateTime } from 'src/lib/format';
 
 import { Iconify } from 'src/components/iconify';
+import { AutoRefresh } from 'src/components/auto-refresh';
 import { Scrollbar } from 'src/components/scrollbar';
 import { Chart, useChart } from 'src/components/chart';
 import { EmptyContent } from 'src/components/empty-content';
@@ -53,6 +54,7 @@ export function SeoView({ clientId, searchConsole, analytics, websites, readOnly
   }
   return (
     <Stack spacing={4}>
+      <AutoRefresh active={websites.some((w) => w.pending)} />
       {searchConsole.map((sc) => <SearchConsoleBlock key={sc.id} data={sc} />)}
       {analytics.map((ga) => <AnalyticsBlock key={ga.id} data={ga} />)}
       {websites.length > 0 && (
@@ -276,8 +278,15 @@ function PageSpeedCard({ site }) {
             LCP {r.lcp ?? '—'} · CLS {r.cls ?? '—'} · TBT {r.tbt ?? '—'}
           </Typography>
         </>
+      ) : site.pending ? (
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', color: 'text.secondary' }}>
+          <CircularProgress size={18} />
+          <Typography variant="body2">Analisi PageSpeed in corso (20-40 secondi): la pagina si aggiorna da sola.</Typography>
+        </Stack>
       ) : (
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>Analisi non ancora eseguita: avviala dalla scheda Canali.</Typography>
+        <Typography variant="body2" sx={{ color: site.error ? 'error.main' : 'text.secondary' }}>
+          {site.error ? `Analisi non riuscita: ${site.error}` : 'Analisi non ancora eseguita.'} Puoi ripeterla dalla scheda Canali (icona di aggiornamento).
+        </Typography>
       )}
     </Card>
   );

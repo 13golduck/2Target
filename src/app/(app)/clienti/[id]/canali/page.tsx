@@ -6,7 +6,7 @@ import { isoDaysAgo } from "@/lib/format";
 import { channelDaily, clients, connections, seoSnapshots, socialAccounts, socialPosts } from "@/db/schema";
 import { isConfigured } from "@/lib/integrations/config";
 import { requireUser, userCanPublish } from "@/lib/auth";
-import { ensureChannelsFromClient } from "@/lib/integrations/client-channels";
+import { ensureChannelsFromClient, isSiteSyncRunning, startSiteSync } from "@/lib/integrations/client-channels";
 import { assetsFor } from "../../../channel-actions";
 import { ChannelsView } from "./channels-view";
 
@@ -96,7 +96,9 @@ export default async function ChannelsPage({ params, searchParams }: { params: P
         connected: c.connected,
         connectionId: c.connectionId,
         lastSyncAt: c.lastSyncAt?.toISOString() ?? null,
-        lastSyncError: c.lastSyncError,
+        lastSyncError: c.platform === "website" && isSiteSyncRunning(c.id) ? null : c.lastSyncError,
+        // Sito mai analizzato: l'analisi parte (o è già in corso) in sottofondo
+        pending: c.platform === "website" && !c.lastSyncAt && (isSiteSyncRunning(c.id) || (!c.lastSyncError && (startSiteSync(c), true))),
         stats: {
           followers: last(c.id, "followers"),
           reach30: sum(c.id, "reach"),

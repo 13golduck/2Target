@@ -24,12 +24,38 @@ function websiteHandle(raw: string | null) {
   }
 }
 
+/** Stesso sito anche con/senza www, http/https e "/" finale. */
+export function siteKey(url: string) {
+  try {
+    const u = new URL(/^https?:\/\//i.test(url.trim()) ? url.trim() : `https://${url.trim()}`);
+    return `${u.hostname.replace(/^www\./i, "").toLowerCase()}${u.pathname.replace(/\/+$/, "")}`;
+  } catch {
+    return url.trim().toLowerCase();
+  }
+}
+
+// Analisi PageSpeed avviate in sottofondo (una sola volta per canale, finché il processo è attivo)
+const g = globalThis as unknown as { __siteSyncRunning?: Set<number> };
+const running = (g.__siteSyncRunning ??= new Set<number>());
+
+export const isSiteSyncRunning = (channelId: number) => running.has(channelId);
+
+/** Avvia l'analisi del sito in sottofondo, se non è già in corso. */
+export function startSiteSync(ch: typeof socialAccounts.$inferSelect) {
+  if (running.has(ch.id)) return;
+  running.add(ch.id);
+  void syncChannel(ch)
+    .catch(() => undefined)
+    .finally(() => running.delete(ch.id));
+}
+
 /** Crea i canali mancanti dal sito e dai profili della scheda cliente. Restituisce quanti ne ha aggiunti. */
 export async function ensureChannelsFromClient(clientId: number, userId: number | null = null) {
   const [client] = await db.select({ website: clients.website, socialLinks: clients.socialLinks }).from(clients).where(eq(clients.id, clientId));
   if (!client) return 0;
   const existing = await db.select({ platform: socialAccounts.platform, handle: socialAccounts.handle }).from(socialAccounts).where(eq(socialAccounts.clientId, clientId));
-  const has = (platform: Kind, handle: string) => existing.some((e) => e.platform === platform && e.handle.toLowerCase() === handle.toLowerCase());
+  const has = (platform: Kind, handle: string) =>
+    existing.some((e) => e.platform === platform && (platform === "website" ? siteKey(e.handle) === siteKey(handle) : e.handle.toLowerCase() === handle.toLowerCase()));
 
   const wanted: { platform: Kind; handle: string }[] = [];
   const site = websiteHandle(client.website);
@@ -47,7 +73,7 @@ export async function ensureChannelsFromClient(clientId: number, userId: number 
     // Il sito si analizza subito (PageSpeed), senza bloccare chi ha salvato
     if (w.platform === "website") {
       const [ch] = await db.select().from(socialAccounts).where(and(eq(socialAccounts.clientId, clientId), eq(socialAccounts.platform, "website"), eq(socialAccounts.handle, w.handle)));
-      if (ch) void syncChannel(ch).catch(() => undefined);
+      if (ch) startSiteSync(ch);
     }
   }
   if (added.length) {
