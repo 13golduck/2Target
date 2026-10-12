@@ -141,6 +141,13 @@
       "when": 1791839023019,
       "tag": "0019_codici_e_avvisi",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1791841413474,
+      "tag": "0020_icona_logo",
+      "breakpoints": true
     }
   ]
 }

@@ -34,12 +34,17 @@ export async function saveBrandKit(f: FormData) {
   }
   data.palette = data.palette.filter((c) => HEX.test(c.hex));
   const logoField = String(f.get("logo") ?? "keep");
-  const set: { data: typeof data; updatedBy: number; logo?: string | null } = { data, updatedBy: me.id };
-  if (logoField === "") set.logo = null;
-  else if (logoField !== "keep") {
+  const set: { data: typeof data; updatedBy: number; logo?: string | null; icon?: string | null } = { data, updatedBy: me.id };
+  if (logoField === "") {
+    set.logo = null;
+    set.icon = null;
+  } else if (logoField !== "keep") {
+    // Il browser ha già rifilato e compresso il logo (lato lungo max 1000 px)
     if (!/^data:image\/(png|jpeg|svg\+xml|webp);base64,/.test(logoField)) return { error: "Logo: usa PNG, JPG, SVG o WebP" };
-    if (logoField.length > 450_000) return { error: "Logo troppo pesante: massimo circa 300 KB" };
+    if (logoField.length > 1_400_000) return { error: "Logo troppo pesante anche dopo la compressione: prova con un'immagine più semplice" };
     set.logo = logoField;
+    const iconField = String(f.get("icon") ?? "");
+    set.icon = /^data:image\/(png|webp);base64,/.test(iconField) && iconField.length < 300_000 ? iconField : null;
   }
   const [kitBefore] = await db.select({ data: brandKits.data }).from(brandKits).where(eq(brandKits.clientId, clientId));
   await db.insert(brandKits).values({ clientId, ...set }).onDuplicateKeyUpdate({ set });

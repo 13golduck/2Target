@@ -19,6 +19,7 @@ import { Iconify } from 'src/components/iconify';
 import { toast } from 'src/components/snackbar';
 
 import { DesignReviewPanel } from '../../../design-review-panel';
+import { LogoEditor, LOGO_MAX_FILE } from './logo-editor';
 import { saveBrandKit, proposeBrandKit } from '../../../design-actions';
 
 // ----------------------------------------------------------------------
@@ -44,7 +45,9 @@ function useGoogleFonts(fonts) {
 export function BrandView({ clientId, aiConfigured, kit, reviews }) {
   const [data, setData] = useState(kit?.data ?? EMPTY);
   const [logo, setLogo] = useState(kit?.logo ?? '');
+  const [icon, setIcon] = useState(null);
   const [logoChanged, setLogoChanged] = useState(false);
+  const [logoFile, setLogoFile] = useState(null);
   const [saving, startSave] = useTransition();
   const [proposing, startPropose] = useTransition();
   useGoogleFonts(data.fonts);
@@ -59,6 +62,7 @@ export function BrandView({ clientId, aiConfigured, kit, reviews }) {
       fd.set('clientId', clientId);
       fd.set('data', JSON.stringify(data));
       fd.set('logo', logoChanged ? logo : 'keep');
+      if (logoChanged) fd.set('icon', icon ?? '');
       const r = await saveBrandKit(fd);
       if (r?.error) toast.error(r.error);
       else {
@@ -77,18 +81,14 @@ export function BrandView({ clientId, aiConfigured, kit, reviews }) {
       }
     });
 
+  // Il logo passa dall'editor: margini tolti, compressione e icona quadrata
   const pickLogo = (file) => {
     if (!file) return;
-    if (file.size > 300 * 1024) {
-      toast.error('Logo troppo pesante: massimo 300 KB');
+    if (file.size > LOGO_MAX_FILE) {
+      toast.error('Immagine troppo grande: massimo 20 MB');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setLogo(String(reader.result));
-      setLogoChanged(true);
-    };
-    reader.readAsDataURL(file);
+    setLogoFile(file);
   };
 
   const headFont = data.fonts[0]?.name || 'inherit';
@@ -99,6 +99,17 @@ export function BrandView({ clientId, aiConfigured, kit, reviews }) {
 
   return (
     <Grid container spacing={3}>
+      <LogoEditor
+        file={logoFile}
+        onClose={() => setLogoFile(null)}
+        onConfirm={(r) => {
+          setLogo(r.logo);
+          setIcon(r.icon);
+          setLogoChanged(true);
+          setLogoFile(null);
+          toast.success('Logo pronto: salva il brand kit per confermarlo');
+        }}
+      />
       <Grid size={{ xs: 12, lg: 7 }}>
         <Card>
           <CardHeader
@@ -126,10 +137,18 @@ export function BrandView({ clientId, aiConfigured, kit, reviews }) {
                 </Box>
                 <Button component="label" variant="outlined" color="inherit" size="small">
                   Carica logo
-                  <input type="file" hidden accept="image/png,image/jpeg,image/svg+xml,image/webp" onChange={(e) => pickLogo(e.target.files?.[0])} />
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif"
+                    onChange={(e) => {
+                      pickLogo(e.target.files?.[0]);
+                      e.target.value = '';
+                    }}
+                  />
                 </Button>
                 {logo && (
-                  <Button size="small" color="inherit" onClick={() => { setLogo(''); setLogoChanged(true); }}>
+                  <Button size="small" color="inherit" onClick={() => { setLogo(''); setIcon(null); setLogoChanged(true); }}>
                     Rimuovi
                   </Button>
                 )}

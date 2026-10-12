@@ -15,7 +15,7 @@ function ClientLogo({ id, version, name }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={`/api/logo/${id}?v=${version}`}
+      src={`/api/logo/${id}?tipo=icona&v=${version}`}
       alt={name}
       width={24}
       height={24}

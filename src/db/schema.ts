@@ -652,8 +652,10 @@ export const appSettings = mysqlTable("app_settings", {
 export const brandKits = mysqlTable("brand_kits", {
   clientId: int("client_id").primaryKey().references(() => clients.id, { onDelete: "cascade" }),
   data: json("data").$type<BrandKitData>().notNull(),
-  /** Logo come data URL (PNG/SVG/JPG, massimo ~300 KB). */
+  /** Logo come data URL (PNG/SVG/JPG/WebP), già rifilato e compresso nel browser. */
   logo: mediumtext("logo"),
+  /** Icona quadrata 256×256 ricavata dal logo (menu, elenchi). */
+  icon: mediumtext("icon"),
   updatedBy: int("updated_by").references(() => users.id, { onDelete: "set null" }),
   updatedAt: updated(),
 });

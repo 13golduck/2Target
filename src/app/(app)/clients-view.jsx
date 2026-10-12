@@ -77,7 +77,7 @@ export function ClientsView({ clients, readOnly = false }) {
               <Card>
                 <CardActionArea component={RouterLink} href={`/clienti/${c.id}`} sx={{ p: 3 }}>
                   <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                    <Avatar sx={{ bgcolor: 'primary.lighter', color: 'primary.darker', fontWeight: 700 }}>
+                    <Avatar src={c.logo ?? undefined} alt={c.name} variant={c.logo ? 'rounded' : 'circular'} sx={{ bgcolor: c.logo ? '#fff' : 'primary.lighter', color: 'primary.darker', fontWeight: 700, '& img': { objectFit: 'contain' } }}>
                       {c.name.slice(0, 2).toUpperCase()}
                     </Avatar>
                     <Box sx={{ flex: 1, minWidth: 0 }}>

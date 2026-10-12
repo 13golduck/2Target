@@ -11,8 +11,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ clie
   const clientId = Number((await params).clientId);
   if (!Number.isInteger(clientId)) return new Response(null, { status: 404 });
   await requireClientAccess(clientId);
-  const [kit] = await db.select({ logo: brandKits.logo }).from(brandKits).where(eq(brandKits.clientId, clientId));
-  const m = kit?.logo?.match(/^data:(image\/(?:png|jpeg|svg\+xml|webp));base64,(.+)$/);
+  const [kit] = await db.select({ logo: brandKits.logo, icon: brandKits.icon }).from(brandKits).where(eq(brandKits.clientId, clientId));
+  // ?tipo=icona: la versione quadrata per menu ed elenchi (se non c'è, il logo)
+  const wantIcon = new URL(request.url).searchParams.get("tipo") === "icona";
+  const m = ((wantIcon && kit?.icon) || kit?.logo)?.match(/^data:(image\/(?:png|jpeg|svg\+xml|webp));base64,(.+)$/);
   if (!m) return new Response(null, { status: 404 });
   const versioned = new URL(request.url).searchParams.has("v");
   return new Response(Buffer.from(m[2], "base64"), {
