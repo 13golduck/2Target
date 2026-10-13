@@ -148,6 +148,13 @@
       "when": 1791841413474,
       "tag": "0020_icona_logo",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1791906769742,
+      "tag": "0021_invito_utenti",
+      "breakpoints": true
     }
   ]
 }

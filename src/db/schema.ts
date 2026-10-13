@@ -55,6 +55,8 @@ export const users = mysqlTable("users", {
   /** Può programmare e pubblicare sui profili dei clienti (Super admin e Administrator possono sempre). */
   canPublish: boolean("can_publish").notNull().default(false),
   lastLoginAt: datetime("last_login_at"),
+  /** Ultima email di invito inviata (null = mai invitato). */
+  invitedAt: datetime("invited_at"),
   createdAt: created(),
 });
 

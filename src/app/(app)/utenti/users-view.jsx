@@ -10,6 +10,8 @@ import Table from '@mui/material/Table';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import Switch from '@mui/material/Switch';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import TableRow from '@mui/material/TableRow';
@@ -33,7 +35,7 @@ import { toast } from 'src/components/snackbar';
 import { Scrollbar } from 'src/components/scrollbar';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
-import { addUser, updateUser, resetUserTotp, setCanPublish } from './actions';
+import { addUser, updateUser, resendInvite, resetUserTotp, setCanPublish } from './actions';
 import { askConfirm } from 'src/components/custom-dialog';
 
 // ----------------------------------------------------------------------
@@ -55,6 +57,22 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
       if (r?.error) toast.error(r.error);
       else toast.success(u.active ? 'Utente disattivato' : 'Utente riattivato');
     });
+
+  const invite = (u) =>
+    start(async () => {
+      const r = await resendInvite(u.id);
+      if (r?.error) toast.error(r.error);
+      else toast.success(`Invito inviato a ${u.email}`);
+    });
+
+  const inviteButton = (u) =>
+    u.active && u.role !== 'superadmin' && u.id !== meId ? (
+      <Tooltip title={u.invitedAt ? `Ultimo invito: ${fmtDateTime(new Date(u.invitedAt))}` : 'Manda un’email con le istruzioni per entrare'}>
+        <Button size="small" color="inherit" disabled={pending} onClick={() => invite(u)} startIcon={<Iconify icon="solar:letter-bold" width={16} />}>
+          {u.invitedAt ? 'Reinvia invito' : 'Invita'}
+        </Button>
+      </Tooltip>
+    ) : null;
 
   const clientName = (id) => clients.find((c) => c.id === id)?.name ?? '—';
   const withTotp = users.filter((u) => u.totp).length;
@@ -158,6 +176,7 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
                     <Typography variant="caption" sx={{ color: 'text.secondary' }}>Non modificabile</Typography>
                   ) : (
                     <>
+                      {inviteButton(u)}
                       <Button size="small" color="inherit" disabled={pending} onClick={() => setEditing(u)}>
                         Modifica
                       </Button>
@@ -224,7 +243,18 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
                         </Typography>
                       )}
                     </TableCell>
-                    <TableCell>{u.lastLoginAt ? fmtDateTime(new Date(u.lastLoginAt)) : 'Mai'}</TableCell>
+                    <TableCell>
+                      {u.lastLoginAt ? (
+                        fmtDateTime(new Date(u.lastLoginAt))
+                      ) : (
+                        <Stack>
+                          <span>Mai</span>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            {u.invitedAt ? `Invitato il ${fmtDateTime(new Date(u.invitedAt))}` : 'Non ancora invitato'}
+                          </Typography>
+                        </Stack>
+                      )}
+                    </TableCell>
                     <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                       {locked ? (
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -237,6 +267,7 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
                               Disattivato
                             </Label>
                           )}
+                          {inviteButton(u)}
                           <Tooltip title="Modifica ruolo e clienti">
                             <IconButton size="small" disabled={pending} onClick={() => setEditing(u)}>
                               <Iconify icon="solar:pen-bold" width={18} />
@@ -293,7 +324,8 @@ function UserDialog({ user, roles, clients, onClose }) {
             const r = isNew ? await addUser(fd) : await updateUser(fd);
             if (r?.error) toast.error(r.error);
             else {
-              toast.success(isNew ? 'Utente aggiunto: può accedere con la sua email' : 'Utente aggiornato');
+              if (r.invited === false) toast.warning('Utente aggiunto, ma l’email di invito non è partita: riprova con «Invita» (dettagli nell’Audit)');
+              else toast.success(isNew ? (r.invited ? 'Utente aggiunto e invito inviato' : 'Utente aggiunto: può accedere con la sua email') : 'Utente aggiornato');
               onClose();
             }
           })
@@ -306,6 +338,10 @@ function UserDialog({ user, roles, clients, onClose }) {
               <>
                 <TextField name="name" label="Nome e cognome" required autoFocus fullWidth />
                 <TextField name="email" type="email" label="Email" required fullWidth />
+                <FormControlLabel
+                  control={<Checkbox name="invite" defaultChecked />}
+                  label="Invia l’email di invito con le istruzioni per entrare"
+                />
               </>
             )}
             <TextField select name="role" label="Ruolo" value={role} onChange={(e) => setRole(e.target.value)} fullWidth>

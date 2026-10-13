@@ -8,6 +8,8 @@ import { userClients, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { ASSIGNABLE_ROLES, isAdminRole, type Role } from "@/lib/roles";
 import { audit } from "@/lib/audit";
+import { logError } from "@/lib/error-log";
+import { sendInvite } from "@/lib/invite";
 
 async function requireAdmin() {
   const me = await requireUser();
@@ -52,8 +54,36 @@ export async function addUser(f: FormData) {
     target: `utente:${saved.id}`,
     meta: role === "viewer" ? { clienti: clientIds } : null,
   });
+  // Email di invito (facoltativa): se non parte l'utente resta creato e si può reinviare
+  let invited: boolean | undefined;
+  if (f.get("invite") === "on") {
+    invited = await inviteSafely({ id: saved.id, email, name, role }, me);
+  }
   revalidatePath("/utenti");
-  return { ok: true };
+  return { ok: true, invited };
+}
+
+async function inviteSafely(u: { id: number; email: string; name: string; role: string }, me: { id: number; name: string }) {
+  try {
+    await sendInvite(u, me.name);
+    await audit({ userId: me.id, category: "utenti", action: "utente.invito", description: `Inviata l'email di invito a ${u.name} <${u.email}>`, target: `utente:${u.id}` });
+    return true;
+  } catch (e) {
+    await logError({ userId: me.id, area: "Utenti", message: `Invito a ${u.email} non inviato: ${e instanceof Error ? e.message : String(e)}`, path: "/utenti" });
+    return false;
+  }
+}
+
+/** Reinvia l'email di invito a un utente attivo. */
+export async function resendInvite(id: number) {
+  const me = await requireAdmin();
+  const [target] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  if (!target) return { error: "Utente non trovato" };
+  if (!target.active) return { error: "L'utente è disattivato: riattivalo prima di invitarlo" };
+  if (target.invitedAt && Date.now() - target.invitedAt.getTime() < 60_000) return { error: "Invito appena inviato: attendi un minuto prima di reinviarlo" };
+  const ok = await inviteSafely(target, me);
+  revalidatePath("/utenti");
+  return ok ? { ok: true } : { error: "Invio non riuscito: controlla la configurazione email in Impostazioni (dettagli nell'Audit, categoria Errori)" };
 }
 
 export async function updateUser(f: FormData) {
