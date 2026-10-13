@@ -308,29 +308,36 @@ function UserDialog({ user, roles, clients, onClose }) {
   const isNew = !user.id;
   const [role, setRole] = useState(user.role ?? 'user');
   const [selected, setSelected] = useState(clients.filter((c) => (user.clientIds ?? []).includes(c.id)));
+  const [clientsError, setClientsError] = useState(false);
   const [pending, start] = useTransition();
+
+  // onSubmit e non action: con action React svuota il modulo anche quando il server risponde con un errore
+  const submit = (e) => {
+    e.preventDefault();
+    if (role === 'viewer' && !selected.length) {
+      setClientsError(true);
+      return;
+    }
+    const fd = new FormData(e.currentTarget);
+    start(async () => {
+      selected.forEach((c) => fd.append('clientIds', c.id));
+      if (!isNew) {
+        fd.set('id', user.id);
+        fd.set('active', String(user.active));
+      }
+      const r = isNew ? await addUser(fd) : await updateUser(fd);
+      if (r?.error) toast.error(r.error);
+      else {
+        if (r.invited === false) toast.warning('Utente aggiunto, ma l’email di invito non è partita: riprova con «Invita» (dettagli nell’Audit)');
+        else toast.success(isNew ? (r.invited ? 'Utente aggiunto e invito inviato' : 'Utente aggiunto: può accedere con la sua email') : 'Utente aggiornato');
+        onClose();
+      }
+    });
+  };
 
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="xs">
-      <Box
-        component="form"
-        action={(fd) =>
-          start(async () => {
-            selected.forEach((c) => fd.append('clientIds', c.id));
-            if (!isNew) {
-              fd.set('id', user.id);
-              fd.set('active', String(user.active));
-            }
-            const r = isNew ? await addUser(fd) : await updateUser(fd);
-            if (r?.error) toast.error(r.error);
-            else {
-              if (r.invited === false) toast.warning('Utente aggiunto, ma l’email di invito non è partita: riprova con «Invita» (dettagli nell’Audit)');
-              else toast.success(isNew ? (r.invited ? 'Utente aggiunto e invito inviato' : 'Utente aggiunto: può accedere con la sua email') : 'Utente aggiornato');
-              onClose();
-            }
-          })
-        }
-      >
+      <Box component="form" onSubmit={submit}>
         <DialogTitle>{isNew ? 'Nuovo utente' : `Modifica ${user.name}`}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
@@ -361,11 +368,19 @@ function UserDialog({ user, roles, clients, onClose }) {
                 multiple
                 options={clients}
                 value={selected}
-                onChange={(_, v) => setSelected(v)}
+                onChange={(_, v) => {
+                  setSelected(v);
+                  if (v.length) setClientsError(false);
+                }}
                 getOptionLabel={(c) => c.name}
                 isOptionEqualToValue={(a, b) => a.id === b.id}
                 renderInput={(params) => (
-                  <TextField {...params} label="Clienti che può vedere" helperText="Vedrà solo KPI, Lead e SEO di questi clienti" />
+                  <TextField
+                    {...params}
+                    label="Clienti che può vedere"
+                    error={clientsError}
+                    helperText={clientsError ? 'Scegli almeno un cliente: il Viewer vede solo i clienti indicati qui' : 'Vedrà solo KPI, Lead e SEO di questi clienti'}
+                  />
                 )}
               />
             )}
