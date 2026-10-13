@@ -33,6 +33,7 @@ const PRESETS = {
   microsoft: { label: 'Microsoft 365 – app Entra (consigliato)' },
   'microsoft-smtp': { label: 'Microsoft 365 – SMTP con password', host: 'smtp.office365.com', port: 587 },
   google: { label: 'Google Workspace / Gmail – SMTP con password per app', host: 'smtp.gmail.com', port: 587 },
+  'google-relay': { label: 'Google Workspace – relay SMTP per IP (senza password)', host: 'smtp-relay.gmail.com', port: 587 },
   smtp: { label: 'Altro server SMTP (Aruba, Register, ...)' },
 };
 
@@ -51,6 +52,14 @@ const HELP = {
       quella casella → <Link href="https://myaccount.google.com/security" target="_blank" rel="noopener">Sicurezza</Link> → attiva la
       Verifica in due passaggi → <Link href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">Password per le app</Link>{' '}
       → nome «2Target» → Crea. Se non è disponibile, l&apos;amministratore di Google Workspace deve consentire la verifica in due passaggi.
+    </>
+  ),
+  'google-relay': (
+    <>
+      Nessuna password: Google accetta le email perché arrivano dall&apos;IP del server di 2Target. Nella{' '}
+      <Link href="https://admin.google.com/ac/apps/gmail/routing" target="_blank" rel="noopener">console di amministrazione Google</Link> → Gmail →
+      Routing → <b>Servizio di inoltro SMTP</b>: mittenti consentiti «Solo indirizzi nei miei domini», autenticazione «Consenti solo gli indirizzi IP
+      specificati» con l&apos;IP del server, e «Richiedi crittografia TLS». La casella mittente deve essere un indirizzo del vostro dominio.
     </>
   ),
   smtp: <>Server, porta, utente e password li trovi nelle istruzioni del tuo provider di posta (porta 587 con STARTTLS oppure 465 con TLS).</>,
@@ -143,11 +152,11 @@ export function SettingsView({ mail, lastTest, limits, method, planMethod, first
               <TextField
                 name="from"
                 label="Casella mittente"
-                placeholder={preset === 'google' ? 'developer@golduck.eu' : 'noreply@golduck.it'}
+                placeholder={preset.startsWith('google') ? 'developer@golduck.eu' : 'noreply@golduck.it'}
                 defaultValue={mail.from}
-                helperText={provider === 'smtp' ? "Se vuota si usa l'utente" : undefined}
+                helperText={provider === 'smtp' && preset !== 'google-relay' ? "Se vuota si usa l'utente" : undefined}
                 fullWidth
-                required={provider === 'microsoft'}
+                required={provider === 'microsoft' || preset === 'google-relay'}
               />
               <TextField name="fromName" label="Nome visualizzato" defaultValue={mail.fromName} fullWidth />
             </Stack>
@@ -196,16 +205,20 @@ export function SettingsView({ mail, lastTest, limits, method, planMethod, first
                     helperText="587 o 465"
                   />
                 </Stack>
-                <TextField name="user" label="Utente (indirizzo email completo)" defaultValue={mail.user} fullWidth required />
-                <TextField
-                  name="pass"
-                  type="password"
-                  label={preset === 'google' ? 'Password per app (16 lettere)' : 'Password'}
-                  autoComplete="new-password"
-                  helperText={secretHelp(mail.hasPass)}
-                  required={!mail.hasPass}
-                  fullWidth
-                />
+                {preset !== 'google-relay' && (
+                  <>
+                    <TextField name="user" label="Utente (indirizzo email completo)" defaultValue={mail.user} fullWidth required />
+                    <TextField
+                      name="pass"
+                      type="password"
+                      label={preset === 'google' ? 'Password per app (16 lettere)' : 'Password'}
+                      autoComplete="new-password"
+                      helperText={secretHelp(mail.hasPass)}
+                      required={!mail.hasPass}
+                      fullWidth
+                    />
+                  </>
+                )}
               </>
             )}
 

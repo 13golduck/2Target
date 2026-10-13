@@ -73,11 +73,12 @@ export async function saveMail(f: FormData) {
   if (!(await settingsUnlocked(me.id))) return LOCKED;
   // Primo salvataggio (email non ancora configurata): resta dentro per poter inviare la prova
   const firstSetup = !(await isMailConfigured());
-  const presets: MailPreset[] = ["microsoft", "microsoft-smtp", "google", "smtp"];
+  const presets: MailPreset[] = ["microsoft", "microsoft-smtp", "google", "google-relay", "smtp"];
   const preset = presets.find((p) => p === str(f, "preset")) ?? "microsoft";
   const provider = preset === "microsoft" ? "microsoft" : "smtp";
   const from = str(f, "from").toLowerCase();
   if (from && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from)) return { error: "Indirizzo mittente non valido" };
+  if (preset === "google-relay" && !from) return { error: "Con il relay di Google serve la casella mittente (un indirizzo del vostro dominio Workspace)" };
   const port = Number(str(f, "port")) || EMPTY_MAIL.port;
   await saveMailSettings(
     {

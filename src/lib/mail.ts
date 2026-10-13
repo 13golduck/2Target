@@ -11,12 +11,15 @@ import { decryptSecret, encryptSecret } from "./secret-box";
 // - "microsoft": Microsoft 365 via Microsoft Graph (registrazione app in Entra ID, permesso Mail.Send).
 //   È il metodo consigliato: Microsoft spegne l'SMTP con password semplice (fine 2026).
 // - "smtp": qualsiasi server SMTP (Google Workspace con password per app, Aruba, ...).
+// - preset "google-relay": relay SMTP di Google Workspace, autorizzato per IP del server: nessuna password salvata.
 // In sviluppo, senza configurazione, il messaggio viene stampato nel terminale.
 
 export type MailProvider = "microsoft" | "smtp";
 
 /** Preimpostazione scelta in Impostazioni (solo per l'interfaccia). */
-export type MailPreset = "microsoft" | "microsoft-smtp" | "google" | "smtp";
+export type MailPreset = "microsoft" | "microsoft-smtp" | "google" | "google-relay" | "smtp";
+
+const isRelay = (s: MailSettings) => s.provider === "smtp" && s.preset === "google-relay";
 
 export type MailSettings = {
   provider: MailProvider;
@@ -73,6 +76,8 @@ function isComplete(s: MailSettings | null, decrypt: boolean) {
   if (!s) return false;
   const secret = (v: string) => (decrypt ? Boolean(decryptSecret(v, PURPOSE)) : Boolean(v));
   if (s.provider === "microsoft") return Boolean(s.tenantId && s.clientId && s.from && secret(s.clientSecret));
+  // Relay per IP: basta server e mittente (Google riconosce il server dall'indirizzo IP)
+  if (isRelay(s)) return Boolean(s.host && s.from);
   return Boolean(s.host && s.user && secret(s.pass));
 }
 
@@ -116,6 +121,11 @@ export async function saveMailSettings(input: MailSettings, userId: number) {
     clientSecret: input.clientSecret ? encryptSecret(input.clientSecret, PURPOSE) : (prev?.clientSecret ?? ""),
     pass: input.pass ? encryptSecret(input.pass.replace(/\s+/g, ""), PURPOSE) : (prev?.pass ?? ""),
   };
+  // Con il relay per IP la vecchia password non serve più: si cancella
+  if (isRelay(value)) {
+    value.pass = "";
+    value.user = "";
+  }
   await db.insert(appSettings).values({ key: KEY, value, updatedBy: userId }).onDuplicateKeyUpdate({ set: { value, updatedBy: userId } });
   transport = null;
   graphToken = null;
@@ -124,16 +134,24 @@ export async function saveMailSettings(input: MailSettings, userId: number) {
 async function activeSettings(): Promise<MailSettings | null> {
   const s = await storedSettings();
   if (isComplete(s, true) && s) {
-    return { ...s, clientSecret: decryptSecret(s.clientSecret, PURPOSE) ?? "", pass: decryptSecret(s.pass, PURPOSE) ?? "" };
+    return { ...s, clientSecret: decryptSecret(s.clientSecret, PURPOSE) ?? "", pass: isRelay(s) ? "" : (decryptSecret(s.pass, PURPOSE) ?? "") };
   }
   return envSettings();
 }
 
 // --- SMTP -------------------------------------------------------------------
 
+const hostOf = (url?: string) => {
+  try {
+    return url ? new URL(url).hostname : null;
+  } catch {
+    return null;
+  }
+};
+
 let transport: { key: string; t: nodemailer.Transporter } | null = null;
 function smtp(s: MailSettings) {
-  const key = `${s.host}:${s.port}:${s.user}:${s.pass}`;
+  const key = `${s.preset}:${s.host}:${s.port}:${s.user}:${s.pass}`;
   if (transport?.key !== key) {
     transport = {
       key,
@@ -141,8 +159,16 @@ function smtp(s: MailSettings) {
         host: s.host,
         port: s.port,
         secure: s.port === 465, // 465 = TLS diretto; 587 = STARTTLS
-        // Le password per app di Google si copiano a gruppi di 4 lettere separati da spazi
-        auth: { user: s.user, pass: s.pass.replace(/\s+/g, "") },
+        ...(isRelay(s)
+          ? {
+              // Relay Google: niente credenziali, TLS obbligatorio e nome del server nel saluto SMTP
+              requireTLS: true,
+              name: hostOf(process.env.APP_URL) ?? "2target.it",
+            }
+          : {
+              // Le password per app di Google si copiano a gruppi di 4 lettere separati da spazi
+              auth: { user: s.user, pass: s.pass.replace(/\s+/g, "") },
+            }),
       }),
     };
   }
@@ -198,6 +224,8 @@ export function explainMailError(e: unknown) {
     [/5\.7\.8|BadCredentials/i, "Google non accetta utente e password: serve la password per app di 16 lettere, non la password normale."],
     [/5\.7\.139|SmtpClientAuthentication is disabled/i, "Microsoft 365: per questa casella l'SMTP autenticato è disattivato. Va attivato nell'interfaccia di amministrazione."],
     [/5\.7\.3|Authentication unsuccessful/i, "Microsoft 365 non accetta utente e password. Controllali; con l'autenticazione a più fattori serve una password per app, e la casella deve avere l'SMTP autenticato attivo."],
+    [/relay denied|Invalid credentials for relay|5\.7\.0.*relay/i, "Relay di Google: l'IP del server non è autorizzato. Nella console Google → Gmail → Routing → Servizio di inoltro SMTP aggiungi l'IP del server e salva (l'attivazione può richiedere fino a un'ora)."],
+    [/Must issue a STARTTLS|TLS required|5\.7\.11/i, "Il server richiede una connessione cifrata: usa la porta 587 (STARTTLS) o 465 (TLS)."],
     [/ENOTFOUND|EAI_AGAIN/i, "Server SMTP sconosciuto: controlla il nome del server."],
     [/ETIMEDOUT|ECONNREFUSED|ECONNECTION/i, "Il server SMTP non risponde su questa porta: prova 587 oppure 465."],
     [/wrong version number|SSL routines/i, "Porta e cifratura non coincidono: usa 587 (STARTTLS) oppure 465 (TLS)."],
