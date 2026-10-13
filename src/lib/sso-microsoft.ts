@@ -53,7 +53,7 @@ type IdClaims = { aud?: string; iss?: string; tid?: string; nonce?: string; exp?
 
 export class SsoError extends Error {
   constructor(
-    public code: "annullato" | "stato" | "microsoft" | "tenant" | "nessun_utente",
+    public code: "annullato" | "stato" | "microsoft" | "configurazione" | "tenant" | "nessun_utente",
     message: string,
     public email?: string,
   ) {
@@ -88,7 +88,9 @@ export async function msHandleCallback(params: URLSearchParams, cookieValue: str
   });
   const data = (await res.json().catch(() => ({}))) as { id_token?: string; error?: string; error_description?: string };
   if (!res.ok || !data.id_token) {
-    throw new SsoError("microsoft", `Microsoft: ${data.error ?? res.status} ${String(data.error_description ?? "").split("\r\n")[0]}`.trim());
+    // Segreto sbagliato (spesso l'ID al posto del valore) o scaduto, app non trovata: è la configurazione, non l'utente
+    const config = /AADSTS(7000215|7000222|700016|90002)/.test(String(data.error_description ?? ""));
+    throw new SsoError(config ? "configurazione" : "microsoft", `Microsoft: ${data.error ?? res.status} ${String(data.error_description ?? "").split("\r\n")[0]}`.trim());
   }
 
   // Il token arriva direttamente da Microsoft su HTTPS, autenticati con il segreto client:

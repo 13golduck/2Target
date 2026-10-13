@@ -21,6 +21,7 @@ const SSO_ERRORS: Record<string, string> = {
   tenant: "Puoi entrare con Microsoft solo con un account Golduck.",
   stato: "L'accesso con Microsoft è scaduto o non è valido: riprova.",
   microsoft: "Microsoft non ha completato l'accesso: riprova o entra con il codice via email.",
+  configurazione: "L'accesso con Microsoft non è configurato correttamente (segreto client sbagliato o scaduto): entra con il codice via email e avvisa un amministratore. Il dettaglio è nell'Audit.",
   annullato: "Accesso con Microsoft annullato.",
   non_configurato: "L'accesso con Microsoft non è ancora configurato.",
 }
