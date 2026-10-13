@@ -121,11 +121,8 @@ export async function saveMailSettings(input: MailSettings, userId: number) {
     clientSecret: input.clientSecret ? encryptSecret(input.clientSecret, PURPOSE) : (prev?.clientSecret ?? ""),
     pass: input.pass ? encryptSecret(input.pass.replace(/\s+/g, ""), PURPOSE) : (prev?.pass ?? ""),
   };
-  // Con il relay per IP la vecchia password non serve più: si cancella
-  if (isRelay(value)) {
-    value.pass = "";
-    value.user = "";
-  }
+  // Con il relay per IP la vecchia password resta salvata ma non si usa: permette di tornare indietro
+  // se il relay non è ancora attivo. Una volta verificato, la si revoca in Google.
   await db.insert(appSettings).values({ key: KEY, value, updatedBy: userId }).onDuplicateKeyUpdate({ set: { value, updatedBy: userId } });
   transport = null;
   graphToken = null;
