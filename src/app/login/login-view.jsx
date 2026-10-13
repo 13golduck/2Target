@@ -9,11 +9,13 @@ import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
+import Divider from '@mui/material/Divider';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
 import { Mark2T } from 'src/components/logo';
+import { Iconify } from 'src/components/iconify';
 import { PoweredBy } from 'src/layouts/components/powered-by';
 
 import { loginStep } from './actions';
@@ -21,7 +23,7 @@ import { loginStep } from './actions';
 // ----------------------------------------------------------------------
 // Accesso senza password: 1) email  2) codice di 6 cifre ricevuto via email.
 
-export function LoginView({ returnTo, setup }) {
+export function LoginView({ returnTo, setup, microsoft, ssoError }) {
   const [state, action, pending] = useActionState(loginStep, { step: setup ? 'setup' : 'email' });
   const codeStep = state.step === 'code';
   const totpStep = state.step === 'totp';
@@ -57,6 +59,29 @@ export function LoginView({ returnTo, setup }) {
                 : 'Accedi con la tua email: ti mandiamo un codice'}
           </Typography>
         </Stack>
+
+        {ssoError && !codeStep && !totpStep && (
+          <Alert severity="warning" sx={{ mb: 2.5 }}>
+            {ssoError}
+          </Alert>
+        )}
+
+        {microsoft && !setupStep && !codeStep && !totpStep && (
+          <>
+            <Button
+              component="a"
+              href={`/api/sso/microsoft?da=${encodeURIComponent(returnTo)}`}
+              size="large"
+              variant="outlined"
+              color="inherit"
+              fullWidth
+              startIcon={<Iconify icon="socials:microsoft" />}
+            >
+              Accedi con Microsoft (Golduck)
+            </Button>
+            <Divider sx={{ my: 2.5, typography: 'caption', color: 'text.secondary' }}>oppure con il codice via email</Divider>
+          </>
+        )}
 
         <Stack component="form" action={action} spacing={2.5}>
           <input type="hidden" name="returnTo" value={returnTo} />

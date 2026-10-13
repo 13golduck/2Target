@@ -196,6 +196,9 @@ export async function saveIntegrations(f: FormData) {
   if (input.metaAppId && !/^\d{6,25}$/.test(input.metaAppId.trim())) return { error: "L'ID app di Meta è fatto solo di cifre" };
   if (input.metaConfigId && !/^\d{6,25}$/.test(input.metaConfigId.trim())) return { error: "L'ID configurazione di Meta è fatto solo di cifre" };
   if (input.googleClientId && !/\.apps\.googleusercontent\.com$/.test(input.googleClientId.trim())) return { error: "L'ID client di Google finisce con .apps.googleusercontent.com" };
+  const guid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (input.msTenantId && !guid.test(input.msTenantId.trim())) return { error: "L'ID directory (tenant) di Microsoft ha la forma xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" };
+  if (input.msClientId && !guid.test(input.msClientId.trim())) return { error: "L'ID applicazione (client) di Microsoft ha la forma xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" };
   const changed = await saveIntegrationKeys(input, clear, me.id);
   // Solo i nomi dei campi cambiati: mai i valori
   if (changed.length) await audit({ userId: me.id, category: "impostazioni", action: "integrazioni.chiavi", description: `Aggiornate le chiavi delle integrazioni: ${changed.join(", ")}`, meta: { campi: changed } });

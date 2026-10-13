@@ -12,6 +12,7 @@ import { claimFirstAccess } from "./first-access";
 import { checkLoginCode, consumeLoginCode, failLoginAttempt } from "./login-codes";
 import { verifySecondFactor } from "./two-factor";
 import { audit } from "./audit";
+import { consumeSsoTicket } from "./sso-microsoft";
 
 // Accesso senza password: email + codice di 6 cifre ricevuto via email (vedi ./login-codes).
 // I limiti (scadenza, tentativi, richieste) stanno nella tabella login_codes, quindi valgono
@@ -21,8 +22,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
     Credentials({
-      credentials: { email: {}, code: {}, totp: {}, remember: {}, firstAccess: {} },
+      credentials: { email: {}, code: {}, totp: {}, remember: {}, firstAccess: {}, ssoTicket: {} },
       async authorize(credentials) {
+        // Accesso con Microsoft: il biglietto firmato arriva dal ritorno di Microsoft (vedi ./sso-microsoft)
+        if (credentials?.ssoTicket) {
+          const uid = consumeSsoTicket(String(credentials.ssoTicket));
+          if (!uid) return null;
+          const [u] = await db.select().from(users).where(eq(users.id, uid)).limit(1);
+          if (!u?.active) return null;
+          await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, u.id));
+          await audit({ userId: u.id, category: "accesso", action: "accesso.sso", description: "Accesso effettuato con l'account Microsoft di Golduck" });
+          // Sessione di 12 ore, come senza «Ricordami»: si rientra con un clic
+          return { id: String(u.id), email: u.email, name: u.name, role: u.role, remember: false };
+        }
         const email = String(credentials?.email ?? "");
         const code = String(credentials?.code ?? "");
         let user;

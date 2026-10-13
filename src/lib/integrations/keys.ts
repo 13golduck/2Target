@@ -21,11 +21,15 @@ export type IntegrationKeys = {
   googleClientSecret: string;
   googlePageSpeedKey: string;
   anthropicApiKey: string;
+  /** Accesso con Microsoft (SSO Golduck): app registrata in Microsoft Entra, un solo tenant. */
+  msTenantId: string;
+  msClientId: string;
+  msClientSecret: string;
   /** Dominio su cui la pubblicazione reale è attiva (vuoto = simulazione). Si imposta con l'interruttore in Impostazioni. */
   publishLiveHost: string;
 };
 
-export const SECRET_FIELDS = ["metaAppSecret", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey"] as const;
+export const SECRET_FIELDS = ["metaAppSecret", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret"] as const;
 const ENV: Record<keyof IntegrationKeys, string> = {
   metaAppId: "META_APP_ID",
   metaAppSecret: "META_APP_SECRET",
@@ -34,6 +38,9 @@ const ENV: Record<keyof IntegrationKeys, string> = {
   googleClientSecret: "GOOGLE_CLIENT_SECRET",
   googlePageSpeedKey: "GOOGLE_PAGESPEED_KEY",
   anthropicApiKey: "ANTHROPIC_API_KEY",
+  msTenantId: "MS_TENANT_ID",
+  msClientId: "MS_CLIENT_ID",
+  msClientSecret: "MS_CLIENT_SECRET",
   publishLiveHost: "PUBLISH_LIVE_HOST",
 };
 export const FIELDS = Object.keys(ENV) as (keyof IntegrationKeys)[];

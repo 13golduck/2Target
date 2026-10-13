@@ -51,6 +51,19 @@ const GROUPS = [
     ],
   },
   {
+    key: 'microsoft',
+    title: 'Microsoft 365 (accesso con l’account Golduck)',
+    icon: 'socials:microsoft',
+    where:
+      'Microsoft Entra → Registrazioni app → «2Target accesso»: ID directory (tenant), ID applicazione (client) e un segreto client. L’indirizzo di reindirizzamento qui sotto va aggiunto come piattaforma Web.',
+    callback: '/api/sso/microsoft/callback',
+    fields: [
+      { name: 'msTenantId', label: 'ID directory (tenant)' },
+      { name: 'msClientId', label: 'ID applicazione (client)' },
+      { name: 'msClientSecret', label: 'Valore del segreto client', secret: true },
+    ],
+  },
+  {
     key: 'anthropic',
     title: 'Anthropic (AI dei check-up e dello studio grafico)',
     icon: 'solar:atom-bold-duotone',
