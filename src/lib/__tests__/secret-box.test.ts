@@ -25,7 +25,8 @@ describe("secret-box", () => {
     const [body, sig] = ok.split(".");
     const forged = Buffer.from(JSON.stringify({ clientId: 99, exp: Date.now() + 1e6 })).toString("base64url");
     expect(verifyPayload(`${forged}.${sig}`)).toBeNull();
-    expect(verifyPayload(`${body}.x${sig.slice(1)}`)).toBeNull();
+    // Primo carattere della firma sempre diverso dall'originale
+    expect(verifyPayload(`${body}.${sig[0] === "x" ? "y" : "x"}${sig.slice(1)}`)).toBeNull();
     expect(verifyPayload(signPayload({ a: 1 }, -1))).toBeNull();
   });
 });
