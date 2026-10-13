@@ -51,6 +51,18 @@ const GROUPS = [
     ],
   },
   {
+    key: 'tiktok',
+    title: 'TikTok (profilo, video e statistiche dei clienti)',
+    icon: 'socials:tiktok',
+    where:
+      'developers.tiktok.com → Manage apps → app 2Target → App details: Client key e Client secret. In Login Kit aggiungi l’indirizzo di reindirizzamento qui sotto; prodotti: Login Kit e Display API.',
+    callback: '/api/connect/tiktok/callback',
+    fields: [
+      { name: 'tiktokClientKey', label: 'Client key' },
+      { name: 'tiktokClientSecret', label: 'Client secret', secret: true },
+    ],
+  },
+  {
     key: 'microsoft',
     title: 'Microsoft 365 (accesso con l’account Golduck)',
     icon: 'socials:microsoft',

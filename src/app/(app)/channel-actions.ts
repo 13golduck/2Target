@@ -11,7 +11,8 @@ import { siteKey } from "@/lib/integrations/client-channels";
 import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import * as google from "@/lib/integrations/google";
 import * as meta from "@/lib/integrations/meta";
-import { syncChannel, syncClient, updateKpisFromData } from "@/lib/integrations/sync";
+import * as tiktok from "@/lib/integrations/tiktok";
+import { accessToken, syncChannel, syncClient, updateKpisFromData } from "@/lib/integrations/sync";
 import { audit } from "@/lib/audit";
 
 const path = (clientId: number) => `/clienti/${clientId}/canali`;
@@ -21,8 +22,8 @@ export async function assetsFor(connectionId: number) {
   await requireWriter();
   const [conn] = await db.select().from(connections).where(eq(connections.id, connectionId));
   if (!conn) return { conn: null, assets: [] as { key: string; kind: string; handle: string; name: string; pictureUrl?: string }[] };
-  const token = decryptSecret(conn.accessTokenEnc)!;
-  const raw = conn.provider === "meta" ? await meta.listAssets(token) : await google.listAssets(token);
+  const token = conn.provider === "tiktok" ? await accessToken(conn) : decryptSecret(conn.accessTokenEnc)!;
+  const raw = conn.provider === "meta" ? await meta.listAssets(token) : conn.provider === "tiktok" ? await tiktok.listAssets(token) : await google.listAssets(token);
   return {
     conn,
     assets: raw.map((a) => ({ key: `${a.kind}|${a.externalId}`, kind: a.kind, handle: a.handle, name: a.name, pictureUrl: "pictureUrl" in a ? a.pictureUrl : undefined })),
@@ -36,7 +37,7 @@ export async function attachChannels(f: FormData) {
   const [conn] = await db.select().from(connections).where(eq(connections.id, connectionId));
   if (!conn) return;
   const chosen = new Set(f.getAll("asset").map(String));
-  const token = decryptSecret(conn.accessTokenEnc)!;
+  const token = conn.provider === "tiktok" ? await accessToken(conn) : decryptSecret(conn.accessTokenEnc)!;
 
   const ids: number[] = [];
   const refused: string[] = [];
@@ -55,6 +56,13 @@ export async function attachChannels(f: FormData) {
       const other = await owner(a.kind, a.externalId);
       if (other) refused.push(`@${a.handle} è già collegato al cliente ${other}`);
       else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, a.pictureUrl, encryptSecret(a.pageToken)));
+    }
+  } else if (conn.provider === "tiktok") {
+    for (const a of await tiktok.listAssets(token)) {
+      if (!chosen.has(`${a.kind}|${a.externalId}`)) continue;
+      const other = await owner(a.kind, a.externalId);
+      if (other) refused.push(`@${a.handle} è già collegato al cliente ${other}`);
+      else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, a.pictureUrl, null));
     }
   } else {
     for (const a of await google.listAssets(token)) {
@@ -75,7 +83,7 @@ export async function attachChannels(f: FormData) {
     userId: me.id,
     category: "canali",
     action: "canali.collegati",
-    description: `Collegati ${ids.length} canali da ${conn.provider === "meta" ? "Meta" : "Google"} (${conn.accountName})${refused.length ? ` · ${refused.length} rifiutati perché di un altro cliente` : ""}`,
+    description: `Collegati ${ids.length} canali da ${conn.provider === "meta" ? "Meta" : conn.provider === "tiktok" ? "TikTok" : "Google"} (${conn.accountName})${refused.length ? ` · ${refused.length} rifiutati perché di un altro cliente` : ""}`,
     clientId: conn.clientId,
     meta: refused.length ? { rifiutati: refused } : null,
   });

@@ -85,7 +85,7 @@ export default async function ChannelsPage({ params, searchParams }: { params: P
       clientId={clientId}
       canConnect={canConnect}
       error={sp.errore ?? null}
-      configured={{ meta: isConfigured("meta"), google: isConfigured("google") }}
+      configured={{ meta: isConfigured("meta"), google: isConfigured("google"), tiktok: isConfigured("tiktok") }}
       connections={conns.map((c) => ({ id: c.id, provider: c.provider, accountName: c.accountName, status: c.status, lastError: c.lastError, expiresAt: c.expiresAt?.toISOString() ?? null }))}
       channels={channels.map((c) => ({
         id: c.id,

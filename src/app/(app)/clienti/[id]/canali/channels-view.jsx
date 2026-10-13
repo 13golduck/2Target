@@ -48,7 +48,7 @@ import {
 export const CHANNEL = {
   instagram: { label: 'Instagram', icon: 'socials:instagram' },
   facebook: { label: 'Facebook', icon: 'socials:facebook' },
-  tiktok: { label: 'TikTok', icon: 'solar:videocamera-record-bold' },
+  tiktok: { label: 'TikTok', icon: 'socials:tiktok' },
   linkedin: { label: 'LinkedIn', icon: 'socials:linkedin' },
   youtube: { label: 'YouTube', icon: 'solar:play-circle-bold' },
   search_console: { label: 'Search Console', icon: 'socials:google' },
@@ -60,7 +60,7 @@ export const CHANNEL = {
 const PROVIDERS = [
   { key: 'meta', name: 'Meta', what: 'Instagram e pagine Facebook: profilo, follower, post e statistiche', icons: ['socials:instagram', 'socials:facebook'] },
   { key: 'google', name: 'Google', what: 'Search Console (SEO) e Analytics 4 (traffico e conversioni)', icons: ['socials:google'] },
-  { key: 'tiktok', name: 'TikTok', what: 'Profilo, video e statistiche · pubblicazione dopo il controllo di TikTok', icons: ['solar:videocamera-record-bold'], soon: true },
+  { key: 'tiktok', name: 'TikTok', what: 'Profilo, video e statistiche · pubblicazione dopo il controllo di TikTok', icons: ['socials:tiktok'] },
   { key: 'linkedin', name: 'LinkedIn', what: 'Pagina aziendale · richiede l\'approvazione di LinkedIn', icons: ['socials:linkedin'], soon: true },
 ];
 
@@ -112,7 +112,7 @@ export function ChannelsView({ clientId, error, configured, connections, channel
                         <Typography variant="body2" noWrap>{c.accountName}</Typography>
                         <Typography variant="caption" sx={{ color: c.status === 'attivo' ? 'text.secondary' : 'error.main' }}>
                           {/* Meta: i token delle pagine collegate non scadono; serve ricollegare solo se Meta revoca l'accesso */}
-                          {c.status === 'attivo' ? (p.key === 'meta' ? 'collegato · pagine attive senza scadenza' : 'collegato') : 'da ricollegare'}
+                          {c.status === 'attivo' ? (p.key === 'meta' ? 'collegato · pagine attive senza scadenza' : p.key === 'tiktok' ? 'collegato · accesso rinnovato in automatico' : 'collegato') : 'da ricollegare'}
                         </Typography>
                       </Box>
                       <Tooltip title="Scegli i canali">
@@ -342,7 +342,7 @@ function PickerDialog({ picker, onClose }) {
           <DialogTitle>Quali canali sono di questo cliente?</DialogTitle>
           <DialogContent>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-              Account {picker.provider === 'meta' ? 'Meta' : 'Google'}: <b>{picker.accountName}</b>. Seleziona solo pagine, profili e
+              Account {picker.provider === 'meta' ? 'Meta' : picker.provider === 'tiktok' ? 'TikTok' : 'Google'}: <b>{picker.accountName}</b>. Seleziona solo pagine, profili e
               proprietà di questo cliente: lo stesso account può gestirne anche altri.
             </Typography>
             {picker.assets.length === 0 ? (

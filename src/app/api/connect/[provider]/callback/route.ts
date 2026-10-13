@@ -11,8 +11,11 @@ import { encryptSecret, verifyPayload } from "@/lib/secret-box";
 import { appUrl } from "@/lib/integrations/config";
 import * as google from "@/lib/integrations/google";
 import * as meta from "@/lib/integrations/meta";
+import * as tiktok from "@/lib/integrations/tiktok";
 
 // Ritorno dalla piattaforma: scambia il codice con i token, li salva cifrati e apre la scelta dei canali.
+
+const PROVIDER_LABEL: Record<string, string> = { meta: "Meta", google: "Google", tiktok: "TikTok" };
 
 type State = { provider: string; clientId: number; uid: string; nonce: string };
 
@@ -37,10 +40,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
 
   try {
     const grant: { accessToken: string; refreshToken?: string | null; expiresAt: Date; scopes?: string; externalUserId: string; accountName: string } =
-      provider === "meta" ? await meta.exchangeCode(code, request) : await google.exchangeCode(code, request);
+      provider === "meta" ? await meta.exchangeCode(code, request) : provider === "tiktok" ? await tiktok.exchangeCode(code, request) : await google.exchangeCode(code, request);
     const values = {
       clientId: state.clientId,
-      provider: provider as "meta" | "google",
+      provider: provider as "meta" | "google" | "tiktok",
       externalUserId: grant.externalUserId,
       accountName: grant.accountName,
       accessTokenEnc: encryptSecret(grant.accessToken),
@@ -69,7 +72,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
       .select({ id: connections.id })
       .from(connections)
       .where(and(eq(connections.clientId, state.clientId), eq(connections.provider, values.provider), eq(connections.externalUserId, values.externalUserId)));
-    await audit({ userId: Number(session.user.id), category: "canali", action: "collegamento.nuovo", description: `Collegato l'account ${provider === "meta" ? "Meta" : "Google"} «${grant.accountName}»`, clientId: state.clientId, target: `collegamento:${row.id}` });
+    await audit({ userId: Number(session.user.id), category: "canali", action: "collegamento.nuovo", description: `Collegato l'account ${PROVIDER_LABEL[provider] ?? provider} «${grant.accountName}»`, clientId: state.clientId, target: `collegamento:${row.id}` });
     const res = back(state.clientId, `scegli=${row.id}`);
     res.cookies.delete({ name: "oauth_nonce", path: "/api/connect" });
     return res;

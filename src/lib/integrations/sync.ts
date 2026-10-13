@@ -9,15 +9,26 @@ import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import { ApiError } from "./http";
 import * as google from "./google";
 import * as meta from "./meta";
+import * as tiktok from "./tiktok";
 import type { DailyValue, PostData } from "./meta";
 
 type Channel = typeof socialAccounts.$inferSelect;
 type Connection = typeof connections.$inferSelect;
 
-/** Token valido per la connessione (Google si rinnova da solo con il refresh token). */
-async function accessToken(conn: Connection) {
+/** Token valido per la connessione (Google e TikTok si rinnovano da soli con il refresh token). */
+export async function accessToken(conn: Connection) {
   const token = decryptSecret(conn.accessTokenEnc);
   if (!token) throw new ApiError("Token illeggibile: ricollega l'account", 401, true);
+  if (conn.provider === "tiktok" && conn.expiresAt && conn.expiresAt.getTime() < Date.now() + 5 * 60_000) {
+    const refresh = decryptSecret(conn.refreshTokenEnc);
+    if (!refresh) throw new ApiError("Accesso TikTok scaduto: ricollega l'account", 401, true);
+    const fresh = await tiktok.refreshAccessToken(refresh);
+    await db
+      .update(connections)
+      .set({ accessTokenEnc: encryptSecret(fresh.accessToken), refreshTokenEnc: encryptSecret(fresh.refreshToken), expiresAt: fresh.expiresAt, status: "attivo", lastError: null })
+      .where(eq(connections.id, conn.id));
+    return fresh.accessToken;
+  }
   if (conn.provider === "google" && conn.expiresAt && conn.expiresAt.getTime() < Date.now() + 5 * 60_000) {
     const refresh = decryptSecret(conn.refreshTokenEnc);
     if (!refresh) throw new ApiError("Accesso Google scaduto: ricollega l'account", 401, true);
@@ -74,6 +85,10 @@ export async function syncChannel(channel: Channel) {
         await savePosts(channel.id, r.posts);
       } else if (channel.platform === "facebook") {
         const r = await meta.syncFacebookPage(id, assetToken);
+        await saveDaily(channel.id, r.daily);
+        await savePosts(channel.id, r.posts);
+      } else if (channel.platform === "tiktok") {
+        const r = await tiktok.syncTikTok(userToken);
         await saveDaily(channel.id, r.daily);
         await savePosts(channel.id, r.posts);
       } else if (channel.platform === "search_console") {

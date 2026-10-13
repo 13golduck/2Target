@@ -52,12 +52,26 @@ export const GOOGLE = {
   ],
 };
 
+export const TIKTOK = {
+  get clientKey() {
+    return integrationKey("tiktokClientKey");
+  },
+  get clientSecret() {
+    return integrationKey("tiktokClientSecret");
+  },
+  // Profilo, statistiche e video; la pubblicazione (video.publish / video.upload) si aggiunge dopo la revisione di TikTok
+  get scopes() {
+    return (process.env.TIKTOK_SCOPES ?? "user.info.basic,user.info.profile,user.info.stats,video.list").split(",").map((s) => s.trim()).filter(Boolean);
+  },
+};
+
 export type Provider = "meta" | "google" | "tiktok" | "linkedin";
 
 export function isConfigured(provider: Provider) {
   if (provider === "meta") return !!(META.appId && META.appSecret);
   if (provider === "google") return !!(GOOGLE.clientId && GOOGLE.clientSecret);
-  return false; // TikTok e LinkedIn: in arrivo
+  if (provider === "tiktok") return !!(TIKTOK.clientKey && TIKTOK.clientSecret);
+  return false; // LinkedIn: in arrivo
 }
 
 /** Indirizzo pubblico dell'app: serve per i redirect OAuth (deve coincidere con quello registrato). */

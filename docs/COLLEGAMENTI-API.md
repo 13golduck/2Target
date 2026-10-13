@@ -91,6 +91,19 @@ Conviene farsi aggiungere dal cliente con un account Google di Golduck.
 
 ---
 
+## 2b. App TikTok (profilo, video e statistiche)
+
+1. Su **developers.tiktok.com** accedi con l'account TikTok di Golduck → **Manage apps → Connect an app** → nome «2Target».
+2. **App details**: categoria Business, descrizione, icona, **Terms of Service URL** `https://2target.it/termini`, **Privacy Policy URL** `https://2target.it/privacy`, piattaforma **Web** con sito `https://2target.it` (TikTok chiede di verificare il dominio: file o record DNS TXT).
+3. **Add products**: **Login Kit** (Redirect URI: `https://2target.it/api/connect/tiktok/callback`) e **Display API**.
+4. **Scopes**: `user.info.basic`, `user.info.profile`, `user.info.stats`, `video.list`.
+5. **Submit for review**. In attesa dell'approvazione funziona la **Sandbox**: aggiungi come *target users* gli account TikTok di prova.
+6. Copia **Client key** e **Client secret** in 2Target → Impostazioni → Integrazioni → TikTok.
+
+Il token TikTok dura 24 ore e il refresh token 365 giorni: 2Target li rinnova da solo a ogni sincronizzazione.
+La pubblicazione (prodotto **Content Posting API**, scope `video.upload` / `video.publish`) richiede una seconda revisione:
+finché l'app non è approvata TikTok pubblica solo in privato. Gli scope si possono estendere con la variabile `TIKTOK_SCOPES`.
+
 ## 3. Sincronizzazione automatica (Plesk)
 
 Ogni notte 2Target scarica i dati di tutti i clienti e aggiorna i KPI.
