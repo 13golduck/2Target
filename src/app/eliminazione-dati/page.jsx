@@ -4,9 +4,17 @@ import { LegalPage } from "src/components/legal/legal-page";
 
 export const metadata = { title: "Eliminazione dei dati", robots: { index: true, follow: true } };
 
-export default function DataDeletionPage() {
+export default async function DataDeletionPage({ searchParams }) {
+  const { codice } = await searchParams;
+  const code = /^[A-F0-9]{12}$/.test(codice ?? "") ? codice : null;
   return (
     <LegalPage title="Eliminazione dei dati" updated="14 ottobre 2026">
+      {code && (
+        <p style={{ padding: 16, borderRadius: 8, background: "#F4F6F8" }}>
+          <b>Richiesta ricevuta.</b> Codice di conferma: <b>{code}</b>. I token di accesso e i dati ricevuti da Facebook e Instagram per il tuo account sono stati
+          eliminati da 2Target. Per qualsiasi domanda scrivi a a.infantino@golduck.it indicando il codice.
+        </p>
+      )}
       <p>
         Questa pagina spiega come scollegare 2Target dai tuoi account (Facebook, Instagram, TikTok, Google) e come chiedere la cancellazione dei dati che 2Target
         ha ricevuto da queste piattaforme. 2Target è gestita da Golduck.
@@ -18,7 +26,10 @@ export default function DataDeletionPage() {
         <li><b>TikTok:</b> app TikTok → Profilo → Menu → Impostazioni e privacy → Sicurezza → App e servizi → 2Target → Rimuovi accesso.</li>
         <li><b>Google:</b> account Google → Sicurezza → Connessioni con app e servizi di terze parti → 2Target → Elimina tutte le connessioni.</li>
       </ul>
-      <p>Da quel momento 2Target non può più leggere né pubblicare nulla sui tuoi account.</p>
+      <p>
+        Da quel momento 2Target non può più leggere né pubblicare nulla sui tuoi account. Quando rimuovi 2Target da Facebook, Meta ce lo comunica e 2Target cancella
+        automaticamente i token e i dati scaricati per il tuo account.
+      </p>
 
       <h2>2. Chiedi la cancellazione dei dati</h2>
       <p>
