@@ -51,9 +51,9 @@ const STATUS = {
   consegnato: { label: 'Consegnato', color: 'success' },
 };
 const MODES = [
-  { key: 'opus', title: 'Claude Opus 5.5', text: 'Analisi e scrittura più profonde. Per i clienti importanti.', cost: '≈ 3-6 $' },
-  { key: 'sonnet', title: 'Claude Sonnet 5.5', text: 'Più veloce, circa metà costo. Analisi un po’ meno profonda.', cost: '≈ 1,5-3 $' },
-  { key: 'misto', title: 'Misto', text: 'Sonnet raccoglie i dati e fa le domande, Opus scrive il documento.', cost: '≈ 2-4 $' },
+  { key: 'opus', title: 'Claude Opus 5.5', text: 'Analisi e scrittura più profonde. Per i clienti importanti.', cost: '≈ 5-10 €' },
+  { key: 'sonnet', title: 'Claude Sonnet 5.5', text: 'Più veloce, circa metà costo. Analisi un po’ meno profonda.', cost: '≈ 2,5-5 €' },
+  { key: 'misto', title: 'Misto', text: 'Sonnet raccoglie i dati e fa le domande, Opus scrive il documento.', cost: '≈ 3-6,5 €' },
 ];
 const STEPS = ['Dati del cliente', 'Ricognizione online', 'Domande al consulente', 'Ricerca approfondita', 'Scrittura', 'Revisione'];
 const STEP_OF = { ricognizione: 1, domande: 2, ricerca: 3, scrittura: 4, pronto: 5 };
@@ -354,7 +354,7 @@ function WorkingPanel({ checkup, runs }) {
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>{checkup.aiProgress ?? 'Avvio…'}</Typography>
         </Box>
         <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'right' }}>
-          {searches} ricerche finora<br />≈ {spent.toFixed(2)} $
+          {searches} ricerche finora<br />≈ {spent.toFixed(2).replace('.', ',')} €
         </Typography>
         <StopButton checkupId={checkup.id} />
       </Stack>
@@ -755,7 +755,7 @@ function HistoryBar({ history, current, isNew, showArchived }) {
                   {' · '}
                   {h.aiState === 'interrotto' ? 'interrotto' : STATUS[h.status].label.toLowerCase()}
                   {h.aiMode && ` · ${MODE_SHORT[h.aiMode]}`}
-                  {h.costUsd > 0 && ` · ${h.costUsd.toFixed(2)} $`}
+                  {h.costUsd > 0 && ` · ${h.costUsd.toFixed(2).replace('.', ',')} €`}
                 </span>
               }
             />
@@ -894,7 +894,7 @@ function UsageCard({ runs, mode, compact }) {
                   <TableCell align="right">{k(r.inputTokens + r.cacheReadTokens + r.cacheWriteTokens)}</TableCell>
                   <TableCell align="right">{k(r.outputTokens)}</TableCell>
                   <TableCell align="right">{r.webSearches || '—'}</TableCell>
-                  <TableCell align="right">{r.costUsd.toFixed(3)} $</TableCell>
+                  <TableCell align="right">{r.costUsd.toFixed(3).replace('.', ',')} €</TableCell>
                 </TableRow>
               ))}
             </TableBody>

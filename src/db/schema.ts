@@ -276,6 +276,8 @@ export const aiRuns = mysqlTable(
     webSearches: int("web_searches").notNull().default(0),
     webFetches: int("web_fetches").notNull().default(0),
     costUsd: decimal("cost_usd", { precision: 10, scale: 4, mode: "number" }).notNull().default(0),
+    /** Costo in euro come lo vede Golduck: listino Anthropic (USD) al cambio BCE del giorno × ricarico. Fissato al momento della chiamata. */
+    costEur: decimal("cost_eur", { precision: 10, scale: 4, mode: "number" }).notNull().default(0),
     durationMs: int("duration_ms"),
     createdAt: created(),
   },

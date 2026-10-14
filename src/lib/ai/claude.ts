@@ -5,7 +5,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { db } from "@/db";
 import { aiRuns } from "@/db/schema";
 import { currentJobSignal, JobCancelled } from "./jobs";
-import { assertBudget } from "./budget";
+import { assertBudget, usdToBilledEur } from "./budget";
 
 // Chiamate a Claude per il check-up: modelli per modalità, streaming, ripresa dei turni in pausa,
 // registro di token e costo stimato (contatore mostrato a fine lavoro).
@@ -187,6 +187,7 @@ export async function callClaude(o: CallOptions): Promise<CallResult> {
   }
 
   const costUsd = estimateCostUsd(PRICES[final?.model ?? ""] ? final!.model : o.model, usage);
+  const costEur = await usdToBilledEur(costUsd);
 
   await db.insert(aiRuns).values({
     clientId: o.log.clientId,
@@ -200,6 +201,7 @@ export async function callClaude(o: CallOptions): Promise<CallResult> {
     webSearches: usage.searches,
     webFetches: usage.fetches,
     costUsd,
+    costEur,
     durationMs: Date.now() - started,
   });
 

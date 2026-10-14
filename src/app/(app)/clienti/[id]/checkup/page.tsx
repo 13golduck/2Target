@@ -18,7 +18,7 @@ export default async function CheckupPage({ params, searchParams }: { params: Pr
   const all = await db.select().from(checkups).where(eq(checkups.clientId, clientId)).orderBy(desc(checkups.id));
   const costs = all.length
     ? await db
-        .select({ checkupId: aiRuns.checkupId, cost: sql<string>`sum(${aiRuns.costUsd})` })
+        .select({ checkupId: aiRuns.checkupId, cost: sql<string>`sum(${aiRuns.costEur})` })
         .from(aiRuns)
         .where(eq(aiRuns.clientId, clientId))
         .groupBy(aiRuns.checkupId)
@@ -97,7 +97,7 @@ export default async function CheckupPage({ params, searchParams }: { params: Pr
         cacheWriteTokens: r.cacheWriteTokens,
         webSearches: r.webSearches,
         webFetches: r.webFetches,
-        costUsd: r.costUsd,
+        costUsd: r.costEur,
         durationMs: r.durationMs,
       }))}
       template={CHECKUP_SECTIONS}

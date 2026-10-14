@@ -27,11 +27,11 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 // ----------------------------------------------------------------------
 
-const usd = (v, d = 2) => `${(v ?? 0).toLocaleString('it-IT', { minimumFractionDigits: d, maximumFractionDigits: d })} $`;
+const usd = (v, d = 2) => `${(v ?? 0).toLocaleString('it-IT', { minimumFractionDigits: d, maximumFractionDigits: d })} €`;
 const k = (n) => (n >= 1_000_000 ? `${(n / 1_000_000).toLocaleString('it-IT', { maximumFractionDigits: 1 })}M` : n >= 1000 ? `${(n / 1000).toLocaleString('it-IT', { maximumFractionDigits: 1 })}k` : String(n));
 const MODEL = { 'claude-opus-5-5': 'Opus 5.5', 'claude-sonnet-5-5': 'Sonnet 5.5' };
 
-export function UsageView({ isAdmin, configured, running, status, tokens, monthly, byClient, recent, insights }) {
+export function UsageView({ isAdmin, configured, running, status, fx, tokens, monthly, byClient, recent, insights }) {
   const { limits, month, ratio, warning } = status;
   const totalIn = tokens.input + tokens.cacheRead + tokens.cacheWrite;
   const cacheShare = totalIn ? tokens.cacheRead / totalIn : 0;
@@ -40,10 +40,10 @@ export function UsageView({ isAdmin, configured, running, status, tokens, monthl
   const chart = useChart({
     colors: ['#CDA434'],
     xaxis: { categories: monthly.map((m) => fmtDate(`${m.month}-01`, { month: 'short', year: '2-digit' })) },
-    yaxis: { labels: { formatter: (v) => `${v.toFixed(0)} $` } },
+    yaxis: { labels: { formatter: (v) => `${v.toFixed(0)} €` } },
     tooltip: { y: { formatter: (v) => usd(v) } },
     plotOptions: { bar: { columnWidth: '40%' } },
-    annotations: { yaxis: [{ y: limits.monthlyUsd, borderColor: '#FF5630', label: { text: 'Budget mensile', style: { color: '#fff', background: '#FF5630' } } }] },
+    annotations: { yaxis: [{ y: limits.monthlyEur, borderColor: '#FF5630', label: { text: 'Budget mensile', style: { color: '#fff', background: '#FF5630' } } }] },
   });
 
   return (
@@ -59,13 +59,14 @@ export function UsageView({ isAdmin, configured, running, status, tokens, monthl
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 6 }}>
             <Card sx={{ p: 3, height: 1 }}>
-              <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>Spesa del mese (stima a listino)</Typography>
+              <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>Spesa del mese</Typography>
               <Typography variant="h3">
-                {usd(month)} <Box component="span" sx={{ typography: 'h6', color: 'text.disabled' }}>/ {usd(limits.monthlyUsd, 0)}</Box>
+                {usd(month)} <Box component="span" sx={{ typography: 'h6', color: 'text.disabled' }}>/ {usd(limits.monthlyEur, 0)}</Box>
               </Typography>
               <LinearProgress variant="determinate" value={Math.min(100, ratio * 100)} color={barColor} sx={{ height: 10, borderRadius: 1, my: 1.5 }} />
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                Il dato ufficiale è su platform.claude.com → Usage e Cost. Lavori AI in corso adesso: {running}.
+                Listino Anthropic al cambio BCE (1 € = {fx.usdPerEur.toLocaleString('it-IT', { maximumFractionDigits: 4 })} $) × ricarico{' '}
+                {String(limits.markup).replace('.', ',')}. Il dato di fatturazione in dollari è su platform.claude.com. Lavori AI in corso adesso: {running}.
               </Typography>
             </Card>
           </Grid>
@@ -102,7 +103,7 @@ export function UsageView({ isAdmin, configured, running, status, tokens, monthl
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, lg: 5 }}>
             <Card sx={{ height: 1 }}>
-              <CardHeader title="Per cliente (questo mese)" subheader={`Tetto per cliente: ${limits.clientMonthlyUsd ? usd(limits.clientMonthlyUsd, 0) : 'nessuno'}`} />
+              <CardHeader title="Per cliente (questo mese)" subheader={`Tetto per cliente: ${limits.clientMonthlyEur ? usd(limits.clientMonthlyEur, 0) : 'nessuno'}`} />
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -118,7 +119,7 @@ export function UsageView({ isAdmin, configured, running, status, tokens, monthl
                       <TableCell>{c.name}</TableCell>
                       <TableCell align="right">{c.checkups}</TableCell>
                       <TableCell align="right">{c.runs}</TableCell>
-                      <TableCell align="right" sx={{ color: limits.clientMonthlyUsd && c.cost >= limits.clientMonthlyUsd * limits.warnPct ? 'warning.dark' : undefined }}>{usd(c.cost)}</TableCell>
+                      <TableCell align="right" sx={{ color: limits.clientMonthlyEur && c.cost >= limits.clientMonthlyEur * limits.warnPct ? 'warning.dark' : undefined }}>{usd(c.cost)}</TableCell>
                     </TableRow>
                   ))}
                   {!byClient.length && <TableRow><TableCell colSpan={4} sx={{ color: 'text.secondary' }}>Nessun consumo questo mese</TableCell></TableRow>}
@@ -171,13 +172,13 @@ export function UsageView({ isAdmin, configured, running, status, tokens, monthl
 
 function InsightsCard({ insights, limits, isAdmin }) {
   const { forecast, avgCheckup, checkups, topStep, topModel, topClient, cacheShare, trendPct } = insights;
-  const over = limits.monthlyUsd > 0 && forecast > limits.monthlyUsd;
+  const over = limits.monthlyEur > 0 && forecast > limits.monthlyEur;
   const rows = [
     {
       icon: 'solar:graph-up-bold',
       label: 'Previsione a fine mese',
       value: usd(forecast),
-      note: limits.monthlyUsd > 0 ? (over ? `oltre il budget di ${usd(limits.monthlyUsd, 0)}` : `entro il budget di ${usd(limits.monthlyUsd, 0)}`) : 'nessun budget impostato',
+      note: limits.monthlyEur > 0 ? (over ? `oltre il budget di ${usd(limits.monthlyEur, 0)}` : `entro il budget di ${usd(limits.monthlyEur, 0)}`) : 'nessun budget impostato',
       color: over ? 'error.main' : 'success.main',
     },
     {

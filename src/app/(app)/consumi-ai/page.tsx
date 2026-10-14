@@ -5,7 +5,7 @@ import { aiRuns, clients } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { isAdminRole, isViewer } from "@/lib/roles";
 import { redirect } from "next/navigation";
-import { budgetStatus } from "@/lib/ai/budget";
+import { budgetStatus, fxRate } from "@/lib/ai/budget";
 import { isAiConfigured } from "@/lib/ai/claude";
 import { runningCount } from "@/lib/ai/jobs";
 import { nowDate } from "@/lib/format";
@@ -18,12 +18,12 @@ export default async function UsagePage() {
   if (isViewer(user.role)) redirect("/");
   const now = nowDate();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const status = await budgetStatus();
+  const [status, fx] = await Promise.all([budgetStatus(), fxRate()]);
 
   const byClient = await db
     .select({
       clientId: aiRuns.clientId,
-      cost: sql<string>`sum(${aiRuns.costUsd})`,
+      cost: sql<string>`sum(${aiRuns.costEur})`,
       runs: sql<number>`count(*)`,
       checkups: sql<number>`count(distinct ${aiRuns.checkupId})`,
     })
@@ -46,7 +46,7 @@ export default async function UsagePage() {
   // Ultimi 6 mesi
   const sixAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 1));
   const monthly = await db
-    .select({ month: sql<string>`date_format(${aiRuns.createdAt}, '%Y-%m')`, cost: sql<string>`sum(${aiRuns.costUsd})` })
+    .select({ month: sql<string>`date_format(${aiRuns.createdAt}, '%Y-%m')`, cost: sql<string>`sum(${aiRuns.costEur})` })
     .from(aiRuns)
     .where(gte(aiRuns.createdAt, sixAgo))
     .groupBy(sql`date_format(${aiRuns.createdAt}, '%Y-%m')`);
@@ -61,13 +61,13 @@ export default async function UsagePage() {
   const prevStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
   const prevSameDay = new Date(prevStart.getTime() + (now.getTime() - monthStart.getTime()));
   const [prev] = await db
-    .select({ cost: sql<string>`coalesce(sum(${aiRuns.costUsd}), 0)` })
+    .select({ cost: sql<string>`coalesce(sum(${aiRuns.costEur}), 0)` })
     .from(aiRuns)
     .where(and(gte(aiRuns.createdAt, prevStart), lt(aiRuns.createdAt, prevSameDay)));
   const prevCost = Number(prev.cost);
   const groupCost = async (col: typeof aiRuns.step | typeof aiRuns.model) =>
     db
-      .select({ name: col, cost: sql<string>`sum(${aiRuns.costUsd})` })
+      .select({ name: col, cost: sql<string>`sum(${aiRuns.costEur})` })
       .from(aiRuns)
       .where(gte(aiRuns.createdAt, monthStart))
       .groupBy(col);
@@ -75,7 +75,7 @@ export default async function UsagePage() {
     groupCost(aiRuns.step),
     groupCost(aiRuns.model),
     db
-      .select({ cost: sql<string>`coalesce(sum(${aiRuns.costUsd}), 0)`, n: sql<number>`count(distinct ${aiRuns.checkupId})` })
+      .select({ cost: sql<string>`coalesce(sum(${aiRuns.costEur}), 0)`, n: sql<number>`count(distinct ${aiRuns.checkupId})` })
       .from(aiRuns)
       .where(and(gte(aiRuns.createdAt, monthStart), isNotNull(aiRuns.checkupId))),
   ]);
@@ -106,6 +106,7 @@ export default async function UsagePage() {
       configured={isAiConfigured()}
       running={runningCount()}
       status={status}
+      fx={fx}
       tokens={{ input: Number(tokens.input), cacheRead: Number(tokens.cacheRead), cacheWrite: Number(tokens.cacheWrite), output: Number(tokens.output), searches: Number(tokens.searches) }}
       monthly={months.map((m) => ({ month: m, cost: Number(monthly.find((x) => x.month === m)?.cost ?? 0) }))}
       byClient={byClient
@@ -122,7 +123,7 @@ export default async function UsagePage() {
         cacheRead: r.cacheReadTokens,
         output: r.outputTokens,
         searches: r.webSearches,
-        cost: r.costUsd,
+        cost: r.costEur,
       }))}
     />
   );

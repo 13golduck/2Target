@@ -65,7 +65,7 @@ const HELP = {
   smtp: <>Server, porta, utente e password li trovi nelle istruzioni del tuo provider di posta (porta 587 con STARTTLS oppure 465 con TLS).</>,
 };
 
-export function SettingsView({ mail, lastTest, limits, method, planMethod, firstAccess, integrations }) {
+export function SettingsView({ mail, lastTest, limits, fx, method, planMethod, firstAccess, integrations }) {
   const [preset, setPreset] = useState(mail.preset ?? (mail.provider === 'smtp' ? 'smtp' : 'microsoft'));
   const [host, setHost] = useState(mail.host);
   const [port, setPort] = useState(mail.port);
@@ -276,7 +276,7 @@ export function SettingsView({ mail, lastTest, limits, method, planMethod, first
       )}
 
       <Box sx={{ mt: 3, maxWidth: 720 }}>
-        <AiLimitsCard limits={limits} />
+        <AiLimitsCard limits={limits} fx={fx} />
       </Box>
 
       {method && (

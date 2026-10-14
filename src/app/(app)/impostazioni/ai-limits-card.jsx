@@ -21,7 +21,7 @@ import { updateLimits } from './actions';
 // ----------------------------------------------------------------------
 // Limiti di spesa delle API Claude (prima erano in Consumi AI): solo amministratori, area riservata.
 
-export function AiLimitsCard({ limits }) {
+export function AiLimitsCard({ limits, fx }) {
   const isAdmin = true;
   const [pending, start] = useTransition();
   return (
@@ -46,12 +46,13 @@ export function AiLimitsCard({ limits }) {
           <FormControlLabel control={<Switch name="enabled" defaultChecked={limits.enabled} />} label="AI attiva" sx={{ mb: 2 }} />
           <Grid container spacing={2}>
             {[
-              ['monthlyUsd', 'Budget mensile dell’app', limits.monthlyUsd, '$', 'Oltre si blocca tutto fino al mese dopo'],
+              ['monthlyEur', 'Budget mensile dell’app', limits.monthlyEur, '€', 'Oltre si blocca tutto fino al mese dopo'],
               ['warnPct', 'Avviso al', Math.round(limits.warnPct * 100), '%', 'Banner di avviso in Consumi AI'],
-              ['checkupUsd', 'Tetto per check-up', limits.checkupUsd, '$', 'Comprese ricerche e revisioni'],
-              ['clientMonthlyUsd', 'Tetto mensile per cliente', limits.clientMonthlyUsd, '$', '0 = nessun tetto'],
+              ['checkupEur', 'Tetto per check-up', limits.checkupEur, '€', 'Comprese ricerche e revisioni'],
+              ['clientMonthlyEur', 'Tetto mensile per cliente', limits.clientMonthlyEur, '€', '0 = nessun tetto'],
               ['maxConcurrent', 'Lavori AI contemporanei', limits.maxConcurrent, '', 'Evita picchi di spesa'],
               ['maxCheckupsPerDay', 'Check-up AI al giorno', limits.maxCheckupsPerDay, '', 'Su tutti i clienti'],
+              ['markup', 'Ricarico sul listino Anthropic', String(limits.markup).replace('.', ','), '×', 'Costo = listino in $ al cambio BCE × ricarico (1,8 = +80%)'],
             ].map(([name, label, value, unit, help]) => (
               <Grid key={name} size={{ xs: 12, sm: 6 }}>
                 <TextField
@@ -72,6 +73,11 @@ export function AiLimitsCard({ limits }) {
             </Button>
           )}
         </fieldset>
+        {fx && (
+          <Typography variant="caption" sx={{ display: 'block', mt: 2, color: 'text.secondary' }}>
+            Cambio BCE in uso: 1 € = {fx.usdPerEur.toLocaleString('it-IT', { maximumFractionDigits: 4 })} $ ({fx.date}). Tutti gli importi sono in euro.
+          </Typography>
+        )}
         <Typography variant="caption" sx={{ display: 'block', mt: 2, color: 'text.secondary' }}>
           Imposta anche il limite di spesa su platform.claude.com (organizzazione e workspace 2Target): è il blocco definitivo se
           qualcosa sfugge a questi controlli.

@@ -148,12 +148,14 @@ export async function updateLimits(f: FormData) {
   if (!(await settingsUnlocked(me.id))) return LOCKED;
   const limits = {
     enabled: f.get("enabled") === "on",
-    monthlyUsd: num(f, "monthlyUsd", DEFAULT_LIMITS.monthlyUsd),
+    monthlyEur: num(f, "monthlyEur", DEFAULT_LIMITS.monthlyEur),
     warnPct: Math.min(1, num(f, "warnPct", DEFAULT_LIMITS.warnPct * 100) / 100),
-    checkupUsd: num(f, "checkupUsd", DEFAULT_LIMITS.checkupUsd),
-    clientMonthlyUsd: num(f, "clientMonthlyUsd", DEFAULT_LIMITS.clientMonthlyUsd),
+    checkupEur: num(f, "checkupEur", DEFAULT_LIMITS.checkupEur),
+    clientMonthlyEur: num(f, "clientMonthlyEur", DEFAULT_LIMITS.clientMonthlyEur),
     maxConcurrent: Math.max(1, Math.round(num(f, "maxConcurrent", DEFAULT_LIMITS.maxConcurrent))),
     maxCheckupsPerDay: Math.max(1, Math.round(num(f, "maxCheckupsPerDay", DEFAULT_LIMITS.maxCheckupsPerDay))),
+    // Ricarico sul listino Anthropic: almeno 1 (nessun ricarico), al massimo 10
+    markup: Math.min(10, Math.max(1, num(f, "markup", DEFAULT_LIMITS.markup))),
   };
   const before = await getLimits();
   await saveLimits(limits, me.id);
