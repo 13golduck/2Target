@@ -28,6 +28,7 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { BriefPanel } from './brief-panel';
 import { PublishPanel } from './publish-panel';
+import { SponsorPanel } from './sponsor-panel';
 import { DesignReviewPanel } from '../../design-review-panel';
 import { saveItem, deleteItem } from '../../actions';
 
@@ -42,7 +43,7 @@ const L = {
 };
 const STATUS_COLOR = { bozza: 'default', da_approvare: 'warning', approvato: 'info', pubblicato: 'success', annullato: 'error' };
 
-export function ItemView({ saved, client, item, issues, series, personas, options, design, publishing }) {
+export function ItemView({ saved, client, item, issues, series, personas, options, design, publishing, sponsoring }) {
   const [isPaid, setIsPaid] = useState(item.isPaid);
   const [destination, setDestination] = useState(item.ctaDestination ?? '');
   const [caption, setCaption] = useState(item.caption ?? '');
@@ -295,6 +296,11 @@ export function ItemView({ saved, client, item, issues, series, personas, option
       {/* Pubblicazione sui profili del cliente: fuori dal modulo della scheda (ha i suoi pulsanti) */}
       <Box sx={{ mt: 3 }}>
         <PublishPanel item={item} client={client} {...publishing} />
+      </Box>
+
+      {/* Sponsorizzate dei post già pubblicati */}
+      <Box sx={{ mt: 3, '&:empty': { display: 'none' } }}>
+        <SponsorPanel {...sponsoring} />
       </Box>
 
       {/* Studio grafico: fuori dal modulo della scheda (ha i suoi pulsanti) */}

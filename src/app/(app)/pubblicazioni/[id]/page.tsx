@@ -13,6 +13,7 @@ import { nowDate, toRomeInput } from "@/lib/format";
 import { FUNNEL_STAGES } from "@/lib/funnel";
 import { toPlanItem } from "@/lib/plan-adapter";
 import { isAiConfigured } from "@/lib/ai/claude";
+import { clientAdsExposure } from "@/lib/ads/ads";
 import { ItemView } from "./item-view";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -39,6 +40,13 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
     .where(and(eq(s.socialAccounts.clientId, item.clientId), inArray(s.socialAccounts.platform, ["facebook", "instagram"])));
   const media = await db.select().from(s.mediaAssets).where(eq(s.mediaAssets.itemId, id)).orderBy(asc(s.mediaAssets.position));
   const pubs = await db.select().from(s.publications).where(eq(s.publications.itemId, id)).orderBy(desc(s.publications.id));
+  const campaigns = await db.select().from(s.adCampaigns).where(eq(s.adCampaigns.itemId, id)).orderBy(desc(s.adCampaigns.id));
+  const [ads] = await db
+    .select({ payer: s.clients.adsPayer, adAccountId: s.clients.adAccountId, adAccountName: s.clients.adAccountName, currency: s.clients.adAccountCurrency, monthlyCap: s.clients.adsMonthlyCap, markup: s.clients.adsMarkup })
+    .from(s.clients)
+    .where(eq(s.clients.id, item.clientId));
+  const anyPublished = pubs.some((p) => p.status === "pubblicata");
+  const exposure = anyPublished || campaigns.length ? await clientAdsExposure(item.clientId) : { spentMonth: 0, committed: 0 };
   const issues = itemIssues(toPlanItem(item)).map((i) => ({ level: i.level, message: i.message.replace(`"${item.title}": `, "") }));
 
   return (
@@ -82,6 +90,24 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
           permalink: p.permalink,
           error: p.error,
           files: p.mediaIds.length,
+        })),
+      }}
+      sponsoring={{
+        clientId: item.clientId,
+        canPublish: canPublishWith(me.role, meRow?.canPublish),
+        dryRun: isDryRun(),
+        ads: { ...ads, ...exposure },
+        publications: pubs.map((p) => {
+          const ch = channels.find((c) => c.id === p.socialAccountId);
+          return { id: p.id, status: p.status, platform: ch?.platform ?? null, channelName: ch?.name ?? ch?.handle ?? "profilo", publishedAt: p.publishedAt?.toISOString() ?? null, permalink: p.permalink };
+        }),
+        campaigns: campaigns.map((c) => ({
+          ...c,
+          startAt: c.startAt.toISOString(),
+          endAt: c.endAt.toISOString(),
+          lastSyncAt: c.lastSyncAt?.toISOString() ?? null,
+          createdAt: undefined,
+          updatedAt: undefined,
         })),
       }}
       series={series}

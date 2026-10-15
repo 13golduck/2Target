@@ -125,6 +125,13 @@ export async function syncClient(clientId: number) {
       errors.push(`${ch.name ?? ch.handle}: ${(e as Error).message}`);
     }
   }
+  // Spesa e risultati delle sponsorizzate (import dinamico: il modulo inserzioni usa a sua volta questo file)
+  try {
+    const { syncAds } = await import("@/lib/ads/ads");
+    for (const e of await syncAds(clientId)) errors.push(`Sponsorizzate: ${e}`);
+  } catch (e) {
+    errors.push(`Sponsorizzate: ${(e as Error).message}`);
+  }
   await updateKpisFromData(clientId);
   return errors;
 }

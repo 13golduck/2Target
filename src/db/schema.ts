@@ -93,6 +93,15 @@ export const clients = mysqlTable("clients", {
   status: mysqlEnum("status", ["onboarding", "attivo", "in_pausa", "chiuso"]).notNull().default("onboarding"),
   /** Chiave pubblica per ricevere i lead dai moduli del sito del cliente (POST /api/lead/<chiave>). */
   leadToken: varchar("lead_token", { length: 64 }).unique(),
+  // Sponsorizzate Meta: chi paga (account del cliente o di Golduck, poi rifatturato), quale account pubblicitario, limiti
+  adsPayer: mysqlEnum("ads_payer", ["cliente", "golduck"]).notNull().default("cliente"),
+  adAccountId: varchar("ad_account_id", { length: 40 }),
+  adAccountName: varchar("ad_account_name", { length: 200 }),
+  adAccountCurrency: varchar("ad_account_currency", { length: 3 }),
+  /** Tetto di spesa del mese in euro per questo cliente (null = nessuno). */
+  adsMonthlyCap: money("ads_monthly_cap"),
+  /** Ricarico sulla spesa quando paga Golduck e rifattura (1,15 = +15%). */
+  adsMarkup: decimal("ads_markup", { precision: 5, scale: 2, mode: "number" }).notNull().default(1),
   createdAt: created(),
 });
 
@@ -765,4 +774,55 @@ export const publications = mysqlTable(
     updatedAt: updated(),
   },
   (t) => [index("publications_due").on(t.status, t.scheduledAt), index("publications_item").on(t.itemId)],
+);
+
+
+// ── Sponsorizzate (Meta Marketing API) ───────────────────────────────
+export const AD_CAMPAIGN_STATUSES = ["in_avvio", "attiva", "in_pausa", "terminata", "errore"] as const;
+
+/** Una sponsorizzazione = un post già pubblicato messo in promozione su un account pubblicitario. */
+export const adCampaigns = mysqlTable(
+  "ad_campaigns",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+    itemId: int("item_id").references(() => editorialItems.id, { onDelete: "set null" }),
+    publicationId: int("publication_id").references(() => publications.id, { onDelete: "set null" }),
+    platform: mysqlEnum("platform", ["facebook", "instagram"]).notNull(),
+    /** Chi paga, fissato al lancio (non cambia se poi cambia l'impostazione del cliente). */
+    payer: mysqlEnum("payer", ["cliente", "golduck"]).notNull(),
+    adAccountId: varchar("ad_account_id", { length: 40 }).notNull(),
+    currency: varchar("currency", { length: 3 }).notNull().default("EUR"),
+    objective: mysqlEnum("objective", AD_OBJECTIVES).notNull(),
+    /** Budget totale (nella valuta dell'account) e periodo. */
+    budget: money("budget").notNull(),
+    startAt: datetime("start_at").notNull(),
+    endAt: datetime("end_at").notNull(),
+    targeting: json("targeting").$type<{ city?: { key: string; name: string; radiusKm: number }; ageMin: number; ageMax: number }>().notNull(),
+    status: mysqlEnum("status", AD_CAMPAIGN_STATUSES).notNull().default("in_avvio"),
+    simulated: boolean("simulated").notNull().default(false),
+    metaCampaignId: varchar("meta_campaign_id", { length: 40 }),
+    metaAdSetId: varchar("meta_adset_id", { length: 40 }),
+    metaAdId: varchar("meta_ad_id", { length: 40 }),
+    /** Ultimi totali letti da Meta. */
+    spend: money("spend").notNull().default(0),
+    results: json("results").$type<Record<string, number>>(),
+    error: text("error"),
+    lastSyncAt: datetime("last_sync_at"),
+    createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (t) => [index("ad_campaigns_client").on(t.clientId, t.status)],
+);
+
+/** Spesa giornaliera per sponsorizzazione (in euro): serve a tetti mensili e rifatturazione. */
+export const adSpendDaily = mysqlTable(
+  "ad_spend_daily",
+  {
+    campaignId: int("campaign_id").notNull().references(() => adCampaigns.id, { onDelete: "cascade" }),
+    day: date("day", { mode: "string" }).notNull(),
+    spendEur: money("spend_eur").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.campaignId, t.day] })],
 );

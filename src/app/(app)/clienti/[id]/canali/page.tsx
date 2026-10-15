@@ -8,6 +8,8 @@ import { isConfigured } from "@/lib/integrations/config";
 import { requireUser, userCanPublish } from "@/lib/auth";
 import { ensureChannelsFromClient, isSiteSyncRunning, startSiteSync } from "@/lib/integrations/client-channels";
 import { assetsFor } from "../../../channel-actions";
+import { clientAdsExposure } from "@/lib/ads/ads";
+import { isDryRun } from "@/lib/publishing/meta-publish";
 import { ChannelsView } from "./channels-view";
 
 export const metadata = { title: "Canali" };
@@ -80,8 +82,16 @@ export default async function ChannelsPage({ params, searchParams }: { params: P
   const last = (id: number, metric: string) =>
     daily.filter((d) => d.socialAccountId === id && d.metric === metric).sort((a, b) => b.day.localeCompare(a.day))[0]?.value ?? null;
 
+  const [ads] = await db
+    .select({ payer: clients.adsPayer, adAccountId: clients.adAccountId, adAccountName: clients.adAccountName, currency: clients.adAccountCurrency, monthlyCap: clients.adsMonthlyCap, markup: clients.adsMarkup })
+    .from(clients)
+    .where(eq(clients.id, clientId));
+  const showAds = !!ads && (isDryRun() || conns.some((c) => c.provider === "meta"));
+  const exposure = showAds ? await clientAdsExposure(clientId) : null;
+
   return (
     <ChannelsView
+      ads={showAds && exposure ? { ...ads, ...exposure } : null}
       clientId={clientId}
       canConnect={canConnect}
       error={sp.errore ?? null}

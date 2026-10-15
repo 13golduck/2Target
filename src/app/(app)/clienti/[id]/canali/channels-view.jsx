@@ -34,6 +34,8 @@ import { EmptyContent } from 'src/components/empty-content';
 import { confirmSubmit } from 'src/components/custom-dialog';
 import { AutoRefresh } from 'src/components/auto-refresh';
 
+import { AdsSettings } from './ads-settings';
+
 import {
   removeChannel,
   syncClientNow,
@@ -64,7 +66,7 @@ const PROVIDERS = [
   { key: 'linkedin', name: 'LinkedIn', what: 'Pagina aziendale · richiede l\'approvazione di LinkedIn', icons: ['socials:linkedin'], soon: true },
 ];
 
-export function ChannelsView({ clientId, error, configured, connections, channels, picker, canConnect }) {
+export function ChannelsView({ clientId, error, configured, connections, channels, picker, canConnect, ads }) {
   const router = useRouter();
   const [syncing, startSync] = useTransition();
   const [manual, setManual] = useState(false);
@@ -149,6 +151,9 @@ export function ChannelsView({ clientId, error, configured, connections, channel
           })}
         </Grid>
       </Box>
+
+      {/* Sponsorizzate: solo con Meta collegato o in simulazione */}
+      {ads && <AdsSettings clientId={clientId} ads={ads} canEdit={canConnect} />}
 
       {/* Canali */}
       <Box>
