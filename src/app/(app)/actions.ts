@@ -59,7 +59,7 @@ export async function addKpi(f: FormData) {
     minSample: int(f, "minSample"),
   });
   await audit({ userId: me.id, category: "clienti", action: "kpi.nuovo", description: `Aggiunto il KPI «${str(f, "label") ?? metric.label}» (obiettivo ${target})`, clientId });
-  revalidatePath(`/clienti/${clientId}`);
+  revalidatePath(`/clienti/${clientId}`, "layout");
 }
 
 export async function addMeasurement(f: FormData) {
@@ -73,7 +73,7 @@ export async function addMeasurement(f: FormData) {
   if (value == null || !periodStart || !periodEnd) return;
   await db.insert(s.kpiMeasurements).values({ kpiId, value, periodStart, periodEnd, sample: int(f, "sample") });
   await audit({ userId: me.id, category: "clienti", action: "kpi.misura", description: `Inserita la misura ${value} per «${kpi.label}» (${periodStart} → ${periodEnd})`, clientId: kpi.clientId, target: `kpi:${kpiId}` });
-  revalidatePath(`/clienti/${kpi.clientId}`);
+  revalidatePath(`/clienti/${kpi.clientId}`, "layout");
 }
 
 export async function deleteKpi(f: FormData) {
@@ -83,7 +83,7 @@ export async function deleteKpi(f: FormData) {
   if (!kpi) return;
   await db.update(s.kpis).set({ active: false }).where(eq(s.kpis.id, id));
   await audit({ userId: me.id, category: "clienti", action: "kpi.rimosso", description: `Rimosso il KPI «${kpi.label}»`, clientId: kpi.clientId, target: `kpi:${id}` });
-  revalidatePath(`/clienti/${kpi.clientId}`);
+  revalidatePath(`/clienti/${kpi.clientId}`, "layout");
 }
 
 // ── Check-up ─────────────────────────────────────────────────────────

@@ -1,8 +1,9 @@
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
 import { db } from "@/db";
-import { checkups as checkupsTable, editorialItems, editorialPlans, FORMATS, PLATFORMS } from "@/db/schema";
+import { checkups as checkupsTable, clients, editorialItems, editorialPlans, FORMATS, PLATFORMS } from "@/db/schema";
 import { planIssues } from "@/lib/editorial-plan";
+import { nowDate } from "@/lib/format";
 import { toPlan, toPlanItem } from "@/lib/plan-adapter";
 import { PlanView } from "./plan-view";
 
@@ -23,11 +24,18 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   ).map((c) => ({ id: c.id, title: c.title, at: (c.completedAt ?? c.createdAt).toISOString() }));
 
   if (!plan || sp.nuovo) {
-    return <PlanView clientId={clientId} plans={plans.map(({ id, name }) => ({ id, name }))} plan={null} items={[]} issues={[]} formats={[...FORMATS]} platforms={[...PLATFORMS]} checkups={checkups} />;
+    return <PlanView clientId={clientId} plans={plans.map(({ id, name }) => ({ id, name }))} plan={null} items={[]} issues={[]} formats={[...FORMATS]} platforms={[...PLATFORMS]} checkups={checkups} approval={null} />;
   }
 
   const rows = await db.select().from(editorialItems).where(eq(editorialItems.planId, plan.id)).orderBy(asc(editorialItems.scheduledAt));
   const issues = planIssues(toPlan(plan), rows.map(toPlanItem));
+  // Approvazione via link: bozze complete dei prossimi 30 giorni e contenuti in attesa del cliente
+  const [client] = await db.select({ approvalEnabled: clients.approvalEnabled }).from(clients).where(eq(clients.id, clientId));
+  const now = nowDate().getTime();
+  const in30 = now + 30 * 86_400_000;
+  const readyCount = rows.filter(
+    (i) => i.status === "bozza" && i.scheduledAt && i.scheduledAt.getTime() > now && i.scheduledAt.getTime() < in30 && !issues.some((x) => x.itemId === String(i.id) && x.level === "errore"),
+  ).length;
 
   return (
     <PlanView
@@ -61,6 +69,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
       formats={[...FORMATS]}
       platforms={[...PLATFORMS]}
       checkups={checkups}
+      approval={{ enabled: !!client?.approvalEnabled, readyCount, pendingCount: rows.filter((i) => i.status === "da_approvare").length }}
     />
   );
 }

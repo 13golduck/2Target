@@ -9,7 +9,7 @@ import { audit } from "@/lib/audit";
 
 // Lavori lunghi dell'AI eseguiti in background nel processo Node (su Plesk ce n'è uno solo).
 // Lo stato sta nel database: la pagina lo rilegge ogni pochi secondi e si può chiudere e riaprire.
-// Se l'app si riavvia a metà, il check-up resta "in corso": il pulsante Riprendi lo fa ripartire.
+// Se l'app si riavvia a metà, all'avvio il check-up riparte da solo (lib/ai/resume.ts) o resta da riprendere con «Riprendi».
 // Ogni lavoro ha un AbortController: "Interrompi" ferma anche la chiamata all'AI in corso.
 
 const running = new Map<number, AbortController>();

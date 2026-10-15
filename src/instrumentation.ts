@@ -25,6 +25,9 @@ export async function register() {
   // Pubblicazioni programmate: controllo ogni minuto
   const { startPublishScheduler } = await import("./lib/publishing/scheduler");
   startPublishScheduler();
+  // Check-up AI fermati dal riavvio: ripartono da soli (se recenti e nei limiti di spesa)
+  const { resumeStaleCheckups } = await import("./lib/ai/resume");
+  await resumeStaleCheckups().catch((e) => console.error("[ai] ripresa automatica non riuscita:", e));
   // Messaggio di sistema nell'audit trail: ogni avvio (deploy, riavvio da Plesk) resta tracciato
   const { audit } = await import("./lib/audit");
   const { readFile } = await import("node:fs/promises");

@@ -70,12 +70,16 @@ describe("planIssues (brief Lesioli)", () => {
   it("segnala quote, cadenza, budget e campi mancanti", () => {
     const bare: EditorialItem = { id: "2", title: "Camera con soppalco", format: "post", scheduledAt: new Date("2026-09-29T09:00:00Z"),
       isPaid: true, adBudget: 60, ctaDestination: "sito", adButton: "Chiama ora" };
-    const msgs = planIssues(plan, [full, bare]).map((i) => i.message);
+    const msgs = planIssues(plan, [full, bare], new Date("2026-09-01T00:00:00Z")).map((i) => i.message);
     expect(msgs).toContain("reel: 1 pianificati su 2 richiesti");
     expect(msgs.some((m) => m.startsWith("Settimana del 21 settembre: 1"))).toBe(true);
     expect(msgs.some((m) => m.includes("oltre il budget"))).toBe(true);
     expect(msgs).toContain('"Camera con soppalco": manca la caption');
     expect(msgs).toContain('"Camera con soppalco": manca il link di destinazione della CTA');
     expect(msgs.some((m) => m.includes('"Chiama ora" non è tipico'))).toBe(true);
+  });
+  it("non segnala la cadenza delle settimane già passate", () => {
+    const msgs = planIssues(plan, [full], new Date("2026-12-01T00:00:00Z")).map((i) => i.message);
+    expect(msgs.some((m) => m.startsWith("Settimana del 21 settembre"))).toBe(false);
   });
 });

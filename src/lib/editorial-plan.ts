@@ -108,7 +108,7 @@ function weekKey(d: Date): string {
   return x.toISOString().slice(0, 10);
 }
 
-export function planIssues(plan: EditorialPlan, items: EditorialItem[]): Issue[] {
+export function planIssues(plan: EditorialPlan, items: EditorialItem[], today: Date = new Date()): Issue[] {
   const out: Issue[] = [];
   const active = items.filter(isActive);
 
@@ -130,10 +130,11 @@ export function planIssues(plan: EditorialPlan, items: EditorialItem[]): Issue[]
     }
   }
 
-  // Cadenza settimanale (si saltano le settimane parziali a inizio e fine piano)
+  // Cadenza settimanale (si saltano le settimane parziali a inizio e fine piano e quelle già passate: non sono più correggibili)
   const counts = new Map<string, number>();
   for (const i of active) if (i.scheduledAt) counts.set(weekKey(i.scheduledAt), (counts.get(weekKey(i.scheduledAt)) ?? 0) + 1);
-  const firstFull = weekKey(addDays(plan.startsOn, 6));
+  const thisWeek = weekKey(today);
+  const firstFull = [weekKey(addDays(plan.startsOn, 6)), thisWeek].sort()[1];
   const lastFull = weekKey(addDays(plan.endsOn, -6));
   for (let w = new Date(firstFull); w.toISOString().slice(0, 10) <= lastFull; w = addDays(w, 7)) {
     const k = w.toISOString().slice(0, 10);

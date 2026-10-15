@@ -26,7 +26,7 @@ import { Chart, useChart } from 'src/components/chart';
 import { EmptyContent } from 'src/components/empty-content';
 import { StatusBadge, STATUS_COLOR } from 'src/components/status-badge';
 
-import { addKpi, deleteKpi, addMeasurement } from '../../actions';
+import { addKpi, deleteKpi, addMeasurement } from '../../../actions';
 
 // ----------------------------------------------------------------------
 

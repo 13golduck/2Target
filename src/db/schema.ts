@@ -102,6 +102,12 @@ export const clients = mysqlTable("clients", {
   adsMonthlyCap: money("ads_monthly_cap"),
   /** Ricarico sulla spesa quando paga Golduck e rifattura (1,15 = +15%). */
   adsMarkup: decimal("ads_markup", { precision: 5, scale: 2, mode: "number" }).notNull().default(1),
+  /** Approvazione dei contenuti via link (senza account): attivabile per cliente. */
+  approvalEnabled: boolean("approval_enabled").notNull().default(false),
+  /** Report mensile automatico: a chi mandarlo e ultimo mese inviato (AAAA-MM), per non mandarlo due volte. */
+  reportEmail: varchar("report_email", { length: 255 }),
+  reportMonthly: boolean("report_monthly").notNull().default(false),
+  reportLastMonth: varchar("report_last_month", { length: 7 }),
   createdAt: created(),
 });
 
@@ -825,4 +831,22 @@ export const adSpendDaily = mysqlTable(
     spendEur: money("spend_eur").notNull(),
   },
   (t) => [primaryKey({ columns: [t.campaignId, t.day] })],
+);
+
+// ── Approvazione del cliente via link ────────────────────────────────
+export const FEEDBACK_DECISIONS = ["approvato", "modifiche", "commento"] as const;
+
+/** Risposte del cliente sui contenuti (dalla pagina pubblica /approva/<link>). */
+export const itemFeedback = mysqlTable(
+  "item_feedback",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    itemId: int("item_id").notNull().references(() => editorialItems.id, { onDelete: "cascade" }),
+    clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+    author: varchar("author", { length: 120 }).notNull(),
+    decision: mysqlEnum("decision", FEEDBACK_DECISIONS).notNull(),
+    message: text("message"),
+    createdAt: created(),
+  },
+  (t) => [index("item_feedback_item").on(t.itemId, t.createdAt)],
 );

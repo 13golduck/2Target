@@ -169,6 +169,13 @@
       "when": 1792042933363,
       "tag": "0023_sponsorizzate",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1792103629568,
+      "tag": "0024_approvazione_report",
+      "breakpoints": true
     }
   ]
 }

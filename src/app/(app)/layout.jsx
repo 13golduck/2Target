@@ -43,7 +43,8 @@ export default async function AppLayout({ children }) {
     {
       subheader: "Panoramica",
       items: [
-        { title: "Clienti", path: "/", icon: <NavIcon name="ic-dashboard" /> },
+        { title: viewer ? "Clienti" : "Oggi", path: "/", icon: <NavIcon name="ic-dashboard" /> },
+        ...(viewer ? [] : [{ title: "Calendario", path: "/calendario", icon: <NavIcon name="ic-calendar" /> }]),
         ...(viewer ? [] : [{ title: "Consumi AI", path: "/consumi-ai", icon: <NavIcon name="ic-analytics" /> }]),
         ...(viewer ? [] : [{ title: "Sponsorizzate", path: "/sponsorizzate", icon: <NavIcon name="ic-invoice" /> }]),
         ...(isAdminRole(user.role)
@@ -64,18 +65,19 @@ export default async function AppLayout({ children }) {
         icon: c.logoAt ? <ClientLogo id={c.id} version={c.logoAt.getTime()} name={c.name} /> : <NavIcon name="ic-user" />,
         children: viewer
           ? [
-              { title: "KPI", path: `/clienti/${c.id}` },
+              { title: "KPI", path: `/clienti/${c.id}/kpi` },
               { title: "Lead", path: `/clienti/${c.id}/lead` },
               { title: "SEO", path: `/clienti/${c.id}/seo` },
             ]
           : [
-              { title: "KPI", path: `/clienti/${c.id}` },
+              { title: "Panoramica", path: `/clienti/${c.id}` },
               { title: "Check-up", path: `/clienti/${c.id}/checkup` },
+              { title: "Brand", path: `/clienti/${c.id}/brand` },
               { title: "Idee", path: `/clienti/${c.id}/idee` },
               { title: "Piano editoriale", path: `/clienti/${c.id}/piano` },
+              { title: "KPI", path: `/clienti/${c.id}/kpi` },
               { title: "Lead", path: `/clienti/${c.id}/lead` },
               { title: "SEO", path: `/clienti/${c.id}/seo` },
-              { title: "Brand", path: `/clienti/${c.id}/brand` },
               { title: "Canali", path: `/clienti/${c.id}/canali` },
             ],
       })),

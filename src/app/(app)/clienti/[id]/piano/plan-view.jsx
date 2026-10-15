@@ -48,6 +48,7 @@ import { CalendarRoot } from 'src/components/calendar/styles';
 import { createItem, createPlan, rescheduleItem } from '../../../actions';
 
 import { PlanAiDialog } from './plan-ai-dialog';
+import { ApprovalButton } from './approval-dialog';
 import { PlanImportDialog } from './plan-import-dialog';
 
 // ----------------------------------------------------------------------
@@ -62,7 +63,7 @@ const STATUS = {
   annullato: { label: 'Annullato', color: 'error' },
 };
 
-export function PlanView({ clientId, plans, plan, items, issues, formats, platforms, checkups }) {
+export function PlanView({ clientId, plans, plan, items, issues, formats, platforms, checkups, approval }) {
   const [tab, setTab] = useState('calendario');
   const [newAt, setNewAt] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -100,6 +101,7 @@ export function PlanView({ clientId, plans, plan, items, issues, formats, platfo
           formats={formats}
           platforms={platforms}
         />
+        {plan && approval && <ApprovalButton clientId={clientId} planId={plan.id} {...approval} />}
         {plan && (
           <Button
             component="a"
@@ -188,7 +190,7 @@ function Summary({ plan, items, issues }) {
           <Card sx={{ p: 3 }}>
             <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>Da sistemare</Typography>
             <Typography variant="h3" sx={{ color: errors ? 'error.main' : 'success.main' }}>{errors}</Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>{warnings} avvisi</Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>{warnings} {warnings === 1 ? 'avviso' : 'avvisi'}</Typography>
           </Card>
         </Grid>
       </Grid>
@@ -246,6 +248,10 @@ function PlanCalendar({ plan, items, onSelectDay }) {
   const [title, setTitle] = useState('');
 
   const api = () => ref.current?.getApi();
+  // Si apre sul primo contenuto da oggi in poi (o su oggi), non sull'inizio del piano che può essere vuoto o passato
+  const today = new Date().toISOString().slice(0, 10);
+  const dated = items.filter((i) => i.scheduledAt).map((i) => i.scheduledAt.slice(0, 10)).sort();
+  const initialDate = dated.find((d) => d >= today) ?? (today >= plan.startsOn && today <= plan.endsOn ? today : dated.at(-1) ?? plan.startsOn);
   // Il calendario è un componente esterno: gli si comunica la vista quando cambia lo schermo
   useEffect(() => {
     const cal = ref.current?.getApi();
@@ -301,7 +307,7 @@ function PlanCalendar({ plan, items, onSelectDay }) {
           ref={ref}
           plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
           initialView={view}
-          initialDate={plan.startsOn}
+          initialDate={initialDate}
           locale="it"
           firstDay={1}
           headerToolbar={false}
@@ -361,7 +367,7 @@ function PlanList({ items }) {
                 {i.errors > 0 ? (
                   <Label color="error">{i.errors} da completare</Label>
                 ) : i.warnings > 0 ? (
-                  <Label color="warning">{i.warnings} avvisi</Label>
+                  <Label color="warning">{i.warnings} {i.warnings === 1 ? 'avviso' : 'avvisi'}</Label>
                 ) : (
                   <Label color="success">Completa</Label>
                 )}

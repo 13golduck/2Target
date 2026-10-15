@@ -26,18 +26,20 @@ import { EmptyContent } from 'src/components/empty-content';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { createClient } from './actions';
+import { TodayView } from './today-view';
 
 // ----------------------------------------------------------------------
 
-export function ClientsView({ clients, readOnly = false }) {
+export function ClientsView({ clients, readOnly = false, board, userName = '' }) {
   const dialog = useBoolean();
-  const count = (s) => clients.filter((c) => c.status === s).length;
 
   return (
     <DashboardContent>
+      {board && <TodayView board={board} userName={userName} />}
+
       <CustomBreadcrumbs
         heading="Clienti"
-        links={[{ name: 'Panoramica' }, { name: 'Clienti' }]}
+        links={board ? [] : [{ name: 'Panoramica' }, { name: 'Clienti' }]}
         action={
           readOnly ? null : (
             <Button variant="contained" startIcon={<Iconify icon="mingcute:add-line" />} onClick={dialog.onTrue}>
@@ -47,26 +49,6 @@ export function ClientsView({ clients, readOnly = false }) {
         }
         sx={{ mb: 3 }}
       />
-
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        {[
-          { label: 'Clienti', value: clients.length, color: 'secondary' },
-          { label: 'In linea', value: count('bene'), color: 'success' },
-          { label: 'Da correggere', value: count('male'), color: 'warning' },
-          { label: 'Troppo male', value: count('troppo_male'), color: 'error' },
-        ].map((s) => (
-          <Grid key={s.label} size={{ xs: 6, md: 3 }}>
-            <Card sx={{ p: 3 }}>
-              <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>
-                {s.label}
-              </Typography>
-              <Typography variant="h3" sx={{ color: `${s.color}.main` }}>
-                {s.value}
-              </Typography>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
 
       {clients.length === 0 ? (
         <EmptyContent filled title="Nessun cliente" description="Aggiungi il primo cliente per iniziare il check-up." sx={{ py: 10 }} />
@@ -94,11 +76,14 @@ export function ClientsView({ clients, readOnly = false }) {
                   <Divider sx={{ my: 2.5, borderStyle: 'dashed' }} />
 
                   <Stack direction="row" sx={{ justifyContent: 'space-between', textAlign: 'center' }}>
-                    <Stat label="KPI" value={c.kpi.total} />
-                    <Stat label="Bene" value={c.kpi.bene} color="success.main" />
-                    <Stat label="Male" value={c.kpi.male} color="warning.main" />
-                    <Stat label="Troppo male" value={c.kpi.troppo_male} color="error.main" />
-                    <Stat label="Pubblicazioni" value={c.items} />
+                    <Stat label="Prossima uscita" value={c.nextAt ? new Date(c.nextAt).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) : '—'} />
+                    <Stat label="In 7 giorni" value={c.week} />
+                    <Stat label="Da approvare" value={c.toApprove} color={c.toApprove ? 'warning.main' : 'text.primary'} />
+                    <Stat
+                      label={c.kpi.total ? 'KPI in linea' : 'KPI'}
+                      value={c.kpi.total ? `${c.kpi.bene}/${c.kpi.total}` : '—'}
+                      color={c.kpi.troppo_male ? 'error.main' : c.kpi.male ? 'warning.main' : c.kpi.total ? 'success.main' : 'text.disabled'}
+                    />
                   </Stack>
                 </CardActionArea>
               </Card>

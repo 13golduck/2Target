@@ -3,7 +3,7 @@
 import { REASONING, REGISTERS } from "@/lib/checkup-report";
 import { getMethodology } from "@/lib/ai/metodologia";
 
-import { and, desc, eq, gte, inArray, isNotNull, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
@@ -15,6 +15,7 @@ import { cancelJob, isRunning, runningCount, startJob } from "@/lib/ai/jobs";
 import { assertBudget, getLimits, BudgetError } from "@/lib/ai/budget";
 import { audit, diff } from "@/lib/audit";
 import { ensureChannelsFromClient } from "@/lib/integrations/client-channels";
+import { resumeCheckup } from "@/lib/ai/resume";
 
 const str = (f: FormData, k: string) => {
   const v = String(f.get(k) ?? "").trim();
@@ -176,17 +177,8 @@ export async function resumeAiCheckup(f: FormData) {
   if (isRunning(checkupId)) return { error: "L'AI sta già lavorando su questo check-up" };
   const blocked = await preflight(c.clientId, checkupId);
   if (blocked) return { error: blocked };
-  const open = await db.select({ id: checkupQuestions.id }).from(checkupQuestions).where(eq(checkupQuestions.checkupId, checkupId));
   await audit({ userId: me.id, category: "checkup", action: "checkup.ripresa", description: `Ripreso il check-up AI (era: ${c.aiState})`, clientId: c.clientId, target: `checkup:${checkupId}`, meta: c.aiError ? { errore: c.aiError.slice(0, 300) } : null });
-
-  if (!c.dossier) startJob(checkupId, "ricognizione", () => runRecon(checkupId), me.id);
-  else if (!open.length) startJob(checkupId, "ricognizione", async () => void (await askQuestions(checkupId, 1)), me.id);
-  else if (!c.dossier.includes("# Ricerca approfondita")) {
-    // L'errore può essere arrivato durante le domande: se non ci sono risposte si torna lì
-    const unanswered = await db.select({ id: checkupQuestions.id }).from(checkupQuestions).where(and(eq(checkupQuestions.checkupId, checkupId), isNull(checkupQuestions.answer)));
-    if ((c.aiState === "errore" || c.aiState === "interrotto") && unanswered.length === open.length) await db.update(checkups).set({ aiState: "domande", aiError: null }).where(eq(checkups.id, checkupId));
-    else startJob(checkupId, "ricerca", async () => { await runDeepResearch(checkupId); await runWriting(checkupId); }, me.id);
-  } else startJob(checkupId, "scrittura", () => runWriting(checkupId), me.id);
+  await resumeCheckup(checkupId, me.id);
   revalidatePath(path(c.clientId));
   return { ok: true };
 }

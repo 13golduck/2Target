@@ -6,6 +6,7 @@ import { appSettings, clients } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { syncClient } from "@/lib/integrations/sync";
 import { audit } from "@/lib/audit";
+import { sendDueMonthlyReports } from "@/lib/monthly-report";
 
 // Sincronizzazione notturna di tutti i clienti (canali, KPI). Su Plesk: Operazioni pianificate →
 // «Recupera un URL» https://2target.it/api/cron/sync ogni notte (es. alle 3:00).
@@ -38,6 +39,8 @@ async function run(request: Request) {
   const report: Record<string, string[]> = {};
   const started = Date.now();
   for (const c of list) report[c.name] = await syncClient(c.id);
+  // Report mensili ai clienti che li hanno attivi (dal 3 del mese, una volta per mese)
+  const reports = await sendDueMonthlyReports().catch((e) => [`report: ${(e as Error).message}`]);
   const withErrors = Object.entries(report).filter(([, e]) => e.length);
   await audit({
     userId: null,
@@ -47,5 +50,5 @@ async function run(request: Request) {
     description: `Aggiornamento automatico dei canali: ${list.length} clienti in ${Math.round((Date.now() - started) / 1000)} s${withErrors.length ? ` · ${withErrors.length} con errori` : " · tutto ok"}`,
     meta: withErrors.length ? { errori: Object.fromEntries(withErrors) } : null,
   });
-  return NextResponse.json({ ok: true, report });
+  return NextResponse.json({ ok: true, report, reports });
 }

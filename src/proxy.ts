@@ -7,7 +7,7 @@ import { authConfig } from "@/lib/auth.config";
 const { auth } = NextAuth(authConfig);
 
 // /api/cron: sveglie pianificate, con limiti di frequenza (e chiave CRON_SECRET per gli usi immediati); /api/lead riceve i moduli dei siti dei clienti (chiave per cliente)
-const PUBLIC = ["/login", "/chi-siamo", "/privacy", "/termini", "/eliminazione-dati", "/api/auth", "/api/sso", "/api/meta/eliminazione-dati", "/api/cron", "/api/lead", "/api/stato"];
+const PUBLIC = ["/login", "/chi-siamo", "/approva", "/privacy", "/termini", "/eliminazione-dati", "/api/auth", "/api/sso", "/api/meta/eliminazione-dati", "/api/cron", "/api/lead", "/api/stato"];
 const SIGNED_MEDIA = /^\/api\/media\/[\w-]{22}\/[\w-]+\.(jpg|png|mp4|mov)$/;
 
 export default auth((request) => {
@@ -40,7 +40,7 @@ export default auth((request) => {
   return NextResponse.next({ request: { headers } });
 });
 
-const VIEWER_PATHS = [/^\/$/, /^\/api\/logo\/\d+$/, /^\/clienti\/\d+$/, /^\/clienti\/\d+\/(seo|lead)$/, /^\/report\/\d+$/, /^\/errori$/, /^\/audit(\/export)?$/, /^\/profilo$/];
+const VIEWER_PATHS = [/^\/$/, /^\/api\/logo\/\d+$/, /^\/clienti\/\d+$/, /^\/clienti\/\d+\/(kpi|seo|lead)$/, /^\/report\/\d+$/, /^\/errori$/, /^\/audit(\/export)?$/, /^\/profilo$/];
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|logo|.*\\.(?:svg|png|jpg|webp)$).*)"],
