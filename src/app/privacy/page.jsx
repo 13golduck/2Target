@@ -6,7 +6,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage title="Informativa sulla privacy" updated="11 ottobre 2026">
       <p>
-        2Target è la piattaforma interna con cui Golduck (titolare del trattamento) gestisce i progetti di comunicazione e marketing dei propri clienti:
+        2Target è la piattaforma interna con cui Golduck (titolare del trattamento: Infantino Antonio, P.IVA 04587910987, Via Zilie Inferiori 37/A, 25013 Calvisano BS) gestisce i progetti di comunicazione e marketing dei propri clienti:
         check-up, piani editoriali, pubblicazioni sui social, lead e indicatori di risultato. Questa informativa spiega quali dati tratta 2Target e perché.
       </p>
 

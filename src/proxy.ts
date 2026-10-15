@@ -7,7 +7,7 @@ import { authConfig } from "@/lib/auth.config";
 const { auth } = NextAuth(authConfig);
 
 // /api/cron: sveglie pianificate, con limiti di frequenza (e chiave CRON_SECRET per gli usi immediati); /api/lead riceve i moduli dei siti dei clienti (chiave per cliente)
-const PUBLIC = ["/login", "/privacy", "/termini", "/eliminazione-dati", "/api/auth", "/api/sso", "/api/meta/eliminazione-dati", "/api/cron", "/api/lead", "/api/stato"];
+const PUBLIC = ["/login", "/chi-siamo", "/privacy", "/termini", "/eliminazione-dati", "/api/auth", "/api/sso", "/api/meta/eliminazione-dati", "/api/cron", "/api/lead", "/api/stato"];
 const SIGNED_MEDIA = /^\/api\/media\/[\w-]{22}\/[\w-]+\.(jpg|png|mp4|mov)$/;
 
 export default auth((request) => {
@@ -17,6 +17,8 @@ export default auth((request) => {
   if (SIGNED_MEDIA.test(pathname)) return NextResponse.next();
 
   if (!request.auth?.user) {
+    // La home pubblica è la presentazione di 2Target (la chiedono Meta e TikTok); chi ha l'accesso vede l'elenco clienti
+    if (pathname === "/") return NextResponse.rewrite(new URL("/chi-siamo", request.url));
     // Dietro nginx/Passenger l'URL interno è 127.0.0.1: il redirect usa il dominio reale
     const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
     const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
