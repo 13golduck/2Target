@@ -204,6 +204,12 @@ function ChannelCard({ channel: c }) {
           { label: 'Reach 30 gg', value: c.platform === 'instagram' ? c.stats.reach30 : null },
           { label: 'Post letti', value: c.stats.posts },
         ]
+      : c.platform === 'tiktok'
+        ? [
+            { label: 'Follower', value: c.stats.followers },
+            { label: 'Like totali', value: c.stats.likesTotal },
+            { label: 'Video', value: c.stats.videosTotal },
+          ]
       : c.platform === 'search_console'
         ? [
             { label: 'Clic 30 gg', value: c.stats.clicks30 },
@@ -302,7 +308,8 @@ function ChannelCard({ channel: c }) {
                 </Typography>
                 <Typography variant="caption" sx={{ display: 'block' }}>
                   {p.metrics.reach != null && <>reach {p.metrics.reach.toLocaleString('it-IT')} · </>}
-                  {(p.metrics.total_interactions ?? (p.metrics.likes ?? 0) + (p.metrics.comments ?? 0)).toLocaleString('it-IT')} interazioni
+                  {p.metrics.views != null && <>{p.metrics.views.toLocaleString('it-IT')} visual. · </>}
+                  {(p.metrics.total_interactions ?? (p.metrics.likes ?? 0) + (p.metrics.comments ?? 0) + (p.metrics.shares ?? 0)).toLocaleString('it-IT')} interazioni
                   {p.metrics.saved != null && <> · {p.metrics.saved} salv.</>}
                 </Typography>
               </Link>

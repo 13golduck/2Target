@@ -111,6 +111,8 @@ export default async function ChannelsPage({ params, searchParams }: { params: P
         pending: c.platform === "website" && !c.lastSyncAt && (isSiteSyncRunning(c.id) || (!c.lastSyncError && (startSiteSync(c), true))),
         stats: {
           followers: last(c.id, "followers"),
+          likesTotal: last(c.id, "likes_total"),
+          videosTotal: last(c.id, "posts_total"),
           reach30: sum(c.id, "reach"),
           clicks30: sum(c.id, "seo_clicks"),
           impressions30: sum(c.id, "seo_impressions"),
