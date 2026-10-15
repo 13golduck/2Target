@@ -1,13 +1,13 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/db";
 import { CHANNEL_KINDS, clients, connections, socialAccounts } from "@/db/schema";
 import { requireWriter, userCanPublish } from "@/lib/auth";
-import { siteKey } from "@/lib/integrations/client-channels";
+import { forgetFromClient, siteKey } from "@/lib/integrations/client-channels";
 import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import * as google from "@/lib/integrations/google";
 import * as meta from "@/lib/integrations/meta";
@@ -145,6 +145,7 @@ export async function removeChannel(f: FormData) {
   const [ch] = await db.select().from(socialAccounts).where(eq(socialAccounts.id, Number(f.get("channelId"))));
   if (!ch) return;
   await db.delete(socialAccounts).where(eq(socialAccounts.id, ch.id));
+  await forgetFromClient(ch);
   await audit({ userId: me.id, category: "canali", action: "canale.rimosso", description: `Rimosso il canale ${ch.platform} «${ch.name ?? ch.handle}»`, clientId: ch.clientId });
   revalidatePath(path(ch.clientId));
 }
@@ -187,6 +188,8 @@ export async function addManualChannel(f: FormData) {
     .onDuplicateKeyUpdate({ set: { name: handle } });
   await audit({ userId: me.id, category: "canali", action: "canale.manuale", description: `Aggiunto a mano il canale ${platform} «${handle}»`, clientId });
   if (platform === "website") {
+    // Se la scheda del cliente non ha un sito, si usa questo (check-up e report leggono da lì)
+    await db.update(clients).set({ website: handle }).where(and(eq(clients.id, clientId), isNull(clients.website)));
     const [ch] = await db.select().from(socialAccounts).where(r.insertId ? eq(socialAccounts.id, r.insertId) : and(eq(socialAccounts.clientId, clientId), eq(socialAccounts.platform, "website"), eq(socialAccounts.handle, handle)));
     try {
       await syncChannel(ch);

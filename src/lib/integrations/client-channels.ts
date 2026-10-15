@@ -81,3 +81,23 @@ export async function ensureChannelsFromClient(clientId: number, userId: number 
   }
   return added.length;
 }
+
+/**
+ * Un canale tolto a mano non deve tornare alla prossima apertura di Canali:
+ * se viene dalla scheda del cliente (sito o link social) lo si toglie anche da lì.
+ */
+export async function forgetFromClient(channel: { clientId: number; platform: string; handle: string }) {
+  const [client] = await db.select({ website: clients.website, socialLinks: clients.socialLinks }).from(clients).where(eq(clients.id, channel.clientId));
+  if (!client) return;
+  if (channel.platform === "website") {
+    const site = websiteHandle(client.website);
+    if (site && siteKey(site) === siteKey(channel.handle)) await db.update(clients).set({ website: null }).where(eq(clients.id, channel.clientId));
+    return;
+  }
+  if (!client.socialLinks) return;
+  const same = (p: { platform: string; handle: string; url: string }) =>
+    p.platform === channel.platform && [p.handle, p.url].some((h) => h?.toLowerCase() === channel.handle.toLowerCase());
+  const lines = client.socialLinks.split(/\r?\n/);
+  const kept = lines.filter((line) => !extractProfiles(line).some(same));
+  if (kept.length !== lines.length) await db.update(clients).set({ socialLinks: kept.join("\n").trim() || null }).where(eq(clients.id, channel.clientId));
+}

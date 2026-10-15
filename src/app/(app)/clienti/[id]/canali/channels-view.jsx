@@ -269,7 +269,7 @@ function ChannelCard({ channel: c }) {
                 <IconButton onClick={sync} loading={pending}><Iconify icon="solar:restart-bold" /></IconButton>
               </Tooltip>
             )}
-            <Box component="form" action={removeChannel} onSubmit={(e) => confirmSubmit(e, { tone: 'error', title: 'Togliere il canale?', content: 'Il canale e i dati scaricati verranno cancellati.', confirmText: 'Togli canale' })}>
+            <Box component="form" action={removeChannel} onSubmit={(e) => confirmSubmit(e, { tone: 'error', title: 'Togliere il canale?', content: 'Il canale e i dati scaricati verranno cancellati. Se viene dalla scheda del cliente (sito o link social), verrà tolto anche da lì.', confirmText: 'Togli canale' })}>
               <input type="hidden" name="channelId" value={c.id} />
               <Tooltip title="Togli canale">
                 <IconButton type="submit"><Iconify icon="solar:trash-bin-trash-bold" /></IconButton>
