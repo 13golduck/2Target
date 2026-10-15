@@ -61,7 +61,7 @@ export const TIKTOK = {
   },
   // Profilo, statistiche e video; la pubblicazione (video.publish / video.upload) si aggiunge dopo la revisione di TikTok
   get scopes() {
-    return (process.env.TIKTOK_SCOPES ?? "user.info.basic,user.info.profile,user.info.stats,video.list").split(",").map((s) => s.trim()).filter(Boolean);
+    return (process.env.TIKTOK_SCOPES ?? "user.info.basic,user.info.stats,video.list").split(",").map((s) => s.trim()).filter(Boolean);
   },
 };
 

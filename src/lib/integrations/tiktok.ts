@@ -78,8 +78,10 @@ type User = {
 };
 
 async function userInfo(accessToken: string) {
-  // I campi statistici richiedono user.info.stats: se manca, si ripiega sui dati base
-  for (const fields of ["open_id,username,display_name,avatar_url,follower_count,following_count,likes_count,video_count", "open_id,display_name,avatar_url"]) {
+  // username richiede user.info.profile (non lo chiediamo: il firewall di Plesk blocca «.profile» nel ritorno da TikTok),
+  // le statistiche user.info.stats: a ogni errore si ripiega su meno campi
+  const stats = "follower_count,following_count,likes_count,video_count";
+  for (const fields of [`open_id,username,display_name,avatar_url,${stats}`, `open_id,display_name,avatar_url,${stats}`, "open_id,display_name,avatar_url"]) {
     try {
       const r = await call<{ data: { user: User } }>(`${API}/user/info/?${qs({ fields })}`, { headers: { authorization: `Bearer ${accessToken}` } });
       return r.data.user;

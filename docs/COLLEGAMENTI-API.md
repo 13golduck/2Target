@@ -96,7 +96,7 @@ Conviene farsi aggiungere dal cliente con un account Google di Golduck.
 1. Su **developers.tiktok.com** accedi con l'account TikTok di Golduck → **Manage apps → Connect an app** → nome «2Target».
 2. **App details**: categoria Business, descrizione, icona, **Terms of Service URL** `https://2target.it/termini`, **Privacy Policy URL** `https://2target.it/privacy`, piattaforma **Web** con sito `https://2target.it` (TikTok chiede di verificare il dominio: file o record DNS TXT).
 3. **Add products**: **Login Kit** (Redirect URI: `https://2target.it/api/connect/tiktok/callback`) e **Display API**.
-4. **Scopes**: `user.info.basic`, `user.info.profile`, `user.info.stats`, `video.list`.
+4. **Scopes**: `user.info.basic`, `user.info.stats`, `video.list` (niente `user.info.profile`: il firewall di Plesk blocca «.profile» nell'indirizzo di ritorno).
 5. **Submit for review**. In attesa dell'approvazione funziona la **Sandbox**: aggiungi come *target users* gli account TikTok di prova.
 6. Copia **Client key** e **Client secret** in 2Target → Impostazioni → Integrazioni → TikTok.
 
