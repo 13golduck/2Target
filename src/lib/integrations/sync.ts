@@ -8,6 +8,7 @@ import { funnelStats } from "@/lib/leads";
 import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import { ApiError } from "./http";
 import * as google from "./google";
+import * as instagram from "./instagram";
 import * as meta from "./meta";
 import * as tiktok from "./tiktok";
 import type { DailyValue, PostData } from "./meta";
@@ -15,10 +16,26 @@ import type { DailyValue, PostData } from "./meta";
 type Channel = typeof socialAccounts.$inferSelect;
 type Connection = typeof connections.$inferSelect;
 
-/** Token valido per la connessione (Google e TikTok si rinnovano da soli con il refresh token). */
+/** Token valido per la connessione (Google e TikTok si rinnovano con il refresh token, Instagram rinnova il suo). */
 export async function accessToken(conn: Connection) {
   const token = decryptSecret(conn.accessTokenEnc);
   if (!token) throw new ApiError("Token illeggibile: ricollega l'account", 401, true);
+  // Instagram: token di 60 giorni, si rinnova quando ne mancano meno di 10 (la sincronizzazione notturna basta)
+  if (conn.provider === "instagram" && conn.expiresAt && conn.expiresAt.getTime() < Date.now() + 10 * 86_400_000) {
+    if (conn.expiresAt.getTime() < Date.now()) throw new ApiError("Accesso Instagram scaduto: ricollega l'account", 401, true);
+    try {
+      const fresh = await instagram.refreshAccessToken(token);
+      await db
+        .update(connections)
+        .set({ accessTokenEnc: encryptSecret(fresh.accessToken), expiresAt: fresh.expiresAt, status: "attivo", lastError: null })
+        .where(eq(connections.id, conn.id));
+      return fresh.accessToken;
+    } catch (e) {
+      // Rinnovo non riuscito (es. token di meno di 24 ore): finché è valido si usa quello attuale
+      if (e instanceof ApiError && e.expired) throw e;
+      return token;
+    }
+  }
   if (conn.provider === "tiktok" && conn.expiresAt && conn.expiresAt.getTime() < Date.now() + 5 * 60_000) {
     const refresh = decryptSecret(conn.refreshTokenEnc);
     if (!refresh) throw new ApiError("Accesso TikTok scaduto: ricollega l'account", 401, true);
@@ -80,7 +97,8 @@ export async function syncChannel(channel: Channel) {
       const id = channel.externalId!;
 
       if (channel.platform === "instagram") {
-        const r = await meta.syncInstagram(id, assetToken);
+        // Collegato con il login Instagram: token dell'utente su graph.instagram.com; altrimenti token della Pagina
+        const r = conn.provider === "instagram" ? await meta.syncInstagram(id, userToken, "instagram") : await meta.syncInstagram(id, assetToken);
         await saveDaily(channel.id, r.daily);
         await savePosts(channel.id, r.posts);
       } else if (channel.platform === "facebook") {

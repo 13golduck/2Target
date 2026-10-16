@@ -52,14 +52,27 @@ const GROUPS = [
   },
   {
     key: 'tiktok',
-    title: 'TikTok (profilo, video e statistiche dei clienti)',
+    title: 'TikTok (profilo, video, statistiche e pubblicazione)',
     icon: 'socials:tiktok',
     where:
-      'developers.tiktok.com → Manage apps → app 2Target → App details: Client key e Client secret. In Login Kit aggiungi l’indirizzo di reindirizzamento qui sotto; prodotti: Login Kit e Display API.',
+      'developers.tiktok.com → Manage apps → app 2Target → App details: Client key e Client secret. In Login Kit aggiungi l’indirizzo di reindirizzamento qui sotto; prodotti: Login Kit, Display API e Content Posting API. Per pubblicare scrivi nei permessi «user.info.basic,user.info.stats,video.list,video.publish» e ricollega gli account TikTok dei clienti.',
     callback: '/api/connect/tiktok/callback',
     fields: [
       { name: 'tiktokClientKey', label: 'Client key' },
       { name: 'tiktokClientSecret', label: 'Client secret', secret: true },
+      { name: 'tiktokScopes', label: 'Permessi richiesti (vuoto = senza pubblicazione)' },
+    ],
+  },
+  {
+    key: 'instagram',
+    title: 'Instagram senza Facebook (login Instagram)',
+    icon: 'socials:instagram',
+    where:
+      'Meta for Developers → app 2Target → Instagram → Configurazione dell’API con login Instagram: ID app di Instagram e chiave segreta dell’app Instagram (diversi da quelli di Meta qui sopra). Aggiungi l’indirizzo di reindirizzamento qui sotto in «Configura il login aziendale di Instagram».',
+    callback: '/api/connect/instagram/callback',
+    fields: [
+      { name: 'instagramAppId', label: 'ID app di Instagram' },
+      { name: 'instagramAppSecret', label: 'Chiave segreta dell’app Instagram', secret: true },
     ],
   },
   {

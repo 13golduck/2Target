@@ -59,18 +59,31 @@ export const TIKTOK = {
   get clientSecret() {
     return integrationKey("tiktokClientSecret");
   },
-  // Profilo, statistiche e video; la pubblicazione (video.publish / video.upload) si aggiunge dopo la revisione di TikTok
+  // Profilo, statistiche e video; per pubblicare si aggiunge video.publish (Impostazioni → Integrazioni → TikTok)
+  // quando il prodotto Content Posting API è attivo sull'app: gli account già collegati vanno ricollegati.
   get scopes() {
-    return (process.env.TIKTOK_SCOPES ?? "user.info.basic,user.info.stats,video.list").split(",").map((s) => s.trim()).filter(Boolean);
+    return (integrationKey("tiktokScopes") || "user.info.basic,user.info.stats,video.list").split(",").map((s) => s.trim()).filter(Boolean);
   },
 };
 
-export type Provider = "meta" | "google" | "tiktok" | "linkedin";
+/** Instagram con login Instagram: per i profili professionali senza Pagina Facebook (lettura e pubblicazione). */
+export const INSTAGRAM = {
+  get appId() {
+    return integrationKey("instagramAppId");
+  },
+  get appSecret() {
+    return integrationKey("instagramAppSecret");
+  },
+  scopes: ["instagram_business_basic", "instagram_business_content_publish", "instagram_business_manage_insights"],
+};
+
+export type Provider = "meta" | "google" | "tiktok" | "linkedin" | "instagram";
 
 export function isConfigured(provider: Provider) {
   if (provider === "meta") return !!(META.appId && META.appSecret);
   if (provider === "google") return !!(GOOGLE.clientId && GOOGLE.clientSecret);
   if (provider === "tiktok") return !!(TIKTOK.clientKey && TIKTOK.clientSecret);
+  if (provider === "instagram") return !!(INSTAGRAM.appId && INSTAGRAM.appSecret);
   return false; // LinkedIn: in arrivo
 }
 

@@ -101,8 +101,44 @@ Conviene farsi aggiungere dal cliente con un account Google di Golduck.
 6. Copia **Client key** e **Client secret** in 2Target → Impostazioni → Integrazioni → TikTok.
 
 Il token TikTok dura 24 ore e il refresh token 365 giorni: 2Target li rinnova da solo a ogni sincronizzazione.
-La pubblicazione (prodotto **Content Posting API**, scope `video.upload` / `video.publish`) richiede una seconda revisione:
-finché l'app non è approvata TikTok pubblica solo in privato. Gli scope si possono estendere con la variabile `TIKTOK_SCOPES`.
+
+### Pubblicazione su TikTok (Content Posting API)
+
+1. Nell'app su developers.tiktok.com → **Add products → Content Posting API**, attiva **Direct Post** e lo scope `video.publish`.
+2. **URL properties**: verifica il dominio `2target.it` (TikTok scarica video e foto dagli indirizzi pubblici di 2Target).
+3. In 2Target → Impostazioni → Integrazioni → TikTok, campo **Permessi richiesti**:
+   `user.info.basic,user.info.stats,video.list,video.publish`. Poi in **Canali** ricollega l'account TikTok di ogni
+   cliente (finché non lo fai, la scheda dice «collegato senza permesso di pubblicare»).
+4. Prova in sandbox: finché TikTok non approva l'app i post escono **solo come privati** («Solo io»).
+5. **Audit**: registra un video dello schermo con l'intero flusso (collegamento dell'account in Canali, scheda
+   «Pubblica su TikTok» con account, visibilità, interazioni, contenuto commerciale, consensi e anteprima, post uscito)
+   e invia la richiesta da Content Posting API → *Apply for audit*. Ogni modifica a quella schermata può richiedere una nuova revisione.
+
+La scheda di pubblicazione segue le Content Sharing Guidelines di TikTok: legge l'account ogni volta, la visibilità
+si sceglie a mano tra quelle consentite (nessun valore predefinito), commenti/duetti/stitch partono spenti e si
+bloccano se l'account non li consente, c'è l'indicazione di contenuto commerciale («Il tuo brand» / «Contenuto
+sponsorizzato», che non può essere privato), il controllo della durata del video, l'anteprima e la dichiarazione di
+consenso (Music Usage Confirmation e, per i contenuti sponsorizzati, Branded Content Policy). TikTok pubblica un video
+(MP4, MOV o WebM) oppure da 1 a 35 foto JPEG/WebP; niente storie. Limite indicativo: circa 15 post al giorno per account.
+
+---
+
+## 2c. Instagram senza Facebook (login Instagram)
+
+Per i clienti con un profilo Instagram professionale (Business o Creator) **senza Pagina Facebook**.
+
+1. In Meta for Developers, nell'app 2Target → **Aggiungi prodotto → Instagram → API con login Instagram**.
+2. **Configura il login aziendale di Instagram**: aggiungi l'indirizzo di reindirizzamento
+   `https://2target.it/api/connect/instagram/callback` (e `http://localhost:3070/...` per le prove).
+3. Permessi: `instagram_business_basic`, `instagram_business_content_publish`, `instagram_business_manage_insights`
+   (per i profili dei clienti serve la revisione dell'app con accesso avanzato).
+4. Copia **ID app di Instagram** e **chiave segreta dell'app Instagram** (sono diversi da ID e chiave di Meta) in
+   2Target → Impostazioni → Integrazioni → Instagram senza Facebook.
+5. In **Canali** del cliente: **Collega Instagram senza Facebook** e accesso con le credenziali Instagram del cliente.
+
+Il token dura 60 giorni: 2Target lo rinnova da solo quando ne mancano meno di 10 (basta la sincronizzazione notturna).
+Statistiche e pubblicazione (post, carosello, reel, storie) funzionano come per Instagram collegato alla Pagina;
+le sponsorizzate restano solo per i post usciti tramite Pagina Facebook.
 
 ## 3. Sincronizzazione automatica (Plesk)
 
@@ -137,7 +173,7 @@ sincronizzazione; le misure inserite a mano non vengono toccate.
 
 - Pubblicazione dei post dalla scheda (permessi `instagram_content_publish`, `pages_manage_posts`).
 - Inserzioni Meta in lettura (`ads_read`) e moduli contatto (`leads_retrieval`) per il raccoglitore lead.
-- TikTok (Login Kit + Content Posting API, audit per la pubblicazione pubblica) e LinkedIn.
+- Audit TikTok per la pubblicazione pubblica (vedi 2b) e LinkedIn.
 
 ---
 

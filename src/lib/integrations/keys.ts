@@ -24,6 +24,11 @@ export type IntegrationKeys = {
   /** TikTok for Developers: app 2Target (Login Kit + Display API). */
   tiktokClientKey: string;
   tiktokClientSecret: string;
+  /** Permessi chiesti a TikTok (vuoto = predefiniti): con la pubblicazione attiva si aggiunge video.publish. */
+  tiktokScopes: string;
+  /** Instagram con login Instagram (clienti senza Pagina Facebook): ID e chiave dell'app Instagram, diversi da quelli di Meta. */
+  instagramAppId: string;
+  instagramAppSecret: string;
   /** Accesso con Microsoft (SSO Golduck): app registrata in Microsoft Entra, un solo tenant. */
   msTenantId: string;
   msClientId: string;
@@ -32,7 +37,7 @@ export type IntegrationKeys = {
   publishLiveHost: string;
 };
 
-export const SECRET_FIELDS = ["metaAppSecret", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret"] as const;
+export const SECRET_FIELDS = ["metaAppSecret", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret", "instagramAppSecret"] as const;
 const ENV: Record<keyof IntegrationKeys, string> = {
   metaAppId: "META_APP_ID",
   metaAppSecret: "META_APP_SECRET",
@@ -43,6 +48,9 @@ const ENV: Record<keyof IntegrationKeys, string> = {
   anthropicApiKey: "ANTHROPIC_API_KEY",
   tiktokClientKey: "TIKTOK_CLIENT_KEY",
   tiktokClientSecret: "TIKTOK_CLIENT_SECRET",
+  tiktokScopes: "TIKTOK_SCOPES",
+  instagramAppId: "INSTAGRAM_APP_ID",
+  instagramAppSecret: "INSTAGRAM_APP_SECRET",
   msTenantId: "MS_TENANT_ID",
   msClientId: "MS_CLIENT_ID",
   msClientSecret: "MS_CLIENT_SECRET",

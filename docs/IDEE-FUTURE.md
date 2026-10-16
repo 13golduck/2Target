@@ -8,9 +8,8 @@ produzione e pubblicazione centralizzata (mai con le credenziali dei clienti, se
 misurazione (KPI, lead, SEO) → report al cliente.
 
 ## Prossimi passi
-- **TikTok da integrare per partire:** lettura profilo e statistiche, poi pubblicazione (richiede l'approvazione
-  dell'app da parte di TikTok: avviare presto la richiesta).
-- **Collega Instagram** diretto (API Instagram con login Instagram) per i clienti senza Pagina Facebook.
+- **Audit TikTok:** registrare il video del flusso e inviare la richiesta (vedi docs/COLLEGAMENTI-API.md, 2b);
+  fino all'approvazione i post TikTok escono solo come privati.
 - Calendario con lo stato reale delle uscite; anteprima fedele di ciò che verrà pubblicato; riepilogo settimanale.
 - Fase avanzata Meta: portfolio business Golduck, revisione dell'app, token che non scadono (utente di sistema).
 - LinkedIn.
@@ -27,3 +26,7 @@ misurazione (KPI, lead, SEO) → report al cliente.
   primo mese di piano; buyer persona e obiettivi solo se mancano. Ogni proposta cita le evidenze del check-up
   (numerate, l'AI non può inventarle). Niente doppioni con KPI e rubriche esistenti; bozza saltata se c'è già un piano
   nel periodo. Codice: `src/lib/ai/foundation-agent.ts`, `src/lib/checkup-foundation.ts`.
+- **Pubblicazione su TikTok e Instagram senza Facebook** (ottobre 2026). TikTok: video e foto dalla scheda, con
+  tutti gli elementi richiesti dalle Content Sharing Guidelines (in attesa dell'audit). Instagram: collegamento con
+  login Instagram, token rinnovato da solo, statistiche e pubblicazione. Codice: `src/lib/publishing/` e
+  `src/lib/integrations/instagram.ts`.

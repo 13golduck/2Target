@@ -10,6 +10,7 @@ import { ensureChannelsFromClient, isSiteSyncRunning, startSiteSync } from "@/li
 import { assetsFor } from "../../../channel-actions";
 import { clientAdsExposure } from "@/lib/ads/ads";
 import { isDryRun } from "@/lib/publishing/meta-publish";
+import { canPublishWithScopes } from "@/lib/publishing/tiktok-publish";
 import { ChannelsView } from "./channels-view";
 
 export const metadata = { title: "Canali" };
@@ -111,8 +112,8 @@ export default async function ChannelsPage({ params, searchParams }: { params: P
       clientId={clientId}
       canConnect={canConnect}
       error={sp.errore ?? null}
-      configured={{ meta: isConfigured("meta"), google: isConfigured("google"), tiktok: isConfigured("tiktok") }}
-      connections={conns.map((c) => ({ id: c.id, provider: c.provider, accountName: c.accountName, status: c.status, lastError: c.lastError, expiresAt: c.expiresAt?.toISOString() ?? null }))}
+      configured={{ meta: isConfigured("meta"), google: isConfigured("google"), tiktok: isConfigured("tiktok"), instagram: isConfigured("instagram") }}
+      connections={conns.map((c) => ({ id: c.id, provider: c.provider, accountName: c.accountName, status: c.status, lastError: c.lastError, expiresAt: c.expiresAt?.toISOString() ?? null, canPublish: c.provider !== "tiktok" || canPublishWithScopes(c.scopes) }))}
       channels={channels.map((c) => ({
         id: c.id,
         platform: c.platform,

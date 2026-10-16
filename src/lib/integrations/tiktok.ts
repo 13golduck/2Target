@@ -8,12 +8,12 @@ import type { DailyValue, PostData } from "./meta";
 // Flusso: login TikTok del cliente → token di accesso (24 ore) e refresh token (365 giorni, si rinnova
 // a ogni uso) → profilo, statistiche e ultimi video. Un collegamento = un account TikTok.
 
-const API = "https://open.tiktokapis.com/v2";
+export const API = "https://open.tiktokapis.com/v2";
 
 type TikTokError = { error?: { code?: string; message?: string; log_id?: string }; error_description?: string };
 
 /** Chiamata alle API TikTok: gli errori arrivano come { error: { code, message } } anche con HTTP 200. */
-async function call<T>(url: string, init?: RequestInit): Promise<T> {
+export async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { ...init, cache: "no-store", signal: AbortSignal.timeout(30_000) });
   const body = (await res.json().catch(() => ({}))) as T & TikTokError & { error?: string | TikTokError["error"] };
   const err = typeof body.error === "string" ? { code: body.error, message: body.error_description } : body.error;

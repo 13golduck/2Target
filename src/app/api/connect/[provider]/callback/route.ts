@@ -10,12 +10,13 @@ import { auth } from "@/lib/auth";
 import { encryptSecret, verifyPayload } from "@/lib/secret-box";
 import { appUrl } from "@/lib/integrations/config";
 import * as google from "@/lib/integrations/google";
+import * as instagram from "@/lib/integrations/instagram";
 import * as meta from "@/lib/integrations/meta";
 import * as tiktok from "@/lib/integrations/tiktok";
 
 // Ritorno dalla piattaforma: scambia il codice con i token, li salva cifrati e apre la scelta dei canali.
 
-const PROVIDER_LABEL: Record<string, string> = { meta: "Meta", google: "Google", tiktok: "TikTok" };
+const PROVIDER_LABEL: Record<string, string> = { meta: "Meta", google: "Google", tiktok: "TikTok", instagram: "Instagram" };
 
 type State = { provider: string; clientId: number; uid: string; nonce: string };
 
@@ -40,10 +41,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
 
   try {
     const grant: { accessToken: string; refreshToken?: string | null; expiresAt: Date; scopes?: string; externalUserId: string; accountName: string } =
-      provider === "meta" ? await meta.exchangeCode(code, request) : provider === "tiktok" ? await tiktok.exchangeCode(code, request) : await google.exchangeCode(code, request);
+      provider === "meta"
+        ? await meta.exchangeCode(code, request)
+        : provider === "tiktok"
+          ? await tiktok.exchangeCode(code, request)
+          : provider === "instagram"
+            ? await instagram.exchangeCode(code, request)
+            : await google.exchangeCode(code, request);
     const values = {
       clientId: state.clientId,
-      provider: provider as "meta" | "google" | "tiktok",
+      provider: provider as "meta" | "google" | "tiktok" | "instagram",
       externalUserId: grant.externalUserId,
       accountName: grant.accountName,
       accessTokenEnc: encryptSecret(grant.accessToken),

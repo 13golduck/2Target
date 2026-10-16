@@ -10,6 +10,9 @@ import { audit } from "@/lib/audit";
 import { removeMediaFile } from "@/lib/media";
 import { checkPublishable, isDryRun } from "@/lib/publishing/meta-publish";
 import { processPublication } from "@/lib/publishing/scheduler";
+import { connectionsOf, publishToken, routeOf } from "@/lib/publishing/targets";
+import { creatorInfo } from "@/lib/publishing/tiktok-publish";
+import { checkTikTokOptions, parseTikTokOptions, tiktokKind } from "@/lib/publishing/tiktok-rules";
 import { snapshotOf, syncPendingPublications } from "@/lib/publishing/sync";
 import { canPublishWith } from "@/lib/roles";
 
@@ -30,13 +33,39 @@ async function itemOf(id: number) {
   return item ?? null;
 }
 
-const channelLabel = (c: { platform: string; handle: string }) => `${c.platform === "instagram" ? "Instagram" : "Facebook"} @${c.handle}`;
+const PLATFORM_LABEL: Record<string, string> = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok" };
+const channelLabel = (c: { platform: string; handle: string }) => `${PLATFORM_LABEL[c.platform] ?? c.platform} @${c.handle}`;
+
+/**
+ * Informazioni aggiornate sull'account TikTok per la scheda di invio (nome, visibilità consentite, interazioni,
+ * durata massima): TikTok chiede di rileggerle ogni volta che si mostra la scheda.
+ */
+export async function tiktokCreator(channelId: number) {
+  await requireWriter();
+  const [ch] = await db.select().from(socialAccounts).where(eq(socialAccounts.id, channelId));
+  if (!ch || ch.platform !== "tiktok") return { error: "Profilo TikTok non trovato" };
+  const [conn] = await connectionsOf([ch]);
+  const route = routeOf(ch, conn);
+  if ("problem" in route) return { error: `@${ch.handle} ${route.problem}` };
+  if (isDryRun()) {
+    // Simulazione: risposta di prova con tutte le opzioni, così la scheda si può provare senza TikTok
+    return {
+      creator: { nickname: ch.name ?? ch.handle, username: ch.handle, avatarUrl: ch.pictureUrl, privacyOptions: ["PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "FOLLOWER_OF_CREATOR", "SELF_ONLY"], commentDisabled: false, duetDisabled: false, stitchDisabled: false, maxVideoSeconds: 600 },
+      simulated: true,
+    };
+  }
+  try {
+    return { creator: await creatorInfo(await publishToken(ch, route.route)) };
+  } catch (e) {
+    return { error: `TikTok: ${e instanceof Error ? e.message : "account non leggibile"}` };
+  }
+}
 
 /**
  * Programma (o pubblica subito) la scheda sui profili scelti.
  * when: "ora" oppure la data della scheda.
  */
-export async function schedulePublication(itemId: number, channelIds: number[], when: "ora" | "programmata") {
+export async function schedulePublication(itemId: number, channelIds: number[], when: "ora" | "programmata", tiktokOptions?: unknown) {
   const { me, error } = await publisher();
   if (error) return { error };
   const item = await itemOf(itemId);
@@ -52,14 +81,25 @@ export async function schedulePublication(itemId: number, channelIds: number[], 
   // Il controllo che evita il profilo sbagliato
   const foreign = channels.find((c) => c.clientId !== item.clientId);
   if (foreign) return { error: `${channelLabel(foreign)} non appartiene a questo cliente: pubblicazione bloccata` };
-  const notReady = channels.find((c) => !c.connected || !c.assetTokenEnc || !c.externalId || !["facebook", "instagram"].includes(c.platform));
-  if (notReady) return { error: `${channelLabel(notReady)} non è collegato a Meta: collegalo da Canali` };
+  const conns = await connectionsOf(channels);
+  for (const c of channels) {
+    const route = routeOf(c, conns.find((x) => x.id === c.connectionId));
+    if ("problem" in route) return { error: `${channelLabel(c)} ${route.problem}` };
+  }
 
   const media = await db.select().from(mediaAssets).where(eq(mediaAssets.itemId, itemId)).orderBy(mediaAssets.position);
   const caption = [item.caption?.trim(), item.hashtags?.trim()].filter(Boolean).join("\n\n");
   for (const c of channels) {
     const problem = checkPublishable(c.platform, item.format, media, caption);
     if (problem) return { error: `${channelLabel(c)}: ${problem}` };
+  }
+  // TikTok: impostazioni scelte nella scheda, verificate sull'account com'è adesso
+  const options = parseTikTokOptions(tiktokOptions);
+  for (const c of channels.filter((x) => x.platform === "tiktok")) {
+    const info = await tiktokCreator(c.id);
+    if ("error" in info) return { error: info.error };
+    const bad = checkTikTokOptions(options, info.creator, tiktokKind(item.format, media)!);
+    if (bad) return { error: `${channelLabel(c)}: ${bad}` };
   }
   // Controllo dei doppioni e inserimento in un'unica transazione, con la scheda bloccata:
   // due persone (o due finestre) non possono programmare lo stesso post sullo stesso profilo
@@ -83,6 +123,7 @@ export async function schedulePublication(itemId: number, channelIds: number[], 
           format: item.format,
           caption,
           mediaIds: media.map((m) => m.id),
+          options: c.platform === "tiktok" ? options : null,
           createdBy: me.id,
         });
         out.push(r.insertId);
@@ -99,7 +140,7 @@ export async function schedulePublication(itemId: number, channelIds: number[], 
     description: `${when === "ora" ? "Pubblicazione immediata" : "Programmata"} «${item.title}» su ${channels.map(channelLabel).join(", ")}${isDryRun() ? " (simulazione)" : ""}`,
     clientId: item.clientId,
     target: `pubblicazione:${itemId}`,
-    meta: { quando: at.toISOString(), profili: channels.map(channelLabel), file: media.length, formato: item.format },
+    meta: { quando: at.toISOString(), profili: channels.map(channelLabel), file: media.length, formato: item.format, ...(channels.some((c) => c.platform === "tiktok") && { tiktok: options }) },
   });
   if (when === "ora") for (const id of ids) await processPublication(id);
   revalidatePath(path(itemId));

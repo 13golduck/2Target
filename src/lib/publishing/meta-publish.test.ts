@@ -34,7 +34,9 @@ describe("checkPublishable", () => {
     expect(checkPublishable("facebook", "post", [jpg, mp4], "")).toMatch(/un solo video/);
     expect(checkPublishable("facebook", "carosello", [jpg, png, jpg], "")).toBeNull();
   });
-  it("Altre piattaforme: non ancora", () => {
-    expect(checkPublishable("tiktok", "reel", [mp4], "")).toMatch(/solo su Facebook e Instagram/);
+  it("TikTok: un video oppure solo foto; LinkedIn non ancora", () => {
+    expect(checkPublishable("tiktok", "reel", [mp4], "")).toBeNull();
+    expect(checkPublishable("tiktok", "post", [jpg, mp4], "")).toMatch(/un solo video/);
+    expect(checkPublishable("linkedin", "post", [jpg], "")).toMatch(/Facebook, Instagram e TikTok/);
   });
 });

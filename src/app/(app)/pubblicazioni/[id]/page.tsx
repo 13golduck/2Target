@@ -2,6 +2,7 @@ import { requireWriter } from "@/lib/auth";
 import { inArray } from "drizzle-orm";
 import { previewMediaUrl } from "@/lib/media";
 import { isDryRun } from "@/lib/publishing/meta-publish";
+import { connectionsOf, PUBLISHABLE, routeOf } from "@/lib/publishing/targets";
 import { canPublishWith } from "@/lib/roles";
 import { notFound } from "next/navigation";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
@@ -38,7 +39,9 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
   const channels = await db
     .select()
     .from(s.socialAccounts)
-    .where(and(eq(s.socialAccounts.clientId, item.clientId), inArray(s.socialAccounts.platform, ["facebook", "instagram"])));
+    .where(and(eq(s.socialAccounts.clientId, item.clientId), inArray(s.socialAccounts.platform, [...PUBLISHABLE])));
+  const conns = await connectionsOf(channels);
+  const routeFor = (c: (typeof channels)[number]) => routeOf(c, conns.find((x) => x.id === c.connectionId));
   const media = await db.select().from(s.mediaAssets).where(eq(s.mediaAssets.itemId, id)).orderBy(asc(s.mediaAssets.position));
   const pubs = await db.select().from(s.publications).where(eq(s.publications.itemId, id)).orderBy(desc(s.publications.id));
   const campaigns = await db.select().from(s.adCampaigns).where(eq(s.adCampaigns.itemId, id)).orderBy(desc(s.adCampaigns.id));
@@ -81,7 +84,10 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
           handle: c.handle,
           name: c.name,
           pictureUrl: c.pictureUrl,
-          ready: c.connected && !!c.assetTokenEnc && !!c.externalId,
+          ...(() => {
+            const r = routeFor(c);
+            return "route" in r ? { ready: true, route: r.route, problem: null } : { ready: false, route: null, problem: r.problem };
+          })(),
         })),
         media: media.map((m) => ({ id: m.id, kind: m.kind, mime: m.mime, fileName: m.fileName, width: m.width, height: m.height, size: m.size, url: previewMediaUrl(m.id) })),
         publications: pubs.map((p) => ({
@@ -102,7 +108,9 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
         ads: { ...ads, ...exposure },
         publications: pubs.map((p) => {
           const ch = channels.find((c) => c.id === p.socialAccountId);
-          return { id: p.id, status: p.status, platform: ch?.platform ?? null, channelName: ch?.name ?? ch?.handle ?? "profilo", publishedAt: p.publishedAt?.toISOString() ?? null, permalink: p.permalink };
+          // Si sponsorizzano solo i post usciti dalle Pagine Meta (non Instagram diretto né TikTok)
+          const viaMeta = !!ch && "route" in routeFor(ch) && (routeFor(ch) as { route: string }).route === "meta";
+          return { id: p.id, status: p.status, platform: viaMeta ? ch.platform : null, channelName: ch?.name ?? ch?.handle ?? "profilo", publishedAt: p.publishedAt?.toISOString() ?? null, permalink: p.permalink };
         }),
         campaigns: campaigns.map((c) => ({
           ...c,

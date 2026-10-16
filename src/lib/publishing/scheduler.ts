@@ -7,8 +7,10 @@ import { editorialItems, mediaAssets, publications, socialAccounts } from "@/db/
 import { audit } from "@/lib/audit";
 import { errorDetail, logError } from "@/lib/error-log";
 import { publicMediaUrl } from "@/lib/media";
-import { decryptSecret } from "@/lib/secret-box";
 import { checkPublishable, findRecentTwin, isDryRun, isUncertain, publish } from "./meta-publish";
+import { connectionsOf, publishToken, routeOf } from "./targets";
+import { creatorInfo, findTikTokTwin, publishTikTok } from "./tiktok-publish";
+import { checkTikTokOptions, tiktokKind } from "./tiktok-rules";
 
 // Pubblicazioni programmate: ogni minuto (e a ogni chiamata di /api/cron/publish) si pubblicano quelle arrivate all'ora.
 // Una pubblicazione si "prende" con un aggiornamento atomico: anche con due giri contemporanei esce una volta sola.
@@ -73,9 +75,10 @@ export async function processPublication(id: number) {
       throw new Error("Il profilo non appartiene più al cliente di questa scheda: pubblicazione bloccata");
     }
     if (item.status !== "approvato" && item.status !== "pubblicato") throw new Error("La scheda non è più approvata: pubblicazione bloccata");
-    if (channel.platform !== "facebook" && channel.platform !== "instagram") throw new Error("Profilo non supportato per la pubblicazione");
-    const token = decryptSecret(channel.assetTokenEnc);
-    if (!channel.connected || !token || !channel.externalId) throw new Error("Il profilo non è più collegato: ricollegalo da Canali");
+    const [conn] = await connectionsOf([channel]);
+    const route = routeOf(channel, conn);
+    if ("problem" in route) throw new Error(`Il profilo ${route.problem}`);
+    const token = await publishToken(channel, route.route);
 
     const files = pub.mediaIds.length ? await db.select().from(mediaAssets).where(inArray(mediaAssets.id, pub.mediaIds)) : [];
     const ordered = pub.mediaIds.map((mid) => files.find((f) => f.id === mid)).filter((f) => !!f);
@@ -84,27 +87,44 @@ export async function processPublication(id: number) {
     const problem = checkPublishable(channel.platform, pub.format, ordered, pub.caption ?? "");
     if (problem) throw new Error(problem);
 
-    // Nuovo tentativo: prima si controlla se il post è già uscito (esito incerto la volta precedente)
-    const twin =
-      (pub.attempts ?? 0) >= 2
-        ? await findRecentTwin({ platform: channel.platform, accountId: channel.externalId, token, caption: pub.caption ?? "", since: pub.createdAt }).catch(() => null)
-        : null;
-    result = twin
-      ? { ...twin, found: true }
-      : await publish({
-          platform: channel.platform,
-          accountId: channel.externalId,
-          token,
-          format: pub.format,
-          caption: pub.caption ?? "",
-          media: ordered.map((f) => ({ kind: f.kind, mime: f.mime, url: publicMediaUrl(f.storageKey) })),
-          heartbeat,
-        });
+    const urls = ordered.map((f) => publicMediaUrl(f.storageKey));
+    const retry = (pub.attempts ?? 0) >= 2;
+    if (route.route === "tiktok") {
+      // TikTok: impostazioni ricontrollate sull'account com'è ADESSO (visibilità e interazioni possono cambiare)
+      const kind = tiktokKind(pub.format, ordered)!;
+      const creator = isDryRun() ? null : await creatorInfo(token);
+      const bad = creator ? checkTikTokOptions(pub.options, creator, kind) : pub.options ? null : "Mancano le impostazioni di TikTok";
+      if (bad) throw new Error(bad);
+      const username = creator?.username || channel.handle;
+      // Nuovo tentativo: prima si controlla se il post è già uscito (esito incerto la volta precedente)
+      const twin = retry && !isDryRun() ? await findTikTokTwin({ token, caption: pub.caption ?? "", since: pub.createdAt, username }).catch(() => null) : null;
+      result = twin
+        ? { ...twin, found: true }
+        : isDryRun()
+          ? { externalId: `simulazione-${Date.now()}`, permalink: null }
+          : await publishTikTok({ token, kind, caption: pub.caption ?? "", options: pub.options!, urls, username, heartbeat });
+    } else {
+      const host = route.route === "instagram" ? ("instagram" as const) : ("facebook" as const);
+      const platform = channel.platform as "facebook" | "instagram";
+      const twin = retry ? await findRecentTwin({ platform, accountId: channel.externalId!, token, caption: pub.caption ?? "", since: pub.createdAt, host }).catch(() => null) : null;
+      result = twin
+        ? { ...twin, found: true }
+        : await publish({
+            platform,
+            accountId: channel.externalId!,
+            token,
+            host,
+            format: pub.format,
+            caption: pub.caption ?? "",
+            media: ordered.map((f, i) => ({ kind: f.kind, mime: f.mime, url: urls[i] })),
+            heartbeat,
+          });
+    }
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     const uncertain = isUncertain(e);
     const text = uncertain
-      ? `ESITO INCERTO: la connessione con Meta si è interrotta (${message}). Il post potrebbe essere uscito: con «Riprova» 2Target controlla prima il profilo e non lo ripubblica se lo trova.`
+      ? `ESITO INCERTO: la connessione con ${channel?.platform === "tiktok" ? "TikTok" : "Meta"} si è interrotta (${message}). Il post potrebbe essere uscito: con «Riprova» 2Target controlla prima il profilo e non lo ripubblica se lo trova.`
       : message;
     await db.update(publications).set({ status: "errore", error: text.slice(0, 2000) }).where(eq(publications.id, id));
     await logError({

@@ -3,6 +3,7 @@
 
 import type { CheckupReport } from "../lib/checkup-report";
 import type { CheckupFoundation } from "../lib/checkup-foundation";
+import type { TikTokOptions } from "../lib/publishing/tiktok-rules";
 import type { BrandKitData, CreativeBrief, DesignReview } from "../lib/design-types";
 import { REASONING, REGISTERS } from "../lib/checkup-report";
 import {
@@ -123,7 +124,7 @@ export const userClients = mysqlTable(
 );
 
 // ── Collegamenti alle piattaforme e canali ────────────────────────────
-export const PROVIDERS = ["meta", "google", "tiktok", "linkedin"] as const;
+export const PROVIDERS = ["meta", "google", "tiktok", "linkedin", "instagram"] as const;
 export const CHANNEL_KINDS = [
   "instagram", "facebook", "tiktok", "linkedin", "youtube",
   "search_console", "ga4", "business_profile", "website",
@@ -789,6 +790,8 @@ export const publications = mysqlTable(
     format: mysqlEnum("format", FORMATS).notNull(),
     caption: text("caption"),
     mediaIds: json("media_ids").$type<number[]>().notNull(),
+    /** Impostazioni scelte per la piattaforma (TikTok: visibilità, interazioni, contenuto commerciale). */
+    options: json("options").$type<TikTokOptions>(),
     attempts: int("attempts").notNull().default(0),
     externalId: varchar("external_id", { length: 120 }),
     permalink: varchar("permalink", { length: 500 }),

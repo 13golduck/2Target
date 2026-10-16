@@ -7,8 +7,13 @@ import { getJson, qs } from "./http";
 // Flusso: login Facebook → token utente a lunga durata (~60 giorni) → pagine gestite con i loro
 // token (non scadono) → account Instagram professionale collegato a ogni pagina.
 
-const graph = (path: string, params: Record<string, string | number | undefined> = {}) =>
-  `https://graph.facebook.com/${META.version}/${path}?${qs(params)}`;
+/** Profili Instagram collegati con il login Instagram (senza Pagina Facebook): stesse chiamate su graph.instagram.com. */
+export type GraphHost = "facebook" | "instagram";
+const graphOn =
+  (host: GraphHost) =>
+  (path: string, params: Record<string, string | number | undefined> = {}) =>
+    `https://graph.${host}.com/${META.version}/${path}?${qs(params)}`;
+const graph = graphOn("facebook");
 
 export function authorizeUrl(state: string, request?: Request) {
   return `https://www.facebook.com/${META.version}/dialog/oauth?${qs({
@@ -116,7 +121,8 @@ export interface PostData {
 const today = () => new Date().toISOString().slice(0, 10);
 
 /** Instagram: follower di oggi, reach giornaliera degli ultimi 28 giorni, ultimi 50 post con statistiche. */
-export async function syncInstagram(igId: string, token: string) {
+export async function syncInstagram(igId: string, token: string, host: GraphHost = "facebook") {
+  const graph = graphOn(host);
   const daily: DailyValue[] = [];
   const profile = await getJson<{ followers_count?: number; media_count?: number }>(
     graph(igId, { fields: "followers_count,media_count", access_token: token }),

@@ -26,13 +26,16 @@ import { askConfirm } from 'src/components/custom-dialog';
 
 import { cancelPublication, deleteMedia, reorderMedia, retryPublication, schedulePublication } from '../../publish-actions';
 
+import { EMPTY_TIKTOK, TikTokSettings } from './tiktok-settings';
+
 // ----------------------------------------------------------------------
-// Pubblicazione della scheda sui profili del cliente (Facebook e Instagram).
+// Pubblicazione della scheda sui profili del cliente (Facebook, Instagram e TikTok).
 // Si vedono e si scelgono SOLO i profili collegati a questo cliente, con foto e nome: niente profili sbagliati.
 
 const PLATFORM = {
   instagram: { label: 'Instagram', icon: 'socials:instagram', color: '#E1306C' },
   facebook: { label: 'Facebook', icon: 'socials:facebook', color: '#1877F2' },
+  tiktok: { label: 'TikTok', icon: 'socials:tiktok', color: '#000000' },
 };
 
 const PUB_STATUS = {
@@ -115,6 +118,8 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
   const [pending, start] = useTransition();
   const [selected, setSelected] = useState([]);
   const [progress, setProgress] = useState(null);
+  const [tiktok, setTiktok] = useState(EMPTY_TIKTOK);
+  const [tiktokValid, setTiktokValid] = useState(false);
 
   const byId = Object.fromEntries(channels.map((c) => [c.id, c]));
   const busyChannels = new Set(publications.filter((p) => ['programmata', 'in_corso', 'pubblicata'].includes(p.status)).map((p) => p.socialAccountId));
@@ -123,6 +128,10 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
   const future = !!when && scheduledFuture;
 
   const toggle = (id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  // TikTok: le impostazioni si scelgono ogni volta (nessuna preselezione) e vanno completate prima dell'invio
+  const tiktokChannel = selected.map((id) => byId[id]).find((c) => c?.platform === 'tiktok');
+  const blocked = !!tiktokChannel && !tiktokValid;
+  const caption = [item.caption?.trim(), item.hashtags?.trim()].filter(Boolean).join('\n\n');
 
   const onFiles = async (files) => {
     for (const [i, file] of [...files].entries()) {
@@ -163,11 +172,18 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
             <Box component="span" key={c.id} sx={{ display: 'block', mt: 0.5 }}>
               • {PLATFORM[c.platform].label} <b>@{c.handle}</b>
               {c.name && c.name !== c.handle ? ` (${c.name})` : ''}
+              {c.route === 'instagram' ? ' · Instagram diretto' : ''}
             </Box>
           ))}
+          {tiktokChannel && (
+            <Box component="span" sx={{ display: 'block', mt: 1 }}>
+              TikTok: visibilità <b>{{ PUBLIC_TO_EVERYONE: 'tutti', MUTUAL_FOLLOW_FRIENDS: 'amici', FOLLOWER_OF_CREATOR: 'follower', SELF_ONLY: 'solo io' }[tiktok.privacyLevel] ?? tiktok.privacyLevel}</b>
+              {tiktok.disclose ? ` · contenuto commerciale (${[tiktok.brandOrganic && 'il tuo brand', tiktok.brandContent && 'sponsorizzato'].filter(Boolean).join(' e ')})` : ''}
+            </Box>
+          )}
           {dryRun && (
             <Box component="span" sx={{ display: 'block', mt: 1, color: 'warning.dark' }}>
-              Modalità simulazione: non verrà inviato nulla a Meta.
+              Modalità simulazione: non verrà inviato nulla a Meta né a TikTok.
             </Box>
           )}
         </Box>
@@ -175,8 +191,12 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
       confirmText: mode === 'ora' ? 'Pubblica ora' : 'Programma',
     });
     if (!ok) return;
-    run(() => schedulePublication(item.id, selected, mode), mode === 'ora' ? 'Pubblicazione avviata' : 'Pubblicazione programmata');
+    run(
+      () => schedulePublication(item.id, selected, mode, tiktokChannel ? tiktok : undefined),
+      mode === 'ora' ? (tiktokChannel ? 'Pubblicazione avviata: su TikTok il post può richiedere qualche minuto' : 'Pubblicazione avviata') : 'Pubblicazione programmata'
+    );
     setSelected([]);
+    setTiktok(EMPTY_TIKTOK);
   };
 
   const move = (index, dir) => {
@@ -197,7 +217,7 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
       <Box sx={{ p: 3, pt: 1 }}>
         {dryRun && (
           <Alert severity="warning" sx={{ mb: 2 }}>
-            <b>Modalità simulazione.</b> Il percorso è completo ma nulla viene inviato a Meta (ambiente di prova).
+<b>Modalità simulazione.</b> Il percorso è completo ma nulla viene inviato a Meta o TikTok (ambiente di prova).
           </Alert>
         )}
 
@@ -298,8 +318,14 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
                         <Typography variant="subtitle2" noWrap>@{c.handle}</Typography>
                         <Typography variant="caption" noWrap sx={{ display: 'block', color: 'text.secondary' }}>
                           {PLATFORM[c.platform].label}
+                          {c.route === 'instagram' ? ' diretto' : ''}
                           {c.name && c.name !== c.handle ? ` · ${c.name}` : ''}
                         </Typography>
+                        {!c.ready && c.problem && (
+                          <Typography variant="caption" sx={{ display: 'block', color: 'warning.dark' }}>
+                            {c.problem.replace(/^(è|non)/, (m) => m[0].toUpperCase() + m.slice(1))}
+                          </Typography>
+                        )}
                       </Box>
                       {busy ? (
                         <Label color="info">Già in programma</Label>
@@ -314,12 +340,18 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
               </Stack>
             ) : (
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Nessun profilo Facebook o Instagram collegato a {client.name}.
+                Nessun profilo Facebook, Instagram o TikTok collegato a {client.name}.
               </Typography>
             )}
             <Button size="small" href={`/clienti/${client.id}/canali`} sx={{ mt: 1 }} startIcon={<Iconify icon="eva:link-2-fill" />}>
               Gestisci i profili in Canali
             </Button>
+
+            {tiktokChannel && (
+              <Box sx={{ mt: 2 }}>
+                <TikTokSettings key={tiktokChannel.id} channel={tiktokChannel} format={item.format} media={media} caption={caption} value={tiktok} onChange={setTiktok} onValid={setTiktokValid} />
+              </Box>
+            )}
 
             <Divider sx={{ my: 2 }} />
 
@@ -332,14 +364,14 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
                 <Button
                   variant="contained"
                   size="large"
-                  disabled={!selected.length || !future || pending}
+                  disabled={!selected.length || !future || pending || blocked}
                   loading={pending}
                   onClick={() => go('programmata')}
                   startIcon={<Iconify icon="solar:calendar-date-bold" />}
                 >
                   {when ? `Programma per ${fmtDateTime(when)}` : 'Imposta data e ora nella scheda'}
                 </Button>
-                <Button variant="outlined" color="inherit" disabled={!selected.length || pending} onClick={() => go('ora')} startIcon={<Iconify icon="custom:send-fill" />}>
+                <Button variant="outlined" color="inherit" disabled={!selected.length || pending || blocked} onClick={() => go('ora')} startIcon={<Iconify icon="custom:send-fill" />}>
                   Pubblica ora
                 </Button>
                 {when && !future && (
