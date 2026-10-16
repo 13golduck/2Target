@@ -30,3 +30,6 @@ misurazione (KPI, lead, SEO) → report al cliente.
   tutti gli elementi richiesti dalle Content Sharing Guidelines (in attesa dell'audit). Instagram: collegamento con
   login Instagram, token rinnovato da solo, statistiche e pubblicazione. Codice: `src/lib/publishing/` e
   `src/lib/integrations/instagram.ts`.
+- **Google approfondito** (ottobre 2026). Search Console con confronti, opportunità, brand/non brand e variazioni;
+  Analytics 4 con pagine di atterraggio, campagne e conversioni affiancate ai Lead; scheda Google (Business Profile);
+  Google Ads con la spesa nei costi di marketing; analisi SEO mensile con l'AI che crea idee in bacheca.

@@ -572,7 +572,7 @@ function BusinessProfileBlock({ data }) {
     chart: { stacked: true },
     xaxis: { categories: s.days.map((d) => fmtDate(d, { day: 'numeric', month: 'short' })), tickAmount: 8, labels: { rotate: 0 } },
     legend: { show: true, position: 'top', horizontalAlign: 'right' },
-    tooltip: { shared: true, y: { formatter: (v) => n(v) } },
+    tooltip: { shared: true, intersect: false, y: { formatter: (v) => n(v) } },
     plotOptions: { bar: { columnWidth: '70%' } },
   });
   return (
@@ -731,7 +731,7 @@ function AnalyticsBlock({ data }) {
     chart: { stacked: true },
     xaxis: { categories: s.days.map((d) => fmtDate(d, { day: 'numeric', month: 'short' })), tickAmount: 8, labels: { rotate: 0 } },
     legend: { show: true, position: 'top', horizontalAlign: 'right' },
-    tooltip: { shared: true, y: { formatter: (v) => n(v) } },
+    tooltip: { shared: true, intersect: false, y: { formatter: (v) => n(v) } },
     plotOptions: { bar: { columnWidth: '70%' } },
   });
   const tot = (m) => sum((s.values[m] ?? []).slice(-28));

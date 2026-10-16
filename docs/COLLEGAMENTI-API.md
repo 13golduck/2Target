@@ -85,6 +85,27 @@ basta premere di nuovo **Collega Meta** con lo stesso account.
 5. **Credenziali → Crea credenziali → Chiave API**, limitala alla sola *PageSpeed Insights API*,
    copiala in `GOOGLE_PAGESPEED_KEY`. Senza chiave Google usa una quota condivisa che spesso è esaurita.
 
+### Scheda Google (Business Profile) e Google Ads
+
+- **Business Profile**: in Google Cloud abilita *My Business Account Management API*, *My Business Business
+  Information API*, *Business Profile Performance API* e (per le recensioni) *Google My Business API*.
+  Google concede queste API solo su richiesta: compila il modulo «Business Profile APIs access request»
+  per il progetto 2Target (di solito qualche settimana). Ambito: `.../auth/business.manage`.
+- **Google Ads**: abilita *Google Ads API*; nel centro clienti (MCC) di Golduck → Amministrazione → Centro API
+  richiedi il **developer token** (accesso «Base»). Inseriscilo in 2Target → Impostazioni → Integrazioni → Google,
+  con l'ID del centro clienti se gli account dei clienti sono collegati all'MCC. Ambito: `.../auth/adwords`
+  (2Target lo chiede solo quando il developer token è impostato). La versione delle API si cambia con
+  la variabile `GOOGLE_ADS_VERSION` (Google ne ritira una all'anno).
+- Aggiungi i due ambiti nella schermata di consenso OAuth e **ricollega l'account Google** di ogni cliente:
+  nella scelta dei canali compariranno anche le schede Google e gli account Google Ads.
+- La spesa Google Ads (account in euro) entra da sola ogni mese nei costi di marketing dei Lead.
+
+### Analisi SEO con l'AI
+
+Dalla pagina SEO del cliente («Analizza») e in automatico ogni mese dal giorno 3, dopo la sincronizzazione
+notturna: l'AI legge Search Console, Analytics 4, scheda Google, Google Ads e PageSpeed, scrive le priorità con
+i numeri e crea idee di contenuto nella bacheca Idee. Costo indicativo: pochi centesimi per cliente (Sonnet).
+
 **Chi collega l'account Google** deve avere accesso alla proprietà Search Console (anche solo
 "utente con accesso limitato") e alla proprietà GA4 (almeno "Visualizzatore") del cliente.
 Conviene farsi aggiungere dal cliente con un account Google di Golduck.

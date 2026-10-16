@@ -34,7 +34,7 @@ Per creare un utente vero: `npm run user:create -- email@golduck.it "Nome Cognom
 | Idee | bacheca kanban con trascinamento: idea → in sviluppo → approvata → nel piano (crea la scheda), con voti |
 | Piano editoriale | calendario (mese, settimana, elenco) con spostamento delle date trascinando; brief, quote per formato, cadenza, budget ads, controlli automatici |
 | Lead | raccoglitore per cliente (moduli del sito via indirizzo dedicato, inserimento manuale), pipeline trascinabile, costi di marketing, costo per lead, costo di acquisizione, conversione, ricavi, ROI e ROAS, per fonte e per mese |
-| SEO | Search Console (clic, impressioni, CTR, posizione, ricerche e pagine), Analytics 4 per canale, PageSpeed |
+| SEO | Search Console (confronti, opportunità, brand e non brand, variazioni, dispositivi), Analytics 4 (canali, pagine di atterraggio, campagne e conversioni con i Lead), scheda Google, Google Ads, PageSpeed, analisi mensile con l'AI che propone idee |
 | Canali | collegamento Meta e Google per cliente, sincronizzazione, ultimi post con statistiche; guida in docs/COLLEGAMENTI-API.md |
 | Scheda pubblicazione | hook, layout, script, clip da girare, caption, hashtag, CTA e destinazione, produzione, sponsorizzata |
 
