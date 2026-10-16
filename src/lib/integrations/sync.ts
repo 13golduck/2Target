@@ -1,6 +1,6 @@
 import "server-only";
 import { ensureIntegrationKeys } from "@/lib/integrations/keys";
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { channelDaily, connections, kpiMeasurements, kpis, leadEvents, leads, marketingCosts, seoSnapshots, socialAccounts, socialPosts } from "@/db/schema";
@@ -76,6 +76,42 @@ async function savePosts(channelId: number, posts: PostData[]) {
   }
 }
 
+/**
+ * Fotografie SEO: si tengono quelle degli ultimi 14 giorni più l'ultima di ogni mese (storico mensile),
+ * così le classifiche di ricerche e pagine non riempiono il database.
+ */
+async function pruneSnapshots(channelId: number) {
+  const rows = await db.select({ id: seoSnapshots.id, kind: seoSnapshots.kind, createdAt: seoSnapshots.createdAt }).from(seoSnapshots).where(eq(seoSnapshots.socialAccountId, channelId));
+  const recent = Date.now() - 14 * 86_400_000;
+  const keep = new Set<number>();
+  const lastOfMonth = new Map<string, number>();
+  for (const r of rows.sort((a, b) => a.id - b.id)) {
+    if (r.createdAt.getTime() >= recent) keep.add(r.id);
+    lastOfMonth.set(`${r.kind}|${r.createdAt.toISOString().slice(0, 7)}`, r.id);
+  }
+  for (const id of lastOfMonth.values()) keep.add(id);
+  const drop = rows.filter((r) => !keep.has(r.id)).map((r) => r.id);
+  for (let i = 0; i < drop.length; i += 200) await db.delete(seoSnapshots).where(inArray(seoSnapshots.id, drop.slice(i, i + 200)));
+}
+
+const adsCostNote = (customerId: string) => `Spesa Google Ads letta in automatico (account ${customerId})`;
+
+/**
+ * Spesa Google Ads per mese nei costi di marketing (fonte google_ads): così costo per lead, CAC e ROI la contano
+ * da soli. Una riga automatica per mese, riscritta a ogni sincronizzazione; quelle inserite a mano restano.
+ * Solo per gli account in euro (gli importi dei costi di marketing sono in euro).
+ */
+async function saveAdsCosts(clientId: number, customerId: string, daily: DailyValue[], currency: string | null) {
+  const note = adsCostNote(customerId);
+  if (currency && currency !== "EUR") return;
+  const byMonth = new Map<string, number>();
+  for (const d of daily) if (d.metric === "ads_spend") byMonth.set(`${d.day.slice(0, 7)}-01`, (byMonth.get(`${d.day.slice(0, 7)}-01`) ?? 0) + d.value);
+  for (const [month, amount] of byMonth) {
+    await db.delete(marketingCosts).where(and(eq(marketingCosts.clientId, clientId), eq(marketingCosts.month, month), eq(marketingCosts.source, "google_ads"), eq(marketingCosts.notes, note)));
+    if (amount > 0) await db.insert(marketingCosts).values({ clientId, month, source: "google_ads", kind: "inserzioni", amount: Math.round(amount * 100) / 100, notes: note });
+  }
+}
+
 /** Sincronizza un canale. Restituisce un messaggio leggibile (o lancia l'errore). */
 export async function syncChannel(channel: Channel) {
   await ensureIntegrationKeys();
@@ -116,11 +152,22 @@ export async function syncChannel(channel: Channel) {
       } else if (channel.platform === "ga4") {
         const r = await google.syncAnalytics(userToken, id);
         await saveDaily(channel.id, r.daily);
+        for (const s of r.snapshots) await db.insert(seoSnapshots).values({ socialAccountId: channel.id, ...s });
+      } else if (channel.platform === "business_profile") {
+        const r = await google.syncBusinessProfile(userToken, id);
+        await saveDaily(channel.id, r.daily);
+        for (const s of r.snapshots) await db.insert(seoSnapshots).values({ socialAccountId: channel.id, ...s });
+      } else if (channel.platform === "google_ads") {
+        const r = await google.syncGoogleAds(userToken, id);
+        await saveDaily(channel.id, r.daily);
+        for (const s of r.snapshots) await db.insert(seoSnapshots).values({ socialAccountId: channel.id, ...s });
+        await saveAdsCosts(channel.clientId, id, r.daily, r.currency);
       } else {
         throw new ApiError(`Sincronizzazione non ancora disponibile per ${channel.platform}`, 400);
       }
     }
     await db.update(socialAccounts).set({ lastSyncAt: new Date(), lastSyncError: null }).where(eq(socialAccounts.id, channel.id));
+    await pruneSnapshots(channel.id).catch((e) => console.error("[sync] pulizia fotografie SEO:", e));
   } catch (e) {
     const err = e instanceof ApiError ? e : new ApiError(e instanceof Error ? e.message : String(e), 500);
     await db.update(socialAccounts).set({ lastSyncError: err.message.slice(0, 500) }).where(eq(socialAccounts.id, channel.id));
@@ -161,6 +208,8 @@ export async function syncClient(clientId: number) {
 const AUTO_METRICS = new Set([
   "reach", "er_reach", "saves_rate", "shares_rate", "follower_growth",
   "seo_clicks", "seo_impressions", "seo_ctr", "seo_position", "organic_sessions", "key_events",
+  "gbp_views", "gbp_calls", "gbp_directions", "gbp_website_clicks", "gbp_rating",
+  "ads_conversions", "ads_cpa", "ads_roas",
 ]);
 
 // Metriche calcolate dal raccoglitore lead (KPI senza canale)
@@ -215,7 +264,9 @@ export async function updateKpisFromData(clientId: number, now = new Date()) {
   for (const k of list) {
     const ch = channels.find((c) => c.platform === k.platform) ??
       (k.metricKey.startsWith("seo_") ? channels.find((c) => c.platform === "search_console") : undefined) ??
-      (["organic_sessions", "key_events"].includes(k.metricKey) ? channels.find((c) => c.platform === "ga4") : undefined);
+      (["organic_sessions", "key_events"].includes(k.metricKey) ? channels.find((c) => c.platform === "ga4") : undefined) ??
+      (k.metricKey.startsWith("gbp_") ? channels.find((c) => c.platform === "business_profile") : undefined) ??
+      (k.metricKey.startsWith("ads_") ? channels.find((c) => c.platform === "google_ads") : undefined);
     if (!ch) continue;
     const value = await computeMetric(k.metricKey, ch.id, start, end);
     if (value == null) continue;
@@ -271,5 +322,22 @@ export async function computeMetric(key: string, channelId: number, start: strin
   }
   if (key === "organic_sessions") return dailySum(channelId, "sessions_organic_search", start, end);
   if (key === "key_events") return dailySum(channelId, "key_events", start, end);
+  if (key === "gbp_views") {
+    const [a, b] = [await dailySum(channelId, "gbp_views_search", start, end), await dailySum(channelId, "gbp_views_maps", start, end)];
+    return a == null && b == null ? null : (a ?? 0) + (b ?? 0);
+  }
+  if (key === "gbp_calls" || key === "gbp_directions" || key === "gbp_website_clicks") return dailySum(channelId, key, start, end);
+  if (key === "gbp_rating") {
+    const [r] = await db
+      .select({ value: channelDaily.value })
+      .from(channelDaily)
+      .where(and(eq(channelDaily.socialAccountId, channelId), eq(channelDaily.metric, "gbp_rating"), lte(channelDaily.day, end)))
+      .orderBy(desc(channelDaily.day))
+      .limit(1);
+    return r ? r.value : null;
+  }
+  if (key === "ads_conversions") return dailySum(channelId, "ads_conversions", start, end);
+  if (key === "ads_cpa") return ratio(await dailySum(channelId, "ads_spend", start, end), await dailySum(channelId, "ads_conversions", start, end));
+  if (key === "ads_roas") return ratio(await dailySum(channelId, "ads_conversion_value", start, end), await dailySum(channelId, "ads_spend", start, end));
   return null;
 }

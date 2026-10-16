@@ -55,13 +55,14 @@ export const CHANNEL = {
   youtube: { label: 'YouTube', icon: 'solar:play-circle-bold' },
   search_console: { label: 'Search Console', icon: 'socials:google' },
   ga4: { label: 'Analytics 4', icon: 'solar:chart-square-outline' },
-  business_profile: { label: 'Business Profile', icon: 'custom:location-fill' },
+  business_profile: { label: 'Scheda Google', icon: 'custom:location-fill' },
+  google_ads: { label: 'Google Ads', icon: 'socials:google' },
   website: { label: 'Sito web', icon: 'solar:monitor-bold' },
 };
 
 const PROVIDERS = [
   { key: 'meta', name: 'Meta', what: 'Instagram e pagine Facebook: profilo, follower, post e statistiche', icons: ['socials:instagram', 'socials:facebook'] },
-  { key: 'google', name: 'Google', what: 'Search Console (SEO) e Analytics 4 (traffico e conversioni)', icons: ['socials:google'] },
+  { key: 'google', name: 'Google', what: 'Search Console, Analytics 4, scheda Google (Business Profile) e Google Ads', icons: ['socials:google'] },
   { key: 'instagram', name: 'Instagram senza Facebook', what: 'Per i profili professionali senza Pagina Facebook: accesso con Instagram, statistiche e pubblicazione', icons: ['socials:instagram'] },
   { key: 'tiktok', name: 'TikTok', what: 'Profilo, video e statistiche · pubblicazione di video e foto', icons: ['socials:tiktok'] },
   { key: 'linkedin', name: 'LinkedIn', what: 'Pagina aziendale · richiede l\'approvazione di LinkedIn', icons: ['socials:linkedin'], soon: true },

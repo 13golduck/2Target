@@ -44,12 +44,26 @@ export const GOOGLE = {
   get pageSpeedKey() {
     return integrationKey("googlePageSpeedKey");
   },
-  scopes: [
-    "openid",
-    "email",
-    "https://www.googleapis.com/auth/webmasters.readonly",
-    "https://www.googleapis.com/auth/analytics.readonly",
-  ],
+  get adsDeveloperToken() {
+    return integrationKey("googleAdsDeveloperToken");
+  },
+  /** ID del centro clienti (MCC) senza trattini: serve se gli account dei clienti sono gestiti dall'MCC di Golduck. */
+  get adsLoginCustomerId() {
+    return integrationKey("googleAdsLoginCustomerId").replace(/\D/g, "");
+  },
+  /** Versione delle API Google Ads (Google ne ritira una all'anno: si aggiorna da qui o con GOOGLE_ADS_VERSION). */
+  adsVersion: process.env.GOOGLE_ADS_VERSION ?? "v22",
+  // Search Console, Analytics 4 e Business Profile; Google Ads solo se c'è il developer token
+  get scopes() {
+    return [
+      "openid",
+      "email",
+      "https://www.googleapis.com/auth/webmasters.readonly",
+      "https://www.googleapis.com/auth/analytics.readonly",
+      "https://www.googleapis.com/auth/business.manage",
+      ...(this.adsDeveloperToken ? ["https://www.googleapis.com/auth/adwords"] : []),
+    ];
+  },
 };
 
 export const TIKTOK = {

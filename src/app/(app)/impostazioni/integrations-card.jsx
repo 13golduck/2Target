@@ -98,9 +98,10 @@ const GROUPS = [
   },
   {
     key: 'google',
-    title: 'Google (Search Console, Analytics, PageSpeed)',
+    title: 'Google (Search Console, Analytics, scheda Google, Google Ads, PageSpeed)',
     icon: 'socials:google',
-    where: 'Google Cloud → progetto 2Target → API e servizi → Credenziali.',
+    where:
+      'Google Cloud → progetto 2Target → API e servizi → Credenziali. Google Ads: centro clienti (MCC) di Golduck → Amministrazione → Centro API → developer token; l’ID del centro clienti serve se gli account dei clienti sono collegati all’MCC. Dopo aver aggiunto il developer token ricollega gli account Google dei clienti.',
     callback: '/api/connect/google/callback',
     fields: [
       { name: 'googleClientId', label: 'ID client OAuth' },
@@ -114,6 +115,8 @@ const GROUPS = [
         label: 'Chiave API PageSpeed',
         secret: true,
       },
+      { name: 'googleAdsDeveloperToken', label: 'Google Ads: developer token', secret: true },
+      { name: 'googleAdsLoginCustomerId', label: 'Google Ads: ID del centro clienti (MCC)' },
     ],
   },
 ];

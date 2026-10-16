@@ -41,6 +41,8 @@ async function run(request: Request) {
   for (const c of list) report[c.name] = await syncClient(c.id);
   // Report mensili ai clienti che li hanno attivi (dal 3 del mese, una volta per mese)
   const reports = await sendDueMonthlyReports().catch((e) => [`report: ${(e as Error).message}`]);
+  // Analisi SEO mensile con l'AI (dal 3 del mese): in sottofondo, dopo la risposta, per non allungare l'operazione pianificata
+  void import("@/lib/ai/seo-agent").then((m) => m.runDueSeoAnalyses()).catch((e) => console.error("[seo] analisi mensili:", e));
   const withErrors = Object.entries(report).filter(([, e]) => e.length);
   await audit({
     userId: null,

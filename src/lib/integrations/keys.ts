@@ -29,6 +29,9 @@ export type IntegrationKeys = {
   /** Instagram con login Instagram (clienti senza Pagina Facebook): ID e chiave dell'app Instagram, diversi da quelli di Meta. */
   instagramAppId: string;
   instagramAppSecret: string;
+  /** Google Ads: developer token del centro clienti (MCC) di Golduck e, se gli account dei clienti sono sotto l'MCC, il suo ID. */
+  googleAdsDeveloperToken: string;
+  googleAdsLoginCustomerId: string;
   /** Accesso con Microsoft (SSO Golduck): app registrata in Microsoft Entra, un solo tenant. */
   msTenantId: string;
   msClientId: string;
@@ -37,7 +40,7 @@ export type IntegrationKeys = {
   publishLiveHost: string;
 };
 
-export const SECRET_FIELDS = ["metaAppSecret", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret", "instagramAppSecret"] as const;
+export const SECRET_FIELDS = ["metaAppSecret", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret", "instagramAppSecret", "googleAdsDeveloperToken"] as const;
 const ENV: Record<keyof IntegrationKeys, string> = {
   metaAppId: "META_APP_ID",
   metaAppSecret: "META_APP_SECRET",
@@ -50,6 +53,8 @@ const ENV: Record<keyof IntegrationKeys, string> = {
   tiktokClientSecret: "TIKTOK_CLIENT_SECRET",
   tiktokScopes: "TIKTOK_SCOPES",
   instagramAppId: "INSTAGRAM_APP_ID",
+  googleAdsDeveloperToken: "GOOGLE_ADS_DEVELOPER_TOKEN",
+  googleAdsLoginCustomerId: "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
   instagramAppSecret: "INSTAGRAM_APP_SECRET",
   msTenantId: "MS_TENANT_ID",
   msClientId: "MS_CLIENT_ID",

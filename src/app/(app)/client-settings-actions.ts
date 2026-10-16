@@ -82,3 +82,19 @@ export async function previewReport(clientId: number, sendToMe = false) {
   }
   return { html: r.html, subject: r.subject };
 }
+
+/** Parole del brand (oltre a nome e dominio) per separare le ricerche con il nome del cliente in SEO. */
+export async function saveBrandTerms(clientId: number, terms: string) {
+  const me = await requireWriter();
+  await requireClientAccess(clientId);
+  const clean = terms
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .join(", ")
+    .slice(0, 500);
+  await db.update(clients).set({ brandTerms: clean || null }).where(eq(clients.id, clientId));
+  await audit({ userId: me.id, category: "canali", action: "seo.brand", description: clean ? `Parole del brand per la SEO: ${clean}` : "Tolte le parole del brand aggiunte a mano", clientId });
+  revalidatePath(`/clienti/${clientId}/seo`);
+  return { ok: true };
+}

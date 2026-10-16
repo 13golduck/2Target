@@ -110,6 +110,8 @@ export const clients = mysqlTable("clients", {
   reportEmail: varchar("report_email", { length: 255 }),
   reportMonthly: boolean("report_monthly").notNull().default(false),
   reportLastMonth: varchar("report_last_month", { length: 7 }),
+  /** Parole del brand per separare le ricerche con il nome del cliente (oltre a nome e dominio), separate da virgola. */
+  brandTerms: varchar("brand_terms", { length: 500 }),
   createdAt: created(),
 });
 
@@ -127,7 +129,7 @@ export const userClients = mysqlTable(
 export const PROVIDERS = ["meta", "google", "tiktok", "linkedin", "instagram"] as const;
 export const CHANNEL_KINDS = [
   "instagram", "facebook", "tiktok", "linkedin", "youtube",
-  "search_console", "ga4", "business_profile", "website",
+  "search_console", "ga4", "business_profile", "website", "google_ads",
 ] as const;
 
 /** Accesso concesso da un utente su una piattaforma (token cifrati). Uno per account collegato. */
@@ -210,12 +212,24 @@ export const socialPosts = mysqlTable(
 );
 
 /** Classifiche SEO del periodo (query e pagine da Search Console, punteggi PageSpeed). */
+/**
+ * Fotografie dei dati Google per periodo. Search Console: ricerche e pagine (periodo e periodo precedente),
+ * dispositivi, totali a confronto; Analytics 4: pagine di atterraggio, campagne, conversioni;
+ * Business Profile: recensioni; Google Ads: campagne; PageSpeed: punteggi.
+ */
+export const SEO_SNAPSHOT_KINDS = [
+  "queries", "pages", "pagespeed",
+  "queries_prev", "pages_prev", "devices", "summary",
+  "landing_pages", "campaigns", "conversions",
+  "gbp_reviews", "ads_campaigns",
+] as const;
+
 export const seoSnapshots = mysqlTable(
   "seo_snapshots",
   {
     id: int("id").autoincrement().primaryKey(),
     socialAccountId: int("social_account_id").notNull().references(() => socialAccounts.id, { onDelete: "cascade" }),
-    kind: mysqlEnum("kind", ["queries", "pages", "pagespeed"]).notNull(),
+    kind: mysqlEnum("kind", SEO_SNAPSHOT_KINDS).notNull(),
     periodStart: date("period_start", { mode: "string" }).notNull(),
     periodEnd: date("period_end", { mode: "string" }).notNull(),
     rows: json("rows").$type<Record<string, unknown>[]>().notNull(),
@@ -853,6 +867,32 @@ export const adSpendDaily = mysqlTable(
     spendEur: money("spend_eur").notNull(),
   },
   (t) => [primaryKey({ columns: [t.campaignId, t.day] })],
+);
+
+// ── Analisi SEO con l'AI ─────────────────────────────────────────────
+/** Analisi mensile (o su richiesta) dei dati Google del cliente: priorità e idee di contenuto. */
+export interface SeoAnalysisData {
+  headline: string;
+  summary: string;
+  priorities: { title: string; area: string; impact: "alto" | "medio" | "basso"; effort: "alto" | "medio" | "basso"; why: string; action: string; data: string }[];
+  ideas: { title: string; body: string; format: string; stage: string; query: string }[];
+  /** Fonti che c'erano (Search Console, Analytics 4, scheda Google, Google Ads, PageSpeed). */
+  sources: string[];
+}
+
+export const seoAnalyses = mysqlTable(
+  "seo_analyses",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+    data: json("data").$type<SeoAnalysisData>().notNull(),
+    /** Idee create nella bacheca da questa analisi. */
+    ideasCreated: int("ideas_created").notNull().default(0),
+    trigger: mysqlEnum("trigger", ["manuale", "mensile"]).notNull().default("manuale"),
+    createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: created(),
+  },
+  (t) => [index("seo_analyses_client").on(t.clientId, t.createdAt)],
 );
 
 // ── Approvazione del cliente via link ────────────────────────────────

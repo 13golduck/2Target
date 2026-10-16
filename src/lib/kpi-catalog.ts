@@ -86,6 +86,18 @@ export const METRICS: MetricDef[] = [
   { key: "organic_sessions", label: "Visite da ricerca organica", scope: "seo", direction: "higher", unit: "n", stages: ["consideration"], hint: "Analytics 4", auto: true },
   { key: "key_events", label: "Conversioni sul sito", scope: "seo", direction: "higher", unit: "n", stages: ["conversion"], hint: "Eventi chiave di Analytics 4", auto: true },
 
+  // Scheda Google (Business Profile, aggiornati dal canale collegato)
+  { key: "gbp_views", label: "Visualizzazioni della scheda Google", scope: "seo", direction: "higher", unit: "n", stages: ["awareness"], hint: "Ricerca e Maps", auto: true },
+  { key: "gbp_calls", label: "Chiamate dalla scheda Google", scope: "seo", direction: "higher", unit: "n", stages: ["conversion"], hint: "Clic su «Chiama»", auto: true },
+  { key: "gbp_directions", label: "Richieste di indicazioni", scope: "seo", direction: "higher", unit: "n", stages: ["conversion"], hint: "Persone che vogliono raggiungere la sede", auto: true },
+  { key: "gbp_website_clicks", label: "Clic al sito dalla scheda Google", scope: "seo", direction: "higher", unit: "n", stages: ["consideration"], hint: "", auto: true },
+  { key: "gbp_rating", label: "Valutazione media su Google", scope: "seo", direction: "higher", unit: "n", stages: ["retention"], hint: "Da 1 a 5 stelle", auto: true },
+
+  // Google Ads (aggiornati dall'account collegato)
+  { key: "ads_conversions", label: "Conversioni Google Ads", scope: "sponsorizzato", direction: "higher", unit: "n", stages: ["conversion"], hint: "Conversioni registrate da Google Ads", auto: true },
+  { key: "ads_cpa", label: "Costo per conversione Google Ads", scope: "sponsorizzato", direction: "lower", unit: "€", stages: ["conversion"], hint: "Spesa / conversioni", auto: true },
+  { key: "ads_roas", label: "ROAS Google Ads", scope: "sponsorizzato", direction: "higher", unit: "x", stages: ["conversion"], hint: "Valore delle conversioni / spesa", auto: true },
+
   // Business (inserite a mano, come nel check-up Piantiny)
   { key: "leads_total", label: "Lead ricevuti", scope: "business", direction: "higher", unit: "n",
     stages: ["consideration"], hint: "Dal raccoglitore lead", auto: true },
