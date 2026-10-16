@@ -19,6 +19,10 @@ export const META = {
   get configId() {
     return integrationKey("metaConfigId");
   },
+  /** Token dell'utente di sistema del portfolio Golduck (vuoto = non configurato). */
+  get systemUserToken() {
+    return integrationKey("metaSystemUserToken");
+  },
   // Lettura di profili, post e statistiche + pubblicazione su Pagine e Instagram.
   // Con META_CONFIG_ID i permessi li decide la configurazione; questo elenco serve senza configurazione.
   scopes: [

@@ -17,6 +17,8 @@ export type IntegrationKeys = {
   metaAppId: string;
   metaAppSecret: string;
   metaConfigId: string;
+  /** Utente di sistema del portfolio business di Golduck: token che non scade, per i clienti che danno accesso al portfolio. */
+  metaSystemUserToken: string;
   googleClientId: string;
   googleClientSecret: string;
   googlePageSpeedKey: string;
@@ -40,11 +42,12 @@ export type IntegrationKeys = {
   publishLiveHost: string;
 };
 
-export const SECRET_FIELDS = ["metaAppSecret", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret", "instagramAppSecret", "googleAdsDeveloperToken"] as const;
+export const SECRET_FIELDS = ["metaAppSecret", "metaSystemUserToken", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret", "instagramAppSecret", "googleAdsDeveloperToken"] as const;
 const ENV: Record<keyof IntegrationKeys, string> = {
   metaAppId: "META_APP_ID",
   metaAppSecret: "META_APP_SECRET",
   metaConfigId: "META_CONFIG_ID",
+  metaSystemUserToken: "META_SYSTEM_USER_TOKEN",
   googleClientId: "GOOGLE_CLIENT_ID",
   googleClientSecret: "GOOGLE_CLIENT_SECRET",
   googlePageSpeedKey: "GOOGLE_PAGESPEED_KEY",

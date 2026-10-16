@@ -48,6 +48,11 @@ const GROUPS = [
         name: 'metaConfigId',
         label: 'ID configurazione (Facebook Login for Business)',
       },
+      {
+        name: 'metaSystemUserToken',
+        label: 'Token utente di sistema (portfolio Golduck, facoltativo: accesso permanente)',
+        secret: true,
+      },
     ],
   },
   {

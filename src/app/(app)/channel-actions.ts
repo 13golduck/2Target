@@ -15,6 +15,7 @@ import * as meta from "@/lib/integrations/meta";
 import * as tiktok from "@/lib/integrations/tiktok";
 import { accessToken, syncChannel, syncClient, updateKpisFromData } from "@/lib/integrations/sync";
 import { audit } from "@/lib/audit";
+import { META } from "@/lib/integrations/config";
 
 const path = (clientId: number) => `/clienti/${clientId}/canali`;
 const PROVIDER_LABEL: Record<string, string> = { meta: "Meta", google: "Google", tiktok: "TikTok", instagram: "Instagram", linkedin: "LinkedIn" };
@@ -210,4 +211,48 @@ export async function addManualChannel(f: FormData) {
   }
   revalidatePath(path(clientId));
   return { ok: true };
+}
+
+/**
+ * Collega le Pagine e gli Instagram del cliente tramite l'utente di sistema del portfolio Golduck: accesso che non
+ * scade e non dipende dalla persona (il cliente condivide le sue risorse con il portfolio Golduck, Golduck le assegna
+ * all'utente di sistema). Poi si scelgono i profili come per un collegamento normale; quelli già collegati passano
+ * al nuovo accesso.
+ */
+export async function connectMetaSystemUser(f: FormData) {
+  const me = await requireWriter();
+  if (!(await userCanPublish(me))) throw new Error("Solo gli amministratori e chi è abilitato a pubblicare possono collegare profili ai clienti");
+  const clientId = Number(f.get("clientId"));
+  const token = META.systemUserToken;
+  if (!clientId) return;
+  if (!token) redirect(`${path(clientId)}?errore=${encodeURIComponent("Manca il token dell'utente di sistema: un amministratore lo inserisce in Impostazioni → Integrazioni → Meta")}`);
+  let su: Awaited<ReturnType<typeof meta.systemUser>>;
+  try {
+    su = await meta.systemUser(token);
+  } catch (e) {
+    redirect(`${path(clientId)}?errore=${encodeURIComponent(`Meta: ${(e as Error).message}`)}`);
+  }
+  const values = {
+    clientId,
+    provider: "meta" as const,
+    externalUserId: `system:${su.id}`,
+    accountName: `Portfolio Golduck (${su.name})`,
+    accessTokenEnc: encryptSecret(token),
+    refreshTokenEnc: null,
+    expiresAt: su.expiresAt,
+    scopes: null,
+    status: "attivo" as const,
+    lastError: null,
+    connectedBy: me.id,
+  };
+  await db
+    .insert(connections)
+    .values(values)
+    .onDuplicateKeyUpdate({ set: { accountName: values.accountName, accessTokenEnc: values.accessTokenEnc, expiresAt: values.expiresAt, status: "attivo", lastError: null } });
+  const [row] = await db
+    .select({ id: connections.id })
+    .from(connections)
+    .where(and(eq(connections.clientId, clientId), eq(connections.provider, "meta"), eq(connections.externalUserId, values.externalUserId)));
+  await audit({ userId: me.id, category: "canali", action: "collegamento.portfolio", description: `Collegato l'accesso permanente di Meta tramite il portfolio Golduck (${su.name})`, clientId, target: `collegamento:${row.id}` });
+  redirect(`${path(clientId)}?scegli=${row.id}`);
 }

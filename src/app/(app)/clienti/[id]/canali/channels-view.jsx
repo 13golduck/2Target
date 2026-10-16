@@ -43,6 +43,7 @@ import {
   syncChannelNow,
   addManualChannel,
   removeConnection,
+  connectMetaSystemUser,
 } from '../../../channel-actions';
 
 // ----------------------------------------------------------------------
@@ -68,7 +69,7 @@ const PROVIDERS = [
   { key: 'linkedin', name: 'LinkedIn', what: 'Pagina aziendale · richiede l\'approvazione di LinkedIn', icons: ['socials:linkedin'], soon: true },
 ];
 
-export function ChannelsView({ clientId, error, configured, connections, channels, picker, canConnect, ads, todo }) {
+export function ChannelsView({ clientId, error, configured, connections, channels, picker, canConnect, ads, todo, metaSystem }) {
   const router = useRouter();
   const [syncing, startSync] = useTransition();
   const [manual, setManual] = useState(false);
@@ -130,8 +131,10 @@ export function ChannelsView({ clientId, error, configured, connections, channel
                           {/* Meta: i token delle pagine collegate non scadono; serve ricollegare solo se Meta revoca l'accesso */}
                           {c.status !== 'attivo'
                             ? 'da ricollegare'
-                            : p.key === 'meta'
-                              ? 'collegato · pagine attive senza scadenza'
+                            : p.key === 'meta' && c.permanent
+                              ? 'accesso permanente del portfolio Golduck'
+                              : p.key === 'meta'
+                                ? 'collegato · pagine attive senza scadenza'
                               : p.key === 'tiktok' && !c.canPublish
                                 ? 'collegato senza permesso di pubblicare: ricollegalo'
                                 : p.key === 'tiktok' || p.key === 'instagram'
@@ -152,6 +155,17 @@ export function ChannelsView({ clientId, error, configured, connections, channel
                       </Box>
                     </Stack>
                   ))}
+                  {/* Meta: accesso permanente tramite il portfolio Golduck, per i clienti che vi hanno condiviso le loro risorse */}
+                  {p.key === 'meta' && metaSystem && canConnect && !mine.some((c) => c.permanent) && (
+                    <Box component="form" action={connectMetaSystemUser}>
+                      <input type="hidden" name="clientId" value={clientId} />
+                      <Tooltip title="Per le Pagine e gli Instagram che il cliente ha condiviso con il portfolio business di Golduck: l'accesso non scade e non dipende da chi l'ha collegato.">
+                        <Button type="submit" fullWidth variant="soft" color="primary" startIcon={<Iconify icon="solar:shield-check-bold" />}>
+                          Accesso permanente (portfolio Golduck)
+                        </Button>
+                      </Tooltip>
+                    </Box>
+                  )}
                   {p.soon ? null : !canConnect ? (
                     <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                       Collegano gli account solo gli amministratori e chi è abilitato a pubblicare.

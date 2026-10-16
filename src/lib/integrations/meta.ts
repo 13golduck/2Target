@@ -52,6 +52,25 @@ export async function exchangeCode(code: string, request?: Request) {
   };
 }
 
+/**
+ * Utente di sistema del portfolio business di Golduck (Meta Business Suite → Impostazioni → Utenti di sistema).
+ * Il token non scade e non dipende dalla persona che ha collegato: le Pagine e gli account Instagram che i clienti
+ * condividono con il portfolio Golduck e che vengono assegnati all'utente di sistema si leggono con me/accounts.
+ */
+export async function systemUser(token: string) {
+  const me = await getJson<{ id: string; name: string }>(graph("me", { fields: "id,name", access_token: token }));
+  // Scadenza del token: 0 = mai (controllo con il token dell'app, se le chiavi ci sono)
+  let expiresAt: Date | null = null;
+  if (META.appId && META.appSecret) {
+    const dbg = await getJson<{ data?: { expires_at?: number; is_valid?: boolean } }>(
+      graph("debug_token", { input_token: token, access_token: `${META.appId}|${META.appSecret}` }),
+    ).catch(() => null);
+    if (dbg?.data?.is_valid === false) throw new Error("Il token dell'utente di sistema non è valido: generane uno nuovo in Meta Business Suite");
+    if (dbg?.data?.expires_at) expiresAt = new Date(dbg.data.expires_at * 1000);
+  }
+  return { id: me.id, name: me.name, expiresAt };
+}
+
 export interface MetaAsset {
   kind: "facebook" | "instagram";
   externalId: string;
