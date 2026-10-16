@@ -176,6 +176,13 @@
       "when": 1792103629568,
       "tag": "0024_approvazione_report",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1792170058218,
+      "tag": "0025_base_dal_checkup",
+      "breakpoints": true
     }
   ]
 }

@@ -8,9 +8,6 @@ produzione e pubblicazione centralizzata (mai con le credenziali dei clienti, se
 misurazione (KPI, lead, SEO) → report al cliente.
 
 ## Prossimi passi
-- **Il check-up imposta il lavoro successivo.** Alla consegna il check-up deve generare la base delle altre sezioni:
-  KPI con obiettivi e baseline, canali da collegare, buyer persona, rubriche, prime idee e bozza di piano editoriale,
-  già collegati alle evidenze del check-up (non un documento fine a sé stesso).
 - **TikTok da integrare per partire:** lettura profilo e statistiche, poi pubblicazione (richiede l'approvazione
   dell'app da parte di TikTok: avviare presto la richiesta).
 - **Collega Instagram** diretto (API Instagram con login Instagram) per i clienti senza Pagina Facebook.
@@ -23,3 +20,10 @@ misurazione (KPI, lead, SEO) → report al cliente.
   alternativa ad Adobe per la produzione grafica, collegata al brief del Senior Graphic Designer AI e al brand kit.
 - **Video generati da agenti AI:** dal brief e dallo script della scheda, agenti che producono bozze di reel/video
   (montaggio, sottotitoli, voce, musica) da revisionare e pubblicare dal piano editoriale.
+
+## Fatto
+- **Il check-up imposta il lavoro successivo** (ottobre 2026). Alla consegna 2Target prepara KPI con punto di partenza
+  e obiettivo (collegati agli obiettivi per fase del funnel), canali da collegare, rubriche, prime idee e la bozza del
+  primo mese di piano; buyer persona e obiettivi solo se mancano. Ogni proposta cita le evidenze del check-up
+  (numerate, l'AI non può inventarle). Niente doppioni con KPI e rubriche esistenti; bozza saltata se c'è già un piano
+  nel periodo. Codice: `src/lib/ai/foundation-agent.ts`, `src/lib/checkup-foundation.ts`.

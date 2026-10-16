@@ -50,6 +50,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
         formatQuotas: plan.formatQuotas ?? {},
         adsBudget: plan.adsBudget,
         brief: plan.brief,
+        fromCheckup: plan.checkupId != null,
       }}
       items={rows.map((i) => ({
         id: i.id,

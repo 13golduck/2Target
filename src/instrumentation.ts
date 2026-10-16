@@ -28,6 +28,9 @@ export async function register() {
   // Check-up AI fermati dal riavvio: ripartono da soli (se recenti e nei limiti di spesa)
   const { resumeStaleCheckups } = await import("./lib/ai/resume");
   await resumeStaleCheckups().catch((e) => console.error("[ai] ripresa automatica non riuscita:", e));
+  // Base di lavoro dal check-up rimasta a metà: si segna da rifare (la riavvia il consulente)
+  const { markStaleFoundations } = await import("./lib/ai/foundation-agent");
+  await markStaleFoundations().catch((e) => console.error("[ai] base dal check-up:", e));
   // Messaggio di sistema nell'audit trail: ogni avvio (deploy, riavvio da Plesk) resta tracciato
   const { audit } = await import("./lib/audit");
   const { readFile } = await import("node:fs/promises");

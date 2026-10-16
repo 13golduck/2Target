@@ -16,6 +16,7 @@ import { assertBudget, getLimits, BudgetError } from "@/lib/ai/budget";
 import { audit, diff } from "@/lib/audit";
 import { ensureChannelsFromClient } from "@/lib/integrations/client-channels";
 import { resumeCheckup } from "@/lib/ai/resume";
+import { startFoundation } from "@/lib/ai/foundation-agent";
 
 const str = (f: FormData, k: string) => {
   const v = String(f.get(k) ?? "").trim();
@@ -226,6 +227,22 @@ export async function reviseSection(f: FormData) {
   } catch (e) {
     return { error: (e as Error).message };
   }
+  revalidatePath(path(c.clientId));
+  return { ok: true };
+}
+
+/** Prepara (o riprova a preparare) la base di lavoro di un check-up consegnato: KPI, canali, rubriche, idee, bozza di piano. */
+export async function prepareFoundation(checkupId: number) {
+  const me = await requireWriter();
+  const c = await checkupOf(checkupId);
+  if (c.status !== "consegnato") return { error: "La base di lavoro si prepara alla consegna del check-up" };
+  if (c.foundationState === "pronta") return { error: "La base di lavoro è già pronta" };
+  if (c.archivedAt) return { error: "Il check-up è archiviato: la base di lavoro si prepara dall'ultimo check-up" };
+  if (!isAiConfigured()) return { error: "Manca la chiave API di Anthropic: un amministratore la inserisce in Impostazioni → Integrazioni" };
+  const blocked = await preflight(c.clientId);
+  if (blocked) return { error: blocked };
+  if (!(await startFoundation(checkupId, me.id))) return { error: "La base di lavoro è già in preparazione" };
+  await audit({ userId: me.id, category: "checkup", action: "checkup.base_avviata", description: "Avviata la preparazione della base di lavoro dal check-up", clientId: c.clientId, target: `checkup:${checkupId}` });
   revalidatePath(path(c.clientId));
   return { ok: true };
 }

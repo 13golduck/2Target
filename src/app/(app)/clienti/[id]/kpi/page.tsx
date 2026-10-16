@@ -32,6 +32,7 @@ export default async function KpiPage({ params }: { params: Promise<{ id: string
     baseline: k.baseline,
     target: k.target,
     minSample: k.minSample,
+    evidence: k.checkupId ? (k.evidence ?? "") : null,
     status: k.evaluation.status,
     score: k.evaluation.score,
     message: k.evaluation.message,

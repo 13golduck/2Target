@@ -1,9 +1,9 @@
-import { and, desc, eq, gte, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull } from "drizzle-orm";
 import { ensureIntegrationKeys } from "@/lib/integrations/keys";
 
 import { db } from "@/db";
 import { isoDaysAgo } from "@/lib/format";
-import { channelDaily, clients, connections, seoSnapshots, socialAccounts, socialPosts } from "@/db/schema";
+import { channelDaily, checkups, clients, connections, seoSnapshots, socialAccounts, socialPosts } from "@/db/schema";
 import { isConfigured } from "@/lib/integrations/config";
 import { requireUser, userCanPublish } from "@/lib/auth";
 import { ensureChannelsFromClient, isSiteSyncRunning, startSiteSync } from "@/lib/integrations/client-channels";
@@ -89,8 +89,24 @@ export default async function ChannelsPage({ params, searchParams }: { params: P
   const showAds = !!ads && (isDryRun() || conns.some((c) => c.provider === "meta"));
   const exposure = showAds ? await clientAdsExposure(clientId) : null;
 
+  // Canali proposti dall'ultimo check-up con la base di lavoro pronta e non ancora collegati
+  const [lastBase] = await db
+    .select({ id: checkups.id, period: checkups.period, foundation: checkups.foundation })
+    .from(checkups)
+    .where(and(eq(checkups.clientId, clientId), eq(checkups.foundationState, "pronta"), isNull(checkups.archivedAt)))
+    .orderBy(desc(checkups.id))
+    .limit(1);
+  const todo = lastBase?.foundation
+    ? {
+        checkupId: lastBase.id,
+        period: lastBase.period,
+        channels: lastBase.foundation.channels.filter((t) => !channels.some((c) => c.platform === t.platform && c.connected)),
+      }
+    : null;
+
   return (
     <ChannelsView
+      todo={todo}
       ads={showAds && exposure ? { ...ads, ...exposure } : null}
       clientId={clientId}
       canConnect={canConnect}

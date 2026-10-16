@@ -201,6 +201,11 @@ function Summary({ plan, items, issues }) {
             <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
               {plan.name} · {fmtDate(plan.startsOn)} → {fmtDate(plan.endsOn)} · minimo {plan.minPerWeek} a settimana
             </Typography>
+            {plan.fromCheckup && (
+              <Label color="info" startIcon={<Iconify icon="solar:notes-bold-duotone" />} sx={{ mb: 1 }}>
+                Bozza dal check-up: titoli e angoli pronti, testi da scrivere
+              </Label>
+            )}
             {plan.brief && (
               <>
                 <Typography

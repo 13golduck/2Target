@@ -43,6 +43,8 @@ import { createCheckup, setCheckupStatus, saveCheckupSection } from '../../../ac
 import { saveAnswers, reviseSection, stopAiCheckup, archiveCheckup, startAiCheckup, resumeAiCheckup, continueAiCheckup } from '../../../checkup-ai-actions';
 import { askConfirm } from 'src/components/custom-dialog';
 
+import { FoundationCard } from './foundation-card';
+
 // ----------------------------------------------------------------------
 
 const STATUS = {
@@ -97,6 +99,10 @@ export function CheckupView({ aiConfigured, history, showArchived, isLatest, pre
       </Button>
     </Card>
   );
+  // La base di lavoro si prepara dall'ultimo check-up; su quelli dello storico si vede solo se c'è già
+  const foundation = checkup.status === 'consegnato' && (checkup.foundation.state !== 'nessuna' || (isLatest && !checkup.archived)) && (
+    <FoundationCard clientId={client.id} checkup={checkup} aiConfigured={aiConfigured} />
+  );
   const banner = checkup.archived ? (
     <Alert severity="warning" icon={<Iconify icon="solar:archive-bold" />}>
       Questo check-up è archiviato ({checkup.period}): resta consultabile ma non compare tra quelli su cui si lavora.
@@ -116,6 +122,7 @@ export function CheckupView({ aiConfigured, history, showArchived, isLatest, pre
         {bar}
         {banner}
         {reportLink}
+        {foundation}
         <SectionsEditor checkup={checkup} template={template} content={content} readOnly={readOnly} />
         {checkup.kpiSnapshot.length > 0 && <KpiSnapshotCard checkup={checkup} />}
       </Stack>
@@ -153,6 +160,7 @@ export function CheckupView({ aiConfigured, history, showArchived, isLatest, pre
       {checkup.aiState === 'pronto' && (
         <>
           {reportLink}
+          {foundation}
           <SectionsEditor checkup={checkup} template={template} content={content} withAi={!readOnly} readOnly={readOnly} />
           {checkup.kpiSnapshot.length > 0 && <KpiSnapshotCard checkup={checkup} />}
           <Grid container spacing={3}>
@@ -614,6 +622,11 @@ function SectionsEditor({ checkup, template, content, withAi, readOnly }) {
             <Button type="submit" variant="outlined">Aggiorna</Button>
           </Stack>
         </Stack>
+        {!readOnly && (
+          <Typography variant="caption" sx={{ display: 'block', mt: 1.5, color: 'text.secondary' }}>
+            Alla consegna 2Target prepara da solo la base di lavoro: KPI, canali da collegare, rubriche, prime idee e bozza del primo mese di piano.
+          </Typography>
+        )}
       </Card>
       <Box>
         {template.map((sec, i) => (

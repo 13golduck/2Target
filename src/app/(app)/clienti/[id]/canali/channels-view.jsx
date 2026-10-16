@@ -66,7 +66,7 @@ const PROVIDERS = [
   { key: 'linkedin', name: 'LinkedIn', what: 'Pagina aziendale · richiede l\'approvazione di LinkedIn', icons: ['socials:linkedin'], soon: true },
 ];
 
-export function ChannelsView({ clientId, error, configured, connections, channels, picker, canConnect, ads }) {
+export function ChannelsView({ clientId, error, configured, connections, channels, picker, canConnect, ads, todo }) {
   const router = useRouter();
   const [syncing, startSync] = useTransition();
   const [manual, setManual] = useState(false);
@@ -85,6 +85,18 @@ export function ChannelsView({ clientId, error, configured, connections, channel
     <Stack spacing={3}>
       <AutoRefresh active={anyPending} />
       {error && <Alert severity="error" onClose={() => router.replace(`/clienti/${clientId}/canali`)}>{error}</Alert>}
+      {todo?.channels.length > 0 && (
+        <Alert severity="info" icon={<Iconify icon="solar:notes-bold-duotone" />}>
+          <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+            Dal check-up{todo.period ? ` di ${todo.period}` : ''}: {todo.channels.length === 1 ? '1 canale da sistemare' : `${todo.channels.length} canali da sistemare`}
+          </Typography>
+          {todo.channels.map((t) => (
+            <Typography key={t.platform} variant="body2">
+              <b>{CHANNEL[t.platform]?.label ?? t.platform}</b> · {t.action === 'collegare' ? 'da collegare' : t.action === 'aprire' ? 'da aprire' : 'da riattivare'} · {t.why}
+            </Typography>
+          ))}
+        </Alert>
+      )}
 
       {/* Collegamenti */}
       <Box>

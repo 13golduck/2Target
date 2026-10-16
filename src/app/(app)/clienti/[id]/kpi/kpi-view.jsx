@@ -24,6 +24,7 @@ import { fmtDate, fmtMetric } from 'src/lib/format';
 import { Iconify } from 'src/components/iconify';
 import { Chart, useChart } from 'src/components/chart';
 import { EmptyContent } from 'src/components/empty-content';
+import { EvidenceHint } from 'src/components/evidence-hint';
 import { StatusBadge, STATUS_COLOR } from 'src/components/status-badge';
 
 import { addKpi, deleteKpi, addMeasurement } from '../../../actions';
@@ -108,6 +109,7 @@ function KpiCard({ kpi, onMeasure }) {
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
             {kpi.platform ?? 'tutti i canali'} · partenza {fmtMetric(kpi.baseline, kpi.unit)}
           </Typography>
+          {kpi.evidence != null && <Box sx={{ mt: 0.5 }}><EvidenceHint evidence={kpi.evidence || 'Proposto alla consegna del check-up'} label="Dal check-up" /></Box>}
         </Box>
         <StatusBadge status={kpi.status} />
       </Stack>
