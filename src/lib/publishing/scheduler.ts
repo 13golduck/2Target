@@ -6,7 +6,8 @@ import { db } from "@/db";
 import { editorialItems, mediaAssets, publications, socialAccounts } from "@/db/schema";
 import { audit } from "@/lib/audit";
 import { errorDetail, logError } from "@/lib/error-log";
-import { publicMediaUrl } from "@/lib/media";
+import { mediaPath, publicMediaUrl } from "@/lib/media";
+import * as linkedin from "@/lib/integrations/linkedin";
 import { checkPublishable, findRecentTwin, isDryRun, isUncertain, publish } from "./meta-publish";
 import { connectionsOf, publishToken, routeOf } from "./targets";
 import { creatorInfo, startTikTok, tiktokResult, tiktokStatus } from "./tiktok-publish";
@@ -129,6 +130,17 @@ export async function processPublication(id: number) {
           return true;
         }
       }
+    } else if (route.route === "linkedin") {
+      // LinkedIn: i file si caricano dal disco di 2Target (non li scarica da un indirizzo pubblico)
+      result = isDryRun()
+        ? { externalId: `simulazione-${Date.now()}`, permalink: null }
+        : await linkedin.publishPost({
+            orgId: channel.externalId!,
+            token,
+            caption: pub.caption ?? "",
+            media: ordered.map((f) => ({ kind: f.kind, mime: f.mime, path: mediaPath(f.storageKey) })),
+            heartbeat,
+          });
     } else {
       const host = route.route === "instagram" ? ("instagram" as const) : ("facebook" as const);
       const platform = channel.platform as "facebook" | "instagram";
@@ -153,7 +165,9 @@ export async function processPublication(id: number) {
       ? message
       : channel?.platform === "tiktok"
         ? `ESITO INCERTO: la connessione con TikTok si è interrotta mentre si avviava l'invio (${message}). Prima di riprovare controlla sul profilo TikTok (anche tra i post privati) che il post non sia uscito.`
-        : `ESITO INCERTO: la connessione con Meta si è interrotta (${message}). Il post potrebbe essere uscito: con «Riprova» 2Target controlla prima il profilo e non lo ripubblica se lo trova.`;
+        : channel?.platform === "linkedin"
+          ? `ESITO INCERTO: la connessione con LinkedIn si è interrotta (${message}). Prima di riprovare controlla sulla pagina LinkedIn che il post non sia uscito.`
+          : `ESITO INCERTO: la connessione con Meta si è interrotta (${message}). Il post potrebbe essere uscito: con «Riprova» 2Target controlla prima il profilo e non lo ripubblica se lo trova.`;
     await db.update(publications).set({ status: "errore", error: text.slice(0, 2000) }).where(eq(publications.id, id));
     await logError({
       userId: pub.createdBy,

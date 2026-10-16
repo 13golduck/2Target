@@ -56,6 +56,19 @@ const GROUPS = [
     ],
   },
   {
+    key: 'linkedin',
+    title: 'LinkedIn (pagine aziendali dei clienti)',
+    icon: 'socials:linkedin',
+    where:
+      'linkedin.com/developers → app 2Target (legata alla Pagina LinkedIn di Golduck) → Auth: Client ID e Primary Client Secret; aggiungi l’indirizzo di reindirizzamento qui sotto. Prodotto: Community Management API (va richiesto e approvato da LinkedIn).',
+    callback: '/api/connect/linkedin/callback',
+    fields: [
+      { name: 'linkedinClientId', label: 'Client ID' },
+      { name: 'linkedinClientSecret', label: 'Client secret', secret: true },
+      { name: 'linkedinScopes', label: 'Permessi richiesti (vuoto = predefiniti)' },
+    ],
+  },
+  {
     key: 'tiktok',
     title: 'TikTok (profilo, video, statistiche e pubblicazione)',
     icon: 'socials:tiktok',

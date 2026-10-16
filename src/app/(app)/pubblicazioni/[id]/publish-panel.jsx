@@ -36,6 +36,7 @@ const PLATFORM = {
   instagram: { label: 'Instagram', icon: 'socials:instagram', color: '#E1306C' },
   facebook: { label: 'Facebook', icon: 'socials:facebook', color: '#1877F2' },
   tiktok: { label: 'TikTok', icon: 'socials:tiktok', color: '#000000' },
+  linkedin: { label: 'LinkedIn', icon: 'socials:linkedin', color: '#0A66C2' },
 };
 
 const PUB_STATUS = {

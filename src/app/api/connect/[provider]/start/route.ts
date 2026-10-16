@@ -8,6 +8,7 @@ import { signPayload } from "@/lib/secret-box";
 import { appUrl, isConfigured, type Provider } from "@/lib/integrations/config";
 import * as google from "@/lib/integrations/google";
 import * as instagram from "@/lib/integrations/instagram";
+import * as linkedin from "@/lib/integrations/linkedin";
 import * as meta from "@/lib/integrations/meta";
 import * as tiktok from "@/lib/integrations/tiktok";
 
@@ -28,7 +29,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
   }
   const client = clientId ? await getClient(clientId) : null;
   if (!client) return NextResponse.json({ message: "Cliente non trovato" }, { status: 404 });
-  if (!["meta", "google", "tiktok", "instagram"].includes(provider) || !isConfigured(provider as Provider)) {
+  if (!["meta", "google", "tiktok", "instagram", "linkedin"].includes(provider) || !isConfigured(provider as Provider)) {
     return NextResponse.redirect(`${appUrl(request)}/clienti/${clientId}/canali?errore=${encodeURIComponent(`${provider} non è ancora configurato`)}`);
   }
 
@@ -43,7 +44,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
         ? tiktok.authorizeUrl(state, request)
         : provider === "instagram"
           ? instagram.authorizeUrl(state, request)
-          : google.authorizeUrl(state, request);
+          : provider === "linkedin"
+            ? linkedin.authorizeUrl(state, request)
+            : google.authorizeUrl(state, request);
 
   const res = NextResponse.redirect(url);
   res.cookies.set("oauth_nonce", nonce, { httpOnly: true, sameSite: "lax", secure: appUrl(request).startsWith("https"), path: "/api/connect", maxAge: 600 });

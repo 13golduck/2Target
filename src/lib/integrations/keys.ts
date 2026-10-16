@@ -34,6 +34,11 @@ export type IntegrationKeys = {
   /** Google Ads: developer token del centro clienti (MCC) di Golduck e, se gli account dei clienti sono sotto l'MCC, il suo ID. */
   googleAdsDeveloperToken: string;
   googleAdsLoginCustomerId: string;
+  /** LinkedIn: app 2Target con il prodotto Community Management API (pagine aziendali dei clienti). */
+  linkedinClientId: string;
+  linkedinClientSecret: string;
+  /** Permessi chiesti a LinkedIn (vuoto = predefiniti, separati da spazio o virgola). */
+  linkedinScopes: string;
   /** Accesso con Microsoft (SSO Golduck): app registrata in Microsoft Entra, un solo tenant. */
   msTenantId: string;
   msClientId: string;
@@ -42,7 +47,7 @@ export type IntegrationKeys = {
   publishLiveHost: string;
 };
 
-export const SECRET_FIELDS = ["metaAppSecret", "metaSystemUserToken", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret", "instagramAppSecret", "googleAdsDeveloperToken"] as const;
+export const SECRET_FIELDS = ["metaAppSecret", "metaSystemUserToken", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret", "instagramAppSecret", "googleAdsDeveloperToken", "linkedinClientSecret"] as const;
 const ENV: Record<keyof IntegrationKeys, string> = {
   metaAppId: "META_APP_ID",
   metaAppSecret: "META_APP_SECRET",
@@ -59,6 +64,9 @@ const ENV: Record<keyof IntegrationKeys, string> = {
   googleAdsDeveloperToken: "GOOGLE_ADS_DEVELOPER_TOKEN",
   googleAdsLoginCustomerId: "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
   instagramAppSecret: "INSTAGRAM_APP_SECRET",
+  linkedinClientId: "LINKEDIN_CLIENT_ID",
+  linkedinClientSecret: "LINKEDIN_CLIENT_SECRET",
+  linkedinScopes: "LINKEDIN_SCOPES",
   msTenantId: "MS_TENANT_ID",
   msClientId: "MS_CLIENT_ID",
   msClientSecret: "MS_CLIENT_SECRET",

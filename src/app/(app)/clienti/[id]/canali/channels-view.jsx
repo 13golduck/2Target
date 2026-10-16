@@ -66,7 +66,7 @@ const PROVIDERS = [
   { key: 'google', name: 'Google', what: 'Search Console, Analytics 4, scheda Google (Business Profile) e Google Ads', icons: ['socials:google'] },
   { key: 'instagram', name: 'Instagram senza Facebook', what: 'Per i profili professionali senza Pagina Facebook: accesso con Instagram, statistiche e pubblicazione', icons: ['socials:instagram'] },
   { key: 'tiktok', name: 'TikTok', what: 'Profilo, video e statistiche · pubblicazione di video e foto', icons: ['socials:tiktok'] },
-  { key: 'linkedin', name: 'LinkedIn', what: 'Pagina aziendale · richiede l\'approvazione di LinkedIn', icons: ['socials:linkedin'], soon: true },
+  { key: 'linkedin', name: 'LinkedIn', what: 'Pagina aziendale: follower, statistiche, post e pubblicazione (accede chi amministra la pagina)', icons: ['socials:linkedin'] },
 ];
 
 export function ChannelsView({ clientId, error, configured, connections, channels, picker, canConnect, ads, todo, metaSystem }) {
@@ -135,8 +135,10 @@ export function ChannelsView({ clientId, error, configured, connections, channel
                               ? 'accesso permanente del portfolio Golduck'
                               : p.key === 'meta'
                                 ? 'collegato · pagine attive senza scadenza'
-                              : p.key === 'tiktok' && !c.canPublish
+                              : (p.key === 'tiktok' || p.key === 'linkedin') && !c.canPublish
                                 ? 'collegato senza permesso di pubblicare: ricollegalo'
+                                : p.key === 'linkedin' && c.expiresAt
+                                  ? `collegato · accesso fino al ${fmtDate(new Date(c.expiresAt))}`
                                 : p.key === 'tiktok' || p.key === 'instagram'
                                   ? 'collegato · accesso rinnovato in automatico'
                                   : 'collegato'}
@@ -390,7 +392,7 @@ function PickerDialog({ picker, onClose }) {
           <DialogTitle>Quali canali sono di questo cliente?</DialogTitle>
           <DialogContent>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-              Account {picker.provider === 'meta' ? 'Meta' : picker.provider === 'tiktok' ? 'TikTok' : 'Google'}: <b>{picker.accountName}</b>. Seleziona solo pagine, profili e
+              Account {{ meta: 'Meta', tiktok: 'TikTok', instagram: 'Instagram', linkedin: 'LinkedIn' }[picker.provider] ?? 'Google'}: <b>{picker.accountName}</b>. Seleziona solo pagine, profili e
               proprietà di questo cliente: lo stesso account può gestirne anche altri.
             </Typography>
             {picker.assets.length === 0 ? (

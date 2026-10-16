@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { isoDaysAgo } from "@/lib/format";
 import { channelDaily, checkups, clients, connections, seoSnapshots, socialAccounts, socialPosts } from "@/db/schema";
 import { META, isConfigured } from "@/lib/integrations/config";
+import { canPublishWithScopes as linkedinCanPublish } from "@/lib/integrations/linkedin";
 import { requireClientAccess, userCanPublish } from "@/lib/auth";
 import { ensureChannelsFromClient, isSiteSyncRunning, startSiteSync } from "@/lib/integrations/client-channels";
 import { assetsFor } from "../../../channel-actions";
@@ -114,8 +115,8 @@ export default async function ChannelsPage({ params, searchParams }: { params: P
       canConnect={canConnect}
       error={sp.errore ?? null}
       metaSystem={!!META.systemUserToken}
-      configured={{ meta: isConfigured("meta"), google: isConfigured("google"), tiktok: isConfigured("tiktok"), instagram: isConfigured("instagram") }}
-      connections={conns.map((c) => ({ id: c.id, provider: c.provider, accountName: c.accountName, status: c.status, lastError: c.lastError, expiresAt: c.expiresAt?.toISOString() ?? null, canPublish: c.provider !== "tiktok" || canPublishWithScopes(c.scopes), permanent: c.externalUserId.startsWith("system:") }))}
+      configured={{ meta: isConfigured("meta"), google: isConfigured("google"), tiktok: isConfigured("tiktok"), instagram: isConfigured("instagram"), linkedin: isConfigured("linkedin") }}
+      connections={conns.map((c) => ({ id: c.id, provider: c.provider, accountName: c.accountName, status: c.status, lastError: c.lastError, expiresAt: c.expiresAt?.toISOString() ?? null, canPublish: c.provider === "tiktok" ? canPublishWithScopes(c.scopes) : c.provider === "linkedin" ? linkedinCanPublish(c.scopes) : true, permanent: c.externalUserId.startsWith("system:") }))}
       channels={channels.map((c) => ({
         id: c.id,
         platform: c.platform,

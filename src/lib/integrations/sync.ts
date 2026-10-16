@@ -10,6 +10,7 @@ import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import { ApiError } from "./http";
 import * as google from "./google";
 import * as instagram from "./instagram";
+import * as linkedin from "./linkedin";
 import * as meta from "./meta";
 import * as tiktok from "./tiktok";
 import type { DailyValue, PostData } from "./meta";
@@ -46,6 +47,19 @@ export async function accessToken(conn: Connection) {
       .set({ accessTokenEnc: encryptSecret(fresh.accessToken), refreshTokenEnc: encryptSecret(fresh.refreshToken), expiresAt: fresh.expiresAt, status: "attivo", lastError: null })
       .where(eq(connections.id, conn.id));
     return fresh.accessToken;
+  }
+  // LinkedIn: token di 60 giorni; con il refresh token (se LinkedIn lo dà all'app) si rinnova da solo, altrimenti si ricollega
+  if (conn.provider === "linkedin" && conn.expiresAt && conn.expiresAt.getTime() < Date.now() + 7 * 86_400_000) {
+    const refresh = decryptSecret(conn.refreshTokenEnc);
+    if (refresh) {
+      const fresh = await linkedin.refreshAccessToken(refresh);
+      await db
+        .update(connections)
+        .set({ accessTokenEnc: encryptSecret(fresh.accessToken), refreshTokenEnc: encryptSecret(fresh.refreshToken), expiresAt: fresh.expiresAt, status: "attivo", lastError: null })
+        .where(eq(connections.id, conn.id));
+      return fresh.accessToken;
+    }
+    if (conn.expiresAt.getTime() < Date.now()) throw new ApiError("Accesso LinkedIn scaduto: ricollega l'account", 401, true);
   }
   if (conn.provider === "google" && conn.expiresAt && conn.expiresAt.getTime() < Date.now() + 5 * 60_000) {
     const refresh = decryptSecret(conn.refreshTokenEnc);
@@ -152,6 +166,10 @@ export async function syncChannel(channel: Channel) {
         await savePosts(channel.id, r.posts);
       } else if (channel.platform === "tiktok") {
         const r = await tiktok.syncTikTok(userToken);
+        await saveDaily(channel.id, r.daily);
+        await savePosts(channel.id, r.posts);
+      } else if (channel.platform === "linkedin") {
+        const r = await linkedin.syncOrganization(id, userToken);
         await saveDaily(channel.id, r.daily);
         await savePosts(channel.id, r.posts);
       } else if (channel.platform === "search_console") {

@@ -33,7 +33,7 @@ async function itemOf(id: number) {
   return item ?? null;
 }
 
-const PLATFORM_LABEL: Record<string, string> = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok" };
+const PLATFORM_LABEL: Record<string, string> = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", linkedin: "LinkedIn" };
 const channelLabel = (c: { platform: string; handle: string }) => `${PLATFORM_LABEL[c.platform] ?? c.platform} @${c.handle}`;
 
 /**

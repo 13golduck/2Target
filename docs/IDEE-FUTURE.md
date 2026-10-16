@@ -10,9 +10,10 @@ misurazione (KPI, lead, SEO) → report al cliente.
 ## Prossimi passi
 - **Audit TikTok:** registrare il video del flusso e inviare la richiesta (vedi docs/COLLEGAMENTI-API.md, 2b);
   fino all'approvazione i post TikTok escono solo come privati.
-- Calendario con lo stato reale delle uscite; anteprima fedele di ciò che verrà pubblicato; riepilogo settimanale.
-- Fase avanzata Meta: portfolio business Golduck, revisione dell'app, token che non scadono (utente di sistema).
-- LinkedIn.
+- Anteprima fedele di ciò che verrà pubblicato (come appare su ogni social).
+- Meta: revisione dell'app (App Review + verifica dell'azienda) per l'uso su larga scala.
+- LinkedIn: richiesta e approvazione della Community Management API (vedi docs/COLLEGAMENTI-API.md, 2d).
+- «Riprova» TikTok con la possibilità di cambiare le impostazioni (oggi: annulla e riprogramma).
 
 ## Spunti futuri
 - **Craft Launcher** (https://github.com/storytold/craft-launcher): valutare l'integrazione della suite come

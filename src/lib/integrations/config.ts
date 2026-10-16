@@ -95,6 +95,23 @@ export const INSTAGRAM = {
   scopes: ["instagram_business_basic", "instagram_business_content_publish", "instagram_business_manage_insights"],
 };
 
+/** LinkedIn: pagine aziendali dei clienti (Community Management API, approvata da LinkedIn sull'app). */
+export const LINKEDIN = {
+  get clientId() {
+    return integrationKey("linkedinClientId");
+  },
+  get clientSecret() {
+    return integrationKey("linkedinClientSecret");
+  },
+  // Lettura delle pagine di cui si è amministratori, statistiche e post; pubblicazione a nome della pagina
+  get scopes() {
+    const custom = integrationKey("linkedinScopes");
+    return (custom || "r_basicprofile r_organization_admin r_organization_social w_organization_social rw_organization_admin").split(/[\s,]+/).filter(Boolean);
+  },
+  /** Versione delle API (AAAAMM): LinkedIn ritira le versioni dopo circa un anno, si aggiorna con LINKEDIN_API_VERSION. */
+  version: process.env.LINKEDIN_API_VERSION ?? "202608",
+};
+
 export type Provider = "meta" | "google" | "tiktok" | "linkedin" | "instagram";
 
 export function isConfigured(provider: Provider) {
@@ -102,7 +119,8 @@ export function isConfigured(provider: Provider) {
   if (provider === "google") return !!(GOOGLE.clientId && GOOGLE.clientSecret);
   if (provider === "tiktok") return !!(TIKTOK.clientKey && TIKTOK.clientSecret);
   if (provider === "instagram") return !!(INSTAGRAM.appId && INSTAGRAM.appSecret);
-  return false; // LinkedIn: in arrivo
+  if (provider === "linkedin") return !!(LINKEDIN.clientId && LINKEDIN.clientSecret);
+  return false;
 }
 
 /** Indirizzo pubblico dell'app: serve per i redirect OAuth (deve coincidere con quello registrato). */

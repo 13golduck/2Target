@@ -11,12 +11,13 @@ import { encryptSecret, verifyPayload } from "@/lib/secret-box";
 import { appUrl } from "@/lib/integrations/config";
 import * as google from "@/lib/integrations/google";
 import * as instagram from "@/lib/integrations/instagram";
+import * as linkedin from "@/lib/integrations/linkedin";
 import * as meta from "@/lib/integrations/meta";
 import * as tiktok from "@/lib/integrations/tiktok";
 
 // Ritorno dalla piattaforma: scambia il codice con i token, li salva cifrati e apre la scelta dei canali.
 
-const PROVIDER_LABEL: Record<string, string> = { meta: "Meta", google: "Google", tiktok: "TikTok", instagram: "Instagram" };
+const PROVIDER_LABEL: Record<string, string> = { meta: "Meta", google: "Google", tiktok: "TikTok", instagram: "Instagram", linkedin: "LinkedIn" };
 
 type State = { provider: string; clientId: number; uid: string; nonce: string };
 
@@ -47,10 +48,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
           ? await tiktok.exchangeCode(code, request)
           : provider === "instagram"
             ? await instagram.exchangeCode(code, request)
-            : await google.exchangeCode(code, request);
+            : provider === "linkedin"
+              ? await linkedin.exchangeCode(code, request)
+              : await google.exchangeCode(code, request);
     const values = {
       clientId: state.clientId,
-      provider: provider as "meta" | "google" | "tiktok" | "instagram",
+      provider: provider as "meta" | "google" | "tiktok" | "instagram" | "linkedin",
       externalUserId: grant.externalUserId,
       accountName: grant.accountName,
       accessTokenEnc: encryptSecret(grant.accessToken),

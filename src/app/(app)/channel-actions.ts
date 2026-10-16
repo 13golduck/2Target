@@ -11,6 +11,7 @@ import { forgetFromClient, siteKey } from "@/lib/integrations/client-channels";
 import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import * as google from "@/lib/integrations/google";
 import * as instagram from "@/lib/integrations/instagram";
+import * as linkedin from "@/lib/integrations/linkedin";
 import * as meta from "@/lib/integrations/meta";
 import * as tiktok from "@/lib/integrations/tiktok";
 import { accessToken, syncChannel, syncClient, updateKpisFromData } from "@/lib/integrations/sync";
@@ -25,7 +26,7 @@ export async function assetsFor(connectionId: number) {
   await requireWriter();
   const [conn] = await db.select().from(connections).where(eq(connections.id, connectionId));
   if (!conn) return { conn: null, assets: [] as { key: string; kind: string; handle: string; name: string; pictureUrl?: string }[] };
-  const token = conn.provider === "tiktok" || conn.provider === "instagram" ? await accessToken(conn) : decryptSecret(conn.accessTokenEnc)!;
+  const token = ["tiktok", "instagram", "linkedin"].includes(conn.provider) ? await accessToken(conn) : decryptSecret(conn.accessTokenEnc)!;
   const raw =
     conn.provider === "meta"
       ? await meta.listAssets(token)
@@ -33,7 +34,9 @@ export async function assetsFor(connectionId: number) {
         ? await tiktok.listAssets(token)
         : conn.provider === "instagram"
           ? await instagram.listAssets(token)
-          : await google.listAssets(token);
+          : conn.provider === "linkedin"
+            ? await linkedin.listAssets(token)
+            : await google.listAssets(token);
   return {
     conn,
     assets: raw.map((a) => ({ key: `${a.kind}|${a.externalId}`, kind: a.kind, handle: a.handle, name: a.name, pictureUrl: "pictureUrl" in a ? a.pictureUrl : undefined })),
@@ -47,7 +50,7 @@ export async function attachChannels(f: FormData) {
   const [conn] = await db.select().from(connections).where(eq(connections.id, connectionId));
   if (!conn) return;
   const chosen = new Set(f.getAll("asset").map(String));
-  const token = conn.provider === "tiktok" || conn.provider === "instagram" ? await accessToken(conn) : decryptSecret(conn.accessTokenEnc)!;
+  const token = ["tiktok", "instagram", "linkedin"].includes(conn.provider) ? await accessToken(conn) : decryptSecret(conn.accessTokenEnc)!;
 
   const ids: number[] = [];
   const refused: string[] = [];
@@ -73,6 +76,14 @@ export async function attachChannels(f: FormData) {
       if (!chosen.has(`${a.kind}|${a.externalId}`)) continue;
       const other = await owner(a.kind, a.externalId);
       if (other) refused.push(`@${a.handle} è già collegato al cliente ${other}`);
+      else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, a.pictureUrl, null));
+    }
+  } else if (conn.provider === "linkedin") {
+    // Pagine aziendali: si legge e si pubblica con il token di chi le amministra
+    for (const a of await linkedin.listAssets(token)) {
+      if (!chosen.has(`${a.kind}|${a.externalId}`)) continue;
+      const other = await owner(a.kind, a.externalId);
+      if (other) refused.push(`${a.name} è già collegata al cliente ${other}`);
       else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, a.pictureUrl, null));
     }
   } else {

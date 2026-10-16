@@ -74,7 +74,15 @@ export function checkPublishable(platform: string, format: string, media: { kind
     return null;
   }
   if (platform === "tiktok") return checkTikTokMedia(format, media, caption);
-  return "Per ora 2Target pubblica solo su Facebook, Instagram e TikTok";
+  if (platform === "linkedin") {
+    if (format === "storia") return "LinkedIn non ha le storie";
+    if (videos.length > 1 || (videos.length && images.length)) return "Su LinkedIn: un solo video, oppure da 1 a 20 foto";
+    if (images.length > 20) return "Su LinkedIn al massimo 20 foto per post";
+    if (!media.length && !caption.trim()) return "Scrivi un testo o carica una foto";
+    if (caption.length > 3000) return "Il testo per LinkedIn supera i 3.000 caratteri";
+    return null;
+  }
+  return "Per ora 2Target pubblica su Facebook, Instagram, TikTok e LinkedIn";
 }
 
 export async function publish(input: PublishInput): Promise<PublishResult> {

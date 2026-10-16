@@ -6,18 +6,20 @@ import { connections, socialAccounts } from "@/db/schema";
 import { accessToken } from "@/lib/integrations/sync";
 import { decryptSecret } from "@/lib/secret-box";
 import { canPublishWithScopes } from "./tiktok-publish";
+import { canPublishWithScopes as linkedinCanPublish } from "@/lib/integrations/linkedin";
 
 // Da quale strada passa la pubblicazione su un profilo:
 // - Pagina Facebook e Instagram collegato alla Pagina: token della Pagina (Meta)
 // - Instagram con login Instagram (senza Pagina): token dell'utente Instagram, su graph.instagram.com
 // - TikTok: token dell'utente TikTok, con il permesso video.publish
+// - LinkedIn: token di chi amministra la pagina aziendale, con il permesso w_organization_social
 
 type Channel = typeof socialAccounts.$inferSelect;
 type Connection = typeof connections.$inferSelect;
 
-export const PUBLISHABLE = ["facebook", "instagram", "tiktok"] as const;
+export const PUBLISHABLE = ["facebook", "instagram", "tiktok", "linkedin"] as const;
 
-export type Route = "meta" | "instagram" | "tiktok";
+export type Route = "meta" | "instagram" | "tiktok" | "linkedin";
 
 /** Il profilo è pronto per pubblicare? Restituisce la strada, oppure il motivo per cui non lo è. */
 export function routeOf(ch: Channel, conn: Connection | null | undefined): { route: Route } | { problem: string } {
@@ -26,6 +28,11 @@ export function routeOf(ch: Channel, conn: Connection | null | undefined): { rou
     if (conn?.provider !== "tiktok") return { problem: "non è collegato a TikTok: collegalo da Canali" };
     if (!canPublishWithScopes(conn.scopes)) return { problem: "è collegato senza il permesso di pubblicare: ricollega TikTok da Canali" };
     return { route: "tiktok" };
+  }
+  if (ch.platform === "linkedin") {
+    if (conn?.provider !== "linkedin") return { problem: "non è collegata a LinkedIn: collegala da Canali" };
+    if (!linkedinCanPublish(conn.scopes)) return { problem: "è collegata senza il permesso di pubblicare: ricollega LinkedIn da Canali" };
+    return { route: "linkedin" };
   }
   if (ch.platform === "instagram" && conn?.provider === "instagram") return { route: "instagram" };
   if ((ch.platform === "facebook" || ch.platform === "instagram") && ch.assetTokenEnc) return { route: "meta" };
