@@ -1,7 +1,7 @@
 import { desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireClientAccess } from "@/lib/auth";
 import { canWrite } from "@/lib/roles";
 import { clients, leadEvents, leads, marketingCosts } from "@/db/schema";
 import { funnelBySource, funnelStats } from "@/lib/leads";
@@ -29,8 +29,9 @@ function range(key: keyof typeof PERIODS, now: Date) {
 }
 
 export default async function LeadsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ periodo?: string }> }) {
-  const readOnly = !canWrite((await requireUser()).role);
   const clientId = Number((await params).id);
+  // Controllo anche qui, non solo nel layout: i Viewer vedono solo i propri clienti
+  const readOnly = !canWrite((await requireClientAccess(clientId)).role);
   const sp = await searchParams;
   const period = (sp.periodo && sp.periodo in PERIODS ? sp.periodo : "mese") as keyof typeof PERIODS;
   const now = nowDate();

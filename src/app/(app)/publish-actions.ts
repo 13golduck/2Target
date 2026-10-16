@@ -41,7 +41,9 @@ const channelLabel = (c: { platform: string; handle: string }) => `${PLATFORM_LA
  * durata massima): TikTok chiede di rileggerle ogni volta che si mostra la scheda.
  */
 export async function tiktokCreator(channelId: number) {
-  await requireWriter();
+  // Usa il token del cliente su TikTok: solo chi può pubblicare
+  const { error } = await publisher();
+  if (error) return { error };
   const [ch] = await db.select().from(socialAccounts).where(eq(socialAccounts.id, channelId));
   if (!ch || ch.platform !== "tiktok") return { error: "Profilo TikTok non trovato" };
   const [conn] = await connectionsOf([ch]);

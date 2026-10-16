@@ -5,6 +5,7 @@ import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { channelDaily, connections, kpiMeasurements, kpis, leadEvents, leads, marketingCosts, seoSnapshots, socialAccounts, socialPosts } from "@/db/schema";
 import { funnelStats } from "@/lib/leads";
+import { adsMonthlySpend } from "@/lib/ads-costs";
 import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import { ApiError } from "./http";
 import * as google from "./google";
@@ -101,15 +102,23 @@ const adsCostNote = (customerId: string) => `Spesa Google Ads letta in automatic
  * da soli. Una riga automatica per mese, riscritta a ogni sincronizzazione; quelle inserite a mano restano.
  * Solo per gli account in euro (gli importi dei costi di marketing sono in euro).
  */
-async function saveAdsCosts(clientId: number, customerId: string, daily: DailyValue[], currency: string | null) {
+async function saveAdsCosts(clientId: number, customerId: string, daily: DailyValue[], currency: string | null, windowStart: string) {
   const note = adsCostNote(customerId);
   if (currency && currency !== "EUR") return;
-  const byMonth = new Map<string, number>();
-  for (const d of daily) if (d.metric === "ads_spend") byMonth.set(`${d.day.slice(0, 7)}-01`, (byMonth.get(`${d.day.slice(0, 7)}-01`) ?? 0) + d.value);
-  for (const [month, amount] of byMonth) {
-    await db.delete(marketingCosts).where(and(eq(marketingCosts.clientId, clientId), eq(marketingCosts.month, month), eq(marketingCosts.source, "google_ads"), eq(marketingCosts.notes, note)));
-    if (amount > 0) await db.insert(marketingCosts).values({ clientId, month, source: "google_ads", kind: "inserzioni", amount: Math.round(amount * 100) / 100, notes: note });
-  }
+  const byMonth = adsMonthlySpend(daily, windowStart);
+  await db.transaction(async (tx) => {
+    for (const [month, amount] of byMonth) {
+      // Un mese con costi Google Ads inseriti a mano resta com'è: la spesa non si conta due volte
+      const manual = await tx
+        .select({ id: marketingCosts.id, notes: marketingCosts.notes })
+        .from(marketingCosts)
+        .where(and(eq(marketingCosts.clientId, clientId), eq(marketingCosts.month, month), eq(marketingCosts.source, "google_ads")))
+        .for("update");
+      if (manual.some((m) => !m.notes?.startsWith("Spesa Google Ads letta in automatico"))) continue;
+      await tx.delete(marketingCosts).where(and(eq(marketingCosts.clientId, clientId), eq(marketingCosts.month, month), eq(marketingCosts.source, "google_ads"), eq(marketingCosts.notes, note)));
+      if (amount > 0) await tx.insert(marketingCosts).values({ clientId, month, source: "google_ads", kind: "inserzioni", amount: Math.round(amount * 100) / 100, notes: note });
+    }
+  });
 }
 
 /** Sincronizza un canale. Restituisce un messaggio leggibile (o lancia l'errore). */
@@ -161,7 +170,7 @@ export async function syncChannel(channel: Channel) {
         const r = await google.syncGoogleAds(userToken, id);
         await saveDaily(channel.id, r.daily);
         for (const s of r.snapshots) await db.insert(seoSnapshots).values({ socialAccountId: channel.id, ...s });
-        await saveAdsCosts(channel.clientId, id, r.daily, r.currency);
+        await saveAdsCosts(channel.clientId, id, r.daily, r.currency, r.windowStart);
       } else {
         throw new ApiError(`Sincronizzazione non ancora disponibile per ${channel.platform}`, 400);
       }
@@ -262,7 +271,9 @@ export async function updateKpisFromData(clientId: number, now = new Date()) {
   const channels = await db.select().from(socialAccounts).where(eq(socialAccounts.clientId, clientId));
 
   for (const k of list) {
-    const ch = channels.find((c) => c.platform === k.platform) ??
+    // Le metriche Google Ads si leggono sempre dall'account Ads, anche se il KPI è legato a un social
+    const ch = (k.metricKey.startsWith("ads_") ? channels.find((c) => c.platform === "google_ads") : undefined) ??
+      channels.find((c) => c.platform === k.platform) ??
       (k.metricKey.startsWith("seo_") ? channels.find((c) => c.platform === "search_console") : undefined) ??
       (["organic_sessions", "key_events"].includes(k.metricKey) ? channels.find((c) => c.platform === "ga4") : undefined) ??
       (k.metricKey.startsWith("gbp_") ? channels.find((c) => c.platform === "business_profile") : undefined) ??

@@ -807,6 +807,8 @@ export const publications = mysqlTable(
     /** Impostazioni scelte per la piattaforma (TikTok: visibilità, interazioni, contenuto commerciale). */
     options: json("options").$type<TikTokOptions>(),
     attempts: int("attempts").notNull().default(0),
+    /** TikTok: publish_id dell'invio avviato, per controllarne l'esito (e non ripubblicare) nei giri successivi. */
+    remoteId: varchar("remote_id", { length: 120 }),
     externalId: varchar("external_id", { length: 120 }),
     permalink: varchar("permalink", { length: 500 }),
     error: text("error"),

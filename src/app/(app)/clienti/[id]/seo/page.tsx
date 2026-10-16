@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gte, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireClientAccess } from "@/lib/auth";
 import { canWrite } from "@/lib/roles";
 import { isoDaysAgo } from "@/lib/format";
 import { channelDaily, clients, leads, seoAnalyses, seoSnapshots, socialAccounts } from "@/db/schema";
@@ -14,9 +14,10 @@ import { SeoView } from "./seo-view";
 export const metadata = { title: "SEO" };
 
 export default async function SeoPage({ params }: { params: Promise<{ id: string }> }) {
-  const me = await requireUser();
-  const readOnly = !canWrite(me.role);
   const clientId = Number((await params).id);
+  // Controllo anche qui, non solo nel layout: i Viewer vedono solo i propri clienti
+  const me = await requireClientAccess(clientId);
+  const readOnly = !canWrite(me.role);
   // Il sito indicato nell'analisi iniziale compare anche qui, senza passare da Canali
   await ensureChannelsFromClient(clientId, me.id).catch(() => undefined);
   const channels = (await db.select().from(socialAccounts).where(eq(socialAccounts.clientId, clientId))).filter((c) =>

@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { isoDaysAgo } from "@/lib/format";
 import { channelDaily, checkups, clients, connections, seoSnapshots, socialAccounts, socialPosts } from "@/db/schema";
 import { isConfigured } from "@/lib/integrations/config";
-import { requireUser, userCanPublish } from "@/lib/auth";
+import { requireClientAccess, userCanPublish } from "@/lib/auth";
 import { ensureChannelsFromClient, isSiteSyncRunning, startSiteSync } from "@/lib/integrations/client-channels";
 import { assetsFor } from "../../../channel-actions";
 import { clientAdsExposure } from "@/lib/ads/ads";
@@ -34,9 +34,10 @@ function nameMatches(assetName: string, clientName: string, website: string | nu
 
 export default async function ChannelsPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ scegli?: string; errore?: string }> }) {
   await ensureIntegrationKeys();
-  const me = await requireUser();
-  const canConnect = await userCanPublish(me);
   const clientId = Number((await params).id);
+  // Controllo anche qui, non solo nel layout: i Viewer vedono solo i propri clienti
+  const me = await requireClientAccess(clientId);
+  const canConnect = await userCanPublish(me);
   const sp = await searchParams;
   // Clienti creati prima: sito e social della scheda diventano canali alla prima apertura
   await ensureChannelsFromClient(clientId, me.id).catch(() => undefined);

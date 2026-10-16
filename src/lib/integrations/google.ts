@@ -2,7 +2,7 @@ import "server-only";
 import { ensureIntegrationKeys } from "@/lib/integrations/keys";
 
 import { GOOGLE, callbackUrl } from "./config";
-import { getJson, qs } from "./http";
+import { ApiError, getJson, qs } from "./http";
 import type { DailyValue } from "./meta";
 
 // Google: Search Console (SEO), Analytics 4 (traffico), Business Profile (scheda Google del cliente),
@@ -187,20 +187,21 @@ export async function syncBusinessProfile(token: string, externalId: string) {
 // Serve il developer token del centro clienti (MCC) di Golduck, approvato da Google per l'accesso «Base».
 
 const adsUrl = (path: string) => `https://googleads.googleapis.com/${GOOGLE.adsVersion}/${path}`;
-const adsHeaders = (token: string) => ({
+// login-customer-id solo quando l'account si raggiunge tramite un centro clienti (MCC), mai per l'accesso diretto
+const adsHeaders = (token: string, loginCustomerId?: string) => ({
   Authorization: `Bearer ${token}`,
   "developer-token": GOOGLE.adsDeveloperToken,
   "Content-Type": "application/json",
-  ...(GOOGLE.adsLoginCustomerId && { "login-customer-id": GOOGLE.adsLoginCustomerId }),
+  ...(loginCustomerId && { "login-customer-id": loginCustomerId }),
 });
 
-async function adsSearch<T>(token: string, customerId: string, query: string): Promise<T[]> {
+async function adsSearch<T>(token: string, customerId: string, query: string, loginCustomerId?: string): Promise<T[]> {
   const out: T[] = [];
   let pageToken: string | undefined;
   do {
     const res: { results?: T[]; nextPageToken?: string } = await getJson(adsUrl(`customers/${customerId}/googleAds:search`), {
       method: "POST",
-      headers: adsHeaders(token),
+      headers: adsHeaders(token, loginCustomerId),
       body: JSON.stringify({ query, ...(pageToken && { pageToken }) }),
     });
     out.push(...(res.results ?? []));
@@ -209,23 +210,59 @@ async function adsSearch<T>(token: string, customerId: string, query: string): P
   return out;
 }
 
+const adsLabel = (id: string) => id.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3");
+
+async function accessibleCustomers(token: string) {
+  const res = await getJson<{ resourceNames?: string[] }>(adsUrl("customers:listAccessibleCustomers"), { headers: adsHeaders(token) });
+  return (res.resourceNames ?? []).map((rn) => rn.split("/")[1]);
+}
+
+type CustomerClient = { customerClient: { id?: string; descriptiveName?: string; currencyCode?: string; manager?: boolean; status?: string } };
+
+/** Account dei clienti sotto un centro clienti (MCC), a qualsiasi livello. */
+async function managerChildren(token: string, managerId: string) {
+  const rows = await adsSearch<CustomerClient>(
+    token,
+    managerId,
+    "SELECT customer_client.id, customer_client.descriptive_name, customer_client.currency_code, customer_client.manager, customer_client.status FROM customer_client WHERE customer_client.level >= 1",
+    managerId,
+  ).catch(() => []);
+  return rows.map((r) => r.customerClient).filter((c) => c.id && !c.manager && (!c.status || c.status === "ENABLED"));
+}
+
+/**
+ * Account Google Ads visibili all'utente collegato: quelli a cui ha accesso diretto e, per i centri clienti (MCC),
+ * gli account dei clienti che gestiscono (è il caso dell'utente Golduck con il centro clienti di Golduck).
+ */
 async function listAdsAccounts(token: string): Promise<GoogleAsset[]> {
   if (!GOOGLE.adsDeveloperToken) return [];
-  const res = await getJson<{ resourceNames?: string[] }>(adsUrl("customers:listAccessibleCustomers"), { headers: adsHeaders(token) });
-  const out: GoogleAsset[] = [];
-  for (const rn of res.resourceNames ?? []) {
-    const id = rn.split("/")[1];
+  const out = new Map<string, GoogleAsset>();
+  const push = (id: string, name?: string, currency?: string) => {
+    if (!out.has(id)) out.set(id, { kind: "google_ads", externalId: id, handle: adsLabel(id), name: `${name || "Account Google Ads"} · ${adsLabel(id)}${currency ? ` · ${currency}` : ""}` });
+  };
+  for (const id of await accessibleCustomers(token)) {
     const [c] = await adsSearch<{ customer: { descriptiveName?: string; currencyCode?: string; manager?: boolean } }>(
       token,
       id,
       "SELECT customer.descriptive_name, customer.currency_code, customer.manager FROM customer LIMIT 1",
     ).catch(() => []);
-    // I centri clienti (MCC) non hanno campagne proprie: si collegano gli account dei clienti
-    if (c?.customer.manager) continue;
-    const label = `${id.replace(/(\d{3})(\d{3})(\d{4})/, "$1-$2-$3")}`;
-    out.push({ kind: "google_ads", externalId: id, handle: label, name: `${c?.customer.descriptiveName || "Account Google Ads"} · ${label}${c?.customer.currencyCode ? ` · ${c.customer.currencyCode}` : ""}` });
+    if (!c?.customer.manager) push(id, c?.customer.descriptiveName, c?.customer.currencyCode);
+    else for (const child of await managerChildren(token, id)) push(child.id!, child.descriptiveName, child.currencyCode);
   }
-  return out;
+  return [...out.values()];
+}
+
+/** Da quale centro clienti passare per leggere l'account (undefined = accesso diretto). */
+async function adsLoginFor(token: string, customerId: string) {
+  const direct = await accessibleCustomers(token);
+  if (direct.includes(customerId)) return undefined;
+  // Prima il centro clienti di Golduck (se configurato), poi gli altri a cui l'utente ha accesso
+  const candidates = [...new Set([GOOGLE.adsLoginCustomerId, ...direct].filter(Boolean))];
+  for (const managerId of candidates) {
+    const rows = await adsSearch<CustomerClient>(token, managerId, `SELECT customer_client.id FROM customer_client WHERE customer_client.id = ${Number(customerId)}`, managerId).catch(() => []);
+    if (rows.length) return managerId;
+  }
+  throw new ApiError(`L'account Google Ads ${adsLabel(customerId)} non è più raggiungibile con questo collegamento: ricollega Google da Canali`, 403);
 }
 
 /** Google Ads: spesa, clic, impression, conversioni giorno per giorno (90 giorni) e per campagna (28 giorni). */
@@ -235,12 +272,15 @@ export async function syncGoogleAds(token: string, customerId: string) {
     campaign: { id: string; name: string; status?: string };
     metrics: { costMicros?: string; clicks?: string; impressions?: string; conversions?: number; conversionsValue?: number };
   };
+  const windowStart = ymd(daysAgo(91));
+  const login = await adsLoginFor(token, customerId);
   const rows = await adsSearch<Row>(
     token,
     customerId,
-    `SELECT segments.date, campaign.id, campaign.name, campaign.status, metrics.cost_micros, metrics.clicks, metrics.impressions, metrics.conversions, metrics.conversions_value FROM campaign WHERE segments.date BETWEEN '${ymd(daysAgo(91))}' AND '${ymd(daysAgo(1))}'`,
+    `SELECT segments.date, campaign.id, campaign.name, campaign.status, metrics.cost_micros, metrics.clicks, metrics.impressions, metrics.conversions, metrics.conversions_value FROM campaign WHERE segments.date BETWEEN '${windowStart}' AND '${ymd(daysAgo(1))}'`,
+    login,
   );
-  const [cust] = await adsSearch<{ customer: { currencyCode?: string } }>(token, customerId, "SELECT customer.currency_code FROM customer LIMIT 1").catch(() => []);
+  const [cust] = await adsSearch<{ customer: { currencyCode?: string } }>(token, customerId, "SELECT customer.currency_code FROM customer LIMIT 1", login).catch(() => []);
   const totals = new Map<string, number>();
   const add = (day: string, metric: string, v: number) => totals.set(`${day}|${metric}`, (totals.get(`${day}|${metric}`) ?? 0) + v);
   const since28 = ymd(daysAgo(28));
@@ -273,6 +313,7 @@ export async function syncGoogleAds(token: string, customerId: string) {
   });
   return {
     daily,
+    windowStart,
     currency: cust?.customer.currencyCode ?? null,
     snapshots: [{ kind: "ads_campaigns" as const, periodStart: since28, periodEnd: ymd(daysAgo(1)), rows: [...campaigns.values()].sort((a, b) => b.cost - a.cost) }],
   };

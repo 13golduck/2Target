@@ -1,6 +1,6 @@
 import "server-only";
 import { ensureIntegrationKeys } from "@/lib/integrations/keys";
-import { and, asc, eq, inArray, lt, lte, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { editorialItems, mediaAssets, publications, socialAccounts } from "@/db/schema";
@@ -9,12 +9,16 @@ import { errorDetail, logError } from "@/lib/error-log";
 import { publicMediaUrl } from "@/lib/media";
 import { checkPublishable, findRecentTwin, isDryRun, isUncertain, publish } from "./meta-publish";
 import { connectionsOf, publishToken, routeOf } from "./targets";
-import { creatorInfo, findTikTokTwin, publishTikTok } from "./tiktok-publish";
+import { creatorInfo, startTikTok, tiktokResult, tiktokStatus } from "./tiktok-publish";
 import { checkTikTokOptions, tiktokKind } from "./tiktok-rules";
 
 // Pubblicazioni programmate: ogni minuto (e a ogni chiamata di /api/cron/publish) si pubblicano quelle arrivate all'ora.
 // Una pubblicazione si "prende" con un aggiornamento atomico: anche con due giri contemporanei esce una volta sola.
 // Gli errori NON si ritentano da soli (rischio di doppio post): si riprovano a mano dalla scheda.
+// TikTok elabora i file in sottofondo: l'invio resta "in corso" con il publish_id salvato e l'esito si legge nei giri dopo.
+
+/** Oltre questo tempo un invio TikTok ancora in elaborazione diventa "esito incerto". */
+const TIKTOK_MAX_MINUTES = 30;
 
 const g = globalThis as unknown as { __publishTimer?: NodeJS.Timeout; __publishRunning?: boolean };
 
@@ -28,11 +32,19 @@ export async function runDuePublications() {
   if (g.__publishRunning) return { skipped: true, done: 0 };
   g.__publishRunning = true;
   try {
-    // Rimaste "in corso" senza segnali di vita da 20 minuti (riavvio a metà): esito incerto
+    // Rimaste "in corso" senza segnali di vita da 20 minuti (riavvio a metà): esito incerto.
+    // Non quelle TikTok già avviate (con publish_id): il loro esito si controlla qui sotto.
     await db
       .update(publications)
       .set({ status: "errore", error: "ESITO INCERTO: invio interrotto (riavvio dell'app). Con «Riprova» 2Target controlla prima il profilo e non ripubblica se il post è già uscito." })
-      .where(and(eq(publications.status, "in_corso"), lt(publications.updatedAt, new Date(Date.now() - 20 * 60_000))));
+      .where(and(eq(publications.status, "in_corso"), isNull(publications.remoteId), lt(publications.updatedAt, new Date(Date.now() - 20 * 60_000))));
+
+    const processing = await db
+      .select({ id: publications.id })
+      .from(publications)
+      .where(and(eq(publications.status, "in_corso"), isNotNull(publications.remoteId)))
+      .limit(20);
+    for (const { id } of processing) await checkTikTokProcessing(id).catch((e) => console.error("[pubblicazioni] stato TikTok:", e));
 
     const due = await db
       .select({ id: publications.id })
@@ -51,10 +63,14 @@ export async function runDuePublications() {
 /** Pubblica subito una pubblicazione (se è ancora programmata). Restituisce true se l'ha presa in carico. */
 export async function processPublication(id: number) {
   await ensureIntegrationKeys();
+  // publish_id TikTok di un tentativo precedente: si toglie durante l'invio, così il controllo dello stato
+  // nei giri dello scheduler non tocca questa pubblicazione finché non c'è il nuovo esito
+  const [before] = await db.select({ remoteId: publications.remoteId }).from(publications).where(eq(publications.id, id));
+  const previousRemoteId = before?.remoteId ?? null;
   // Presa in carico atomica: anche con due giri contemporanei (timer, cron, più processi) esce una volta sola
   const [claim] = await db
     .update(publications)
-    .set({ status: "in_corso", attempts: sql`${publications.attempts} + 1`, error: null })
+    .set({ status: "in_corso", attempts: sql`${publications.attempts} + 1`, error: null, remoteId: null })
     .where(and(eq(publications.id, id), eq(publications.status, "programmata")));
   if (claim.affectedRows !== 1) return false;
 
@@ -68,7 +84,7 @@ export async function processPublication(id: number) {
     await db.update(publications).set({ updatedAt: new Date() }).where(and(eq(publications.id, id), eq(publications.status, "in_corso")));
   };
 
-  let result: { externalId: string; permalink: string | null; found?: boolean };
+  let result: { externalId: string; permalink: string | null; found?: boolean } | undefined;
   try {
     // Controlli decisivi al momento dell'invio
     if (!channel || !item || channel.clientId !== pub.clientId || item.clientId !== pub.clientId) {
@@ -90,19 +106,29 @@ export async function processPublication(id: number) {
     const urls = ordered.map((f) => publicMediaUrl(f.storageKey));
     const retry = (pub.attempts ?? 0) >= 2;
     if (route.route === "tiktok") {
-      // TikTok: impostazioni ricontrollate sull'account com'è ADESSO (visibilità e interazioni possono cambiare)
       const kind = tiktokKind(pub.format, ordered)!;
-      const creator = isDryRun() ? null : await creatorInfo(token);
-      const bad = creator ? checkTikTokOptions(pub.options, creator, kind) : pub.options ? null : "Mancano le impostazioni di TikTok";
-      if (bad) throw new Error(bad);
-      const username = creator?.username || channel.handle;
-      // Nuovo tentativo: prima si controlla se il post è già uscito (esito incerto la volta precedente)
-      const twin = retry && !isDryRun() ? await findTikTokTwin({ token, caption: pub.caption ?? "", since: pub.createdAt, username }).catch(() => null) : null;
-      result = twin
-        ? { ...twin, found: true }
-        : isDryRun()
-          ? { externalId: `simulazione-${Date.now()}`, permalink: null }
-          : await publishTikTok({ token, kind, caption: pub.caption ?? "", options: pub.options!, urls, username, heartbeat });
+      // Nuovo tentativo di un invio già avviato: si chiede a TikTok com'è finito, invece di ripubblicare
+      if (previousRemoteId && !isDryRun()) {
+        const st = await tiktokStatus(previousRemoteId, token);
+        if (st.state === "processing") {
+          await db.update(publications).set({ remoteId: previousRemoteId }).where(eq(publications.id, id));
+          return true; // TikTok ci sta ancora lavorando: si torna a controllare nei giri successivi
+        }
+        if (st.state === "done") result = { ...tiktokResult(previousRemoteId, st.postId, channel.handle, kind), found: true };
+      }
+      if (!result) {
+        // Impostazioni ricontrollate sull'account com'è ADESSO (visibilità e interazioni possono cambiare)
+        const creator = isDryRun() ? null : await creatorInfo(token);
+        const bad = creator ? checkTikTokOptions(pub.options, creator, kind) : pub.options ? null : "Mancano le impostazioni di TikTok";
+        if (bad) throw new Error(`${bad}. Per cambiare le impostazioni annulla questa pubblicazione e programmala di nuovo.`);
+        if (isDryRun()) result = { externalId: `simulazione-${Date.now()}`, permalink: null };
+        else {
+          const publishId = await startTikTok({ token, kind, caption: pub.caption ?? "", options: pub.options!, urls });
+          // Salvato subito: da qui l'esito si legge con il publish_id, anche dopo un riavvio
+          await db.update(publications).set({ remoteId: publishId, updatedAt: new Date() }).where(eq(publications.id, id));
+          return true;
+        }
+      }
     } else {
       const host = route.route === "instagram" ? ("instagram" as const) : ("facebook" as const);
       const platform = channel.platform as "facebook" | "instagram";
@@ -123,9 +149,11 @@ export async function processPublication(id: number) {
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     const uncertain = isUncertain(e);
-    const text = uncertain
-      ? `ESITO INCERTO: la connessione con ${channel?.platform === "tiktok" ? "TikTok" : "Meta"} si è interrotta (${message}). Il post potrebbe essere uscito: con «Riprova» 2Target controlla prima il profilo e non lo ripubblica se lo trova.`
-      : message;
+    const text = !uncertain
+      ? message
+      : channel?.platform === "tiktok"
+        ? `ESITO INCERTO: la connessione con TikTok si è interrotta mentre si avviava l'invio (${message}). Prima di riprovare controlla sul profilo TikTok (anche tra i post privati) che il post non sia uscito.`
+        : `ESITO INCERTO: la connessione con Meta si è interrotta (${message}). Il post potrebbe essere uscito: con «Riprova» 2Target controlla prima il profilo e non lo ripubblica se lo trova.`;
     await db.update(publications).set({ status: "errore", error: text.slice(0, 2000) }).where(eq(publications.id, id));
     await logError({
       userId: pub.createdBy,
@@ -138,30 +166,71 @@ export async function processPublication(id: number) {
     return true;
   }
 
-  // Da qui il post è USCITO: lo si registra subito, e niente di ciò che segue può riportarlo a "errore"
+  await markPublished(id, pub, item!, label, result!);
+  return true;
+}
+
+type Pub = typeof publications.$inferSelect;
+type Item = typeof editorialItems.$inferSelect;
+
+/** Il post è USCITO: lo si registra subito, e niente di ciò che segue può riportarlo a "errore". */
+async function markPublished(id: number, pub: Pub, item: Item, label: string, result: { externalId: string; permalink: string | null; found?: boolean }) {
   await db
     .update(publications)
     .set({ status: "pubblicata", externalId: result.externalId, permalink: result.permalink, publishedAt: new Date(), error: null })
     .where(eq(publications.id, id));
   try {
-    if (item!.status !== "pubblicato" || !item!.publishedUrl) {
+    if (item.status !== "pubblicato" || !item.publishedUrl) {
       await db
         .update(editorialItems)
-        .set({ status: "pubblicato", publishedUrl: item!.publishedUrl ?? result.permalink, externalPostId: item!.externalPostId ?? result.externalId })
-        .where(eq(editorialItems.id, item!.id));
+        .set({ status: "pubblicato", publishedUrl: item.publishedUrl ?? result.permalink, externalPostId: item.externalPostId ?? result.externalId })
+        .where(eq(editorialItems.id, item.id));
     }
     await audit({
       userId: null,
       actorLabel: "Sistema",
       category: "contenuti",
       action: isDryRun() ? "pubblicazione.simulata" : result.found ? "pubblicazione.ritrovata" : "pubblicazione.uscita",
-      description: `${isDryRun() ? "SIMULAZIONE: " : ""}${result.found ? "ritrovata sul profilo (già uscita, non ripubblicata)" : "pubblicata"} «${item!.title}» su ${label}`,
+      description: `${isDryRun() ? "SIMULAZIONE: " : ""}${result.found ? "ritrovata sul profilo (già uscita, non ripubblicata)" : "pubblicata"} «${item.title}» su ${label}`,
       clientId: pub.clientId,
-      target: `pubblicazione:${item!.id}`,
+      target: `pubblicazione:${item.id}`,
       meta: { profilo: label, idEsterno: result.externalId, link: result.permalink, programmataDa: pub.createdBy },
     });
   } catch (e) {
     console.error("[pubblicazioni] registrazione dopo l'uscita non riuscita:", e);
   }
-  return true;
+}
+
+/** Un controllo dello stato di un invio TikTok avviato: uscito, rifiutato o ancora in elaborazione. */
+async function checkTikTokProcessing(id: number) {
+  const [pub] = await db.select().from(publications).where(eq(publications.id, id));
+  if (!pub || pub.status !== "in_corso" || !pub.remoteId) return;
+  const [channel] = await db.select().from(socialAccounts).where(eq(socialAccounts.id, pub.socialAccountId));
+  const [item] = await db.select().from(editorialItems).where(eq(editorialItems.id, pub.itemId));
+  const label = channel ? `${channel.platform} @${channel.handle}` : "profilo rimosso";
+  const tooOld = Date.now() - pub.updatedAt.getTime() > TIKTOK_MAX_MINUTES * 60_000;
+  const fail = async (text: string) => {
+    await db.update(publications).set({ status: "errore", error: text.slice(0, 2000) }).where(and(eq(publications.id, id), eq(publications.status, "in_corso")));
+    await logError({ userId: pub.createdBy, area: "Pubblicazione", message: `Pubblicazione non riuscita su ${label}: ${text}`, path: `/pubblicazioni/${pub.itemId}`, clientId: pub.clientId });
+  };
+  if (!channel || !item) return fail("Profilo o scheda rimossi durante l'elaborazione di TikTok");
+  let st: Awaited<ReturnType<typeof tiktokStatus>>;
+  try {
+    const [conn] = await connectionsOf([channel]);
+    const route = routeOf(channel, conn);
+    if ("problem" in route) throw new Error(`Il profilo ${route.problem}`);
+    st = await tiktokStatus(pub.remoteId, await publishToken(channel, route.route));
+  } catch (e) {
+    // Errore di rete o di accesso: si riprova al giro dopo, fino al limite di tempo
+    if (tooOld) await fail(`ESITO INCERTO: non è stato possibile leggere da TikTok l'esito dell'invio (${e instanceof Error ? e.message : e}). Con «Riprova» 2Target chiede prima a TikTok com'è finito e non ripubblica se il post è uscito.`);
+    return;
+  }
+  if (st.state === "failed") return fail(st.reason);
+  if (st.state === "processing") {
+    if (tooOld) await fail(`ESITO INCERTO: TikTok sta ancora elaborando il post dopo ${TIKTOK_MAX_MINUTES} minuti. Con «Riprova» 2Target chiede prima a TikTok com'è finito e non ripubblica se il post è uscito.`);
+    return;
+  }
+  const files = pub.mediaIds.length ? await db.select().from(mediaAssets).where(inArray(mediaAssets.id, pub.mediaIds)) : [];
+  const kind = tiktokKind(pub.format, pub.mediaIds.map((mid) => files.find((f) => f.id === mid)).filter((f) => !!f)) ?? "video";
+  await markPublished(id, pub, item, label, tiktokResult(pub.remoteId, st.postId, channel.handle, kind));
 }

@@ -1,15 +1,14 @@
 import "server-only";
 
 import { API, call } from "@/lib/integrations/tiktok";
-import { ApiError } from "@/lib/integrations/http";
 import type { TikTokCreator, TikTokKind, TikTokOptions } from "./tiktok-rules";
 
 // Pubblicazione su TikTok (Content Posting API, Direct Post, scope video.publish).
 // I file non si caricano: TikTok li scarica dall'indirizzo pubblico di 2Target (PULL_FROM_URL),
 // per questo il dominio va verificato nel portale sviluppatori di TikTok.
 // Finché TikTok non approva l'app (audit), i post escono solo come privati («Solo io»).
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// L'invio è in due tempi: si avvia (publish_id, salvato subito) e lo stato si controlla nei giri successivi
+// dello scheduler, così un video lento non ferma le altre pubblicazioni e un nuovo tentativo non ripubblica.
 const auth = (token: string) => ({ authorization: `Bearer ${token}`, "content-type": "application/json; charset=UTF-8" });
 
 /** Il collegamento TikTok ha il permesso di pubblicare? (account collegati prima di attivarlo vanno ricollegati) */
@@ -49,8 +48,6 @@ export type TikTokPublishInput = {
   options: TikTokOptions;
   /** Indirizzi pubblici dei file (un video, oppure le foto in ordine). */
   urls: string[];
-  username: string;
-  heartbeat?: () => Promise<void>;
 };
 
 /** Testo per TikTok: il video ha un solo testo (fino a 2.200), le foto un titolo breve (90) e una descrizione. */
@@ -60,7 +57,8 @@ function texts(kind: TikTokKind, caption: string) {
   return { title: firstLine.slice(0, 90), description: caption.slice(0, 4000) };
 }
 
-export async function publishTikTok(i: TikTokPublishInput) {
+/** Avvia la pubblicazione: TikTok scarica ed elabora il file in sottofondo. Restituisce il publish_id. */
+export async function startTikTok(i: TikTokPublishInput) {
   const o = i.options;
   const commercial = { brand_content_toggle: o.disclose && o.brandContent, brand_organic_toggle: o.disclose && o.brandOrganic };
   let publishId: string;
@@ -94,27 +92,29 @@ export async function publishTikTok(i: TikTokPublishInput) {
     });
     publishId = r.data.publish_id;
   }
-  const postId = await waitPublished(publishId, i.token, i.heartbeat);
-  const permalink = postId && i.username ? `https://www.tiktok.com/@${i.username}/${i.kind === "video" ? "video" : "photo"}/${postId}` : null;
-  return { externalId: postId ?? publishId, permalink };
+  return publishId;
 }
 
-/** TikTok scarica ed elabora il file: si controlla lo stato ogni 5 secondi, fino a 10 minuti. */
-async function waitPublished(publishId: string, token: string, heartbeat?: () => Promise<void>) {
-  for (let n = 0; n < 120; n++) {
-    await heartbeat?.().catch(() => undefined);
-    const r = await call<{ data: { status: string; fail_reason?: string; publicaly_available_post_id?: (string | number)[] } }>(`${API}/post/publish/status/fetch/`, {
-      method: "POST",
-      headers: auth(token),
-      body: JSON.stringify({ publish_id: publishId }),
-    });
-    const s = r.data;
-    if (s.status === "PUBLISH_COMPLETE") return s.publicaly_available_post_id?.[0] != null ? String(s.publicaly_available_post_id[0]) : null;
-    if (s.status === "FAILED") throw new ApiError(`TikTok non ha pubblicato il post: ${FAIL_REASONS[s.fail_reason ?? ""] ?? s.fail_reason ?? "motivo non indicato"}`, 400);
-    await sleep(5000);
-  }
-  throw new ApiError("TikTok sta ancora elaborando il post dopo 10 minuti: controlla il profilo prima di riprovare", 504);
+export type TikTokStatus = { state: "done"; postId: string | null } | { state: "failed"; reason: string } | { state: "processing" };
+
+/** Stato di un invio già avviato (un solo controllo). */
+export async function tiktokStatus(publishId: string, token: string): Promise<TikTokStatus> {
+  const r = await call<{ data: { status: string; fail_reason?: string; publicaly_available_post_id?: (string | number)[] } }>(`${API}/post/publish/status/fetch/`, {
+    method: "POST",
+    headers: auth(token),
+    body: JSON.stringify({ publish_id: publishId }),
+  });
+  const s = r.data;
+  if (s.status === "PUBLISH_COMPLETE") return { state: "done", postId: s.publicaly_available_post_id?.[0] != null ? String(s.publicaly_available_post_id[0]) : null };
+  if (s.status === "FAILED") return { state: "failed", reason: `TikTok non ha pubblicato il post: ${FAIL_REASONS[s.fail_reason ?? ""] ?? s.fail_reason ?? "motivo non indicato"}` };
+  return { state: "processing" };
 }
+
+/** Link al post (i post privati o di foto non hanno un ID pubblico: si tiene il publish_id). */
+export const tiktokResult = (publishId: string, postId: string | null, username: string, kind: TikTokKind) => ({
+  externalId: postId ?? publishId,
+  permalink: postId && username ? `https://www.tiktok.com/@${username}/${kind === "video" ? "video" : "photo"}/${postId}` : null,
+});
 
 const FAIL_REASONS: Record<string, string> = {
   file_format_check_failed: "formato del file non accettato",
@@ -131,19 +131,3 @@ const FAIL_REASONS: Record<string, string> = {
   spam_risk_text: "il testo è stato segnalato come spam",
   spam_risk: "TikTok ha bloccato il post come possibile spam",
 };
-
-/**
- * Prima di ripetere un invio dall'esito incerto: cerca tra gli ultimi video uno uscito dopo `since`
- * con lo stesso testo (richiede video.list). Null se non lo trova o non si può controllare.
- */
-export async function findTikTokTwin(o: { token: string; caption: string; since: Date; username: string }) {
-  const norm = (t: string) => t.replace(/\s+/g, " ").trim().toLowerCase().slice(0, 300);
-  const target = norm(o.caption);
-  if (!target) return null;
-  const r = await call<{ data: { videos: { id: string; create_time: number; share_url?: string; video_description?: string; title?: string }[] } }>(
-    `${API}/video/list/?fields=id,create_time,share_url,video_description,title`,
-    { method: "POST", headers: auth(o.token), body: JSON.stringify({ max_count: 10 }) },
-  );
-  const hit = (r.data.videos ?? []).find((v) => v.create_time * 1000 >= o.since.getTime() - 60_000 && [v.video_description, v.title].some((t) => t && norm(t).startsWith(target.slice(0, 80))));
-  return hit ? { externalId: hit.id, permalink: hit.share_url ?? (o.username ? `https://www.tiktok.com/@${o.username}/video/${hit.id}` : null) } : null;
-}

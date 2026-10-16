@@ -487,10 +487,17 @@ ${days.join("\n")}`
  */
 export async function startFoundation(checkupId: number, userId: number | null) {
   if (running.has(checkupId)) return false;
-  const [c] = await db.select({ clientId: checkups.clientId, state: checkups.foundationState }).from(checkups).where(eq(checkups.id, checkupId));
-  if (!c || c.state === "pronta") return false;
   running.add(checkupId);
-  await db.update(checkups).set({ foundationState: "in_corso", foundationError: null, foundationProgress: "Preparo la base di lavoro" }).where(eq(checkups.id, checkupId));
+  // Presa in carico atomica: con due richieste quasi insieme (doppio clic, «Consegnato» e «Prepara») ne parte una sola
+  const [claim] = await db
+    .update(checkups)
+    .set({ foundationState: "in_corso", foundationError: null, foundationProgress: "Preparo la base di lavoro" })
+    .where(and(eq(checkups.id, checkupId), inArray(checkups.foundationState, ["nessuna", "errore"])));
+  const [c] = claim.affectedRows === 1 ? await db.select({ clientId: checkups.clientId }).from(checkups).where(eq(checkups.id, checkupId)) : [];
+  if (!c) {
+    running.delete(checkupId);
+    return false;
+  }
   void (async () => {
     try {
       const s = await prepare(checkupId, userId);

@@ -4,7 +4,7 @@ import { and, desc, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
-import { channelDaily, checkups, clients, contentPillars, FORMATS, FUNNEL, ideas, seoAnalyses, seoSnapshots, socialAccounts, type SeoAnalysisData } from "@/db/schema";
+import { auditLogs, channelDaily, checkups, clients, contentPillars, FORMATS, FUNNEL, ideas, seoAnalyses, seoSnapshots, socialAccounts, type SeoAnalysisData } from "@/db/schema";
 import { audit } from "@/lib/audit";
 import { errorDetail, logError } from "@/lib/error-log";
 import { brandSplit, brandTerms, changes, opportunities, type GscRow } from "@/lib/seo-insights";
@@ -252,8 +252,21 @@ scheda Google e recensioni, campagne Google Ads, misurazione) e idee di contenut
  * Analisi mensile automatica (dalla sincronizzazione notturna, dal 3 del mese): per i clienti con dati Google
  * che questo mese non ne hanno ancora una. Un errore su un cliente non ferma gli altri.
  */
+const g = globalThis as unknown as { __seoDueRunning?: boolean };
+
 export async function runDueSeoAnalyses(now = new Date()) {
   if (!isAiConfigured() || now.getUTCDate() < 3) return [];
+  // Un solo giro alla volta: due chiamate al cron non devono creare analisi e idee doppie
+  if (g.__seoDueRunning) return [];
+  g.__seoDueRunning = true;
+  try {
+    return await dueSeoAnalyses(now);
+  } finally {
+    g.__seoDueRunning = false;
+  }
+}
+
+async function dueSeoAnalyses(now: Date) {
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const withGoogle = await db
     .selectDistinct({ clientId: socialAccounts.clientId })
@@ -261,8 +274,18 @@ export async function runDueSeoAnalyses(now = new Date()) {
     .where(and(inArray(socialAccounts.platform, ["search_console", "ga4"]), eq(socialAccounts.connected, true)));
   const done = await db.select({ clientId: seoAnalyses.clientId }).from(seoAnalyses).where(gte(seoAnalyses.createdAt, monthStart));
   const out: string[] = [];
+  // Chi ha già fallito questo mese viene ritentato al massimo una volta al giorno per 3 giorni, poi si aspetta il mese dopo
+  const failed = await db
+    .select({ clientId: auditLogs.clientId, n: sql<number>`count(*)` })
+    .from(auditLogs)
+    .where(and(eq(auditLogs.action, "errore.analisi_seo"), gte(auditLogs.createdAt, monthStart)))
+    .groupBy(auditLogs.clientId);
   for (const { clientId } of withGoogle) {
     if (done.some((d) => d.clientId === clientId)) continue;
+    if (Number(failed.find((f) => f.clientId === clientId)?.n ?? 0) >= 3) continue;
+    // Ricontrollo subito prima: un'analisi avviata a mano nel frattempo vale per il mese
+    const [already] = await db.select({ id: seoAnalyses.id }).from(seoAnalyses).where(and(eq(seoAnalyses.clientId, clientId), gte(seoAnalyses.createdAt, monthStart))).limit(1);
+    if (already) continue;
     try {
       const r = await runSeoAnalysis(clientId, { userId: null, createIdeas: true, trigger: "mensile" });
       await audit({ userId: null, actorLabel: "AI", category: "canali", action: "seo.analisi", description: `Analisi SEO mensile con l'AI: ${r.ideas} idee aggiunte in bacheca`, clientId, target: `analisi-seo:${r.id}` });

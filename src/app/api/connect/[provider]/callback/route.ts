@@ -71,6 +71,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
           // Google non rimanda sempre il refresh token: si tiene quello vecchio
           ...(values.refreshTokenEnc && { refreshTokenEnc: values.refreshTokenEnc }),
           expiresAt: values.expiresAt,
+          // Ricollegando si aggiornano anche i permessi (es. video.publish di TikTok, business.manage di Google)
+          scopes: values.scopes,
           status: "attivo",
           lastError: null,
         },
