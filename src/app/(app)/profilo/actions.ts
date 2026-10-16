@@ -11,6 +11,9 @@ import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import { hashRecovery, newRecoveryCodes, newTotpSecret, otpauthUrl, verifyTotp } from "@/lib/totp";
 import { TOTP_PURPOSE, verifySecondFactor } from "@/lib/two-factor";
 import { audit } from "@/lib/audit";
+import { sendMail } from "@/lib/mail";
+import { isViewer } from "@/lib/roles";
+import { buildWeeklyDigest } from "@/lib/weekly-digest";
 
 // Doppio fattore dell'utente collegato: attivazione con QR code, conferma, codici di recupero, disattivazione.
 
@@ -67,4 +70,23 @@ export async function regenerateRecovery(code: string) {
   await audit({ userId: user.id, category: "accesso", action: "2fa.recupero", description: "Generati nuovi codici di recupero del doppio fattore" });
   revalidatePath("/profilo");
   return { ok: true, codes };
+}
+
+/** Riepilogo settimanale via email: attivo o no (solo per il team, non per i Viewer). */
+export async function setWeeklyDigest(on: boolean) {
+  const user = await me();
+  if (isViewer(user.role)) return { error: "Il riepilogo settimanale è per il team Golduck" };
+  await db.update(users).set({ weeklyDigest: !!on }).where(eq(users.id, user.id));
+  await audit({ userId: user.id, category: "utenti", action: "profilo.riepilogo", description: `Riepilogo settimanale ${on ? "attivato" : "disattivato"}`, target: `utente:${user.id}` });
+  revalidatePath("/profilo");
+  return { ok: true };
+}
+
+/** Manda subito a sé stessi il riepilogo com'è adesso (per vederlo senza aspettare lunedì). */
+export async function sendWeeklyDigestPreview() {
+  const user = await me();
+  if (isViewer(user.role)) return { error: "Il riepilogo settimanale è per il team Golduck" };
+  const d = await buildWeeklyDigest();
+  await sendMail(user.email, `[Anteprima] ${d.subject}`, d.text, d.html);
+  return { ok: true, email: user.email };
 }

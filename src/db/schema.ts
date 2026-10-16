@@ -56,6 +56,8 @@ export const users = mysqlTable("users", {
   totpRecovery: json("totp_recovery").$type<string[]>(),
   /** Può programmare e pubblicare sui profili dei clienti (Super admin e Administrator possono sempre). */
   canPublish: boolean("can_publish").notNull().default(false),
+  /** Riepilogo settimanale via email (uscite, contenuti non usciti, prossima settimana). Non per i Viewer. */
+  weeklyDigest: boolean("weekly_digest").notNull().default(true),
   lastLoginAt: datetime("last_login_at"),
   /** Ultima email di invito inviata (null = mai invitato). */
   invitedAt: datetime("invited_at"),

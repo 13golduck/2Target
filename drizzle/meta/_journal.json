@@ -204,6 +204,13 @@
       "when": 1792186646430,
       "tag": "0028_tiktok_esito_in_sottofondo",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1792186860204,
+      "tag": "0029_calendario_e_riepilogo",
+      "breakpoints": true
     }
   ]
 }

@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { syncClient } from "@/lib/integrations/sync";
 import { audit } from "@/lib/audit";
 import { sendDueMonthlyReports } from "@/lib/monthly-report";
+import { sendDueWeeklyDigest } from "@/lib/weekly-digest";
 
 // Sincronizzazione notturna di tutti i clienti (canali, KPI). Su Plesk: Operazioni pianificate →
 // «Recupera un URL» https://2target.it/api/cron/sync ogni notte (es. alle 3:00).
@@ -41,6 +42,8 @@ async function run(request: Request) {
   for (const c of list) report[c.name] = await syncClient(c.id);
   // Report mensili ai clienti che li hanno attivi (dal 3 del mese, una volta per mese)
   const reports = await sendDueMonthlyReports().catch((e) => [`report: ${(e as Error).message}`]);
+  // Riepilogo settimanale al team (una volta per settimana, alla prima sincronizzazione della settimana)
+  const weekly = await sendDueWeeklyDigest().catch((e) => [`riepilogo: ${(e as Error).message}`]);
   // Analisi SEO mensile con l'AI (dal 3 del mese): in sottofondo, dopo la risposta, per non allungare l'operazione pianificata
   void import("@/lib/ai/seo-agent").then((m) => m.runDueSeoAnalyses()).catch((e) => console.error("[seo] analisi mensili:", e));
   const withErrors = Object.entries(report).filter(([, e]) => e.length);
@@ -52,5 +55,5 @@ async function run(request: Request) {
     description: `Aggiornamento automatico dei canali: ${list.length} clienti in ${Math.round((Date.now() - started) / 1000)} s${withErrors.length ? ` · ${withErrors.length} con errori` : " · tutto ok"}`,
     meta: withErrors.length ? { errori: Object.fromEntries(withErrors) } : null,
   });
-  return NextResponse.json({ ok: true, report, reports });
+  return NextResponse.json({ ok: true, report, reports, weekly });
 }
