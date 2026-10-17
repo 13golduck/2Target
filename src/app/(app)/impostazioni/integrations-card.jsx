@@ -133,7 +133,7 @@ const GROUPS = [
         label: 'Chiave API PageSpeed',
         secret: true,
       },
-      { name: 'googleAdsDeveloperToken', label: 'Google Ads: developer token', secret: true },
+      { name: 'googleAdsDeveloperToken', label: 'Google Ads: developer token (facoltativo, ritirato da Google il 9/9/2026)', secret: true },
       { name: 'googleAdsLoginCustomerId', label: 'Google Ads: ID del centro clienti (MCC)' },
     ],
   },

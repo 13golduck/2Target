@@ -48,8 +48,13 @@ export const GOOGLE = {
   get pageSpeedKey() {
     return integrationKey("googlePageSpeedKey");
   },
+  /** Facoltativo: dal 9/9/2026 Google ha ritirato i developer token (l'accesso dipende dal progetto Google Cloud). */
   get adsDeveloperToken() {
     return integrationKey("googleAdsDeveloperToken");
+  },
+  /** Google Ads attivo: l'accesso (Test/Explorer/Base) è del progetto Google Cloud. Si spegne con GOOGLE_ADS_ENABLED=false. */
+  get adsEnabled() {
+    return process.env.GOOGLE_ADS_ENABLED !== "false";
   },
   /** ID del centro clienti (MCC) senza trattini: serve se gli account dei clienti sono gestiti dall'MCC di Golduck. */
   get adsLoginCustomerId() {
@@ -57,7 +62,7 @@ export const GOOGLE = {
   },
   /** Versione delle API Google Ads (Google ne ritira una all'anno: si aggiorna da qui o con GOOGLE_ADS_VERSION). */
   adsVersion: process.env.GOOGLE_ADS_VERSION ?? "v22",
-  // Search Console, Analytics 4 e Business Profile; Google Ads solo se c'è il developer token
+  // Search Console, Analytics 4, Business Profile e Google Ads (se attivo)
   get scopes() {
     return [
       "openid",
@@ -65,7 +70,7 @@ export const GOOGLE = {
       "https://www.googleapis.com/auth/webmasters.readonly",
       "https://www.googleapis.com/auth/analytics.readonly",
       "https://www.googleapis.com/auth/business.manage",
-      ...(this.adsDeveloperToken ? ["https://www.googleapis.com/auth/adwords"] : []),
+      ...(this.adsEnabled ? ["https://www.googleapis.com/auth/adwords"] : []),
     ];
   },
 };

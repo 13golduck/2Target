@@ -184,13 +184,14 @@ export async function syncBusinessProfile(token: string, externalId: string) {
 }
 
 // ── Google Ads ───────────────────────────────────────────────────────
-// Serve il developer token del centro clienti (MCC) di Golduck, approvato da Google per l'accesso «Base».
+// L'accesso dipende dal livello del progetto Google Cloud (Test, Explorer, Base, Standard): dal 9/9/2026 Google
+// ha ritirato i developer token. Se in Impostazioni ne è rimasto uno, si invia ancora (Google lo ignora).
 
 const adsUrl = (path: string) => `https://googleads.googleapis.com/${GOOGLE.adsVersion}/${path}`;
 // login-customer-id solo quando l'account si raggiunge tramite un centro clienti (MCC), mai per l'accesso diretto
 const adsHeaders = (token: string, loginCustomerId?: string) => ({
   Authorization: `Bearer ${token}`,
-  "developer-token": GOOGLE.adsDeveloperToken,
+  ...(GOOGLE.adsDeveloperToken && { "developer-token": GOOGLE.adsDeveloperToken }),
   "Content-Type": "application/json",
   ...(loginCustomerId && { "login-customer-id": loginCustomerId }),
 });
@@ -235,7 +236,7 @@ async function managerChildren(token: string, managerId: string) {
  * gli account dei clienti che gestiscono (è il caso dell'utente Golduck con il centro clienti di Golduck).
  */
 async function listAdsAccounts(token: string): Promise<GoogleAsset[]> {
-  if (!GOOGLE.adsDeveloperToken) return [];
+  if (!GOOGLE.adsEnabled) return [];
   const out = new Map<string, GoogleAsset>();
   const push = (id: string, name?: string, currency?: string) => {
     if (!out.has(id)) out.set(id, { kind: "google_ads", externalId: id, handle: adsLabel(id), name: `${name || "Account Google Ads"} · ${adsLabel(id)}${currency ? ` · ${currency}` : ""}` });
