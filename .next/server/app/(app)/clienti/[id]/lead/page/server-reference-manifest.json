@@ -1,0 +1,113 @@
+{
+  "node": {
+    "00a4a9f3b6e7fe3ef421361f39b7bacacf48ad32ec": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 763251,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "logout",
+      "filename": "src/app/login/actions.ts"
+    },
+    "6081deea92077672afe8f57024852364d4349d530e": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 763251,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "loginStep",
+      "filename": "src/app/login/actions.ts"
+    },
+    "7883be4b4174d3f266953e41902b5c01a27c085358": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 763251,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        }
+      },
+      "exportedName": "reportClientError",
+      "filename": "src/app/(app)/error-actions.ts"
+    },
+    "40cec69a5c8b8a094d8d9725e6dcc0de2348d816bc": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 763251,
+          "async": false,
+          "exportedName": "addCost",
+          "filename": "src/app/(app)/lead-actions.ts"
+        }
+      },
+      "exportedName": "addCost",
+      "filename": "src/app/(app)/lead-actions.ts"
+    },
+    "60d6fae9a71b869d9ae9ba2749707b412093645d52": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 763251,
+          "async": false,
+          "exportedName": "moveLead",
+          "filename": "src/app/(app)/lead-actions.ts"
+        }
+      },
+      "exportedName": "moveLead",
+      "filename": "src/app/(app)/lead-actions.ts"
+    },
+    "403bbcf85aa1b6b235f66b32c245628a778c3c75cc": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 763251,
+          "async": false,
+          "exportedName": "saveLead",
+          "filename": "src/app/(app)/lead-actions.ts"
+        }
+      },
+      "exportedName": "saveLead",
+      "filename": "src/app/(app)/lead-actions.ts"
+    },
+    "403b466029657c5688f477f5e381d21ee089a76247": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 763251,
+          "async": false,
+          "exportedName": "deleteCost",
+          "filename": "src/app/(app)/lead-actions.ts"
+        }
+      },
+      "exportedName": "deleteCost",
+      "filename": "src/app/(app)/lead-actions.ts"
+    },
+    "409aedbb880b08321e6ef3f870a2d78a2d65eaa434": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 763251,
+          "async": false,
+          "exportedName": "deleteLead",
+          "filename": "src/app/(app)/lead-actions.ts"
+        }
+      },
+      "exportedName": "deleteLead",
+      "filename": "src/app/(app)/lead-actions.ts"
+    },
+    "40696384fe2810c4e04b4b0ca4b674d61de9e86c20": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 763251,
+          "async": false,
+          "exportedName": "regenerateLeadToken",
+          "filename": "src/app/(app)/lead-actions.ts"
+        }
+      },
+      "exportedName": "regenerateLeadToken",
+      "filename": "src/app/(app)/lead-actions.ts"
+    }
+  },
+  "edge": {}
+}

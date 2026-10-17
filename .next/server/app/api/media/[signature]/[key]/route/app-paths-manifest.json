@@ -1,0 +1,3 @@
+{
+  "/api/media/[signature]/[key]/route": "app/api/media/[signature]/[key]/route.js"
+}

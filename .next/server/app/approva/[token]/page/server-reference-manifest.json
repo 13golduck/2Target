@@ -1,0 +1,17 @@
+{
+  "node": {
+    "404d9ad6544d194f95da3f7f95d4fed28b871012dc": {
+      "workers": {
+        "app/approva/[token]/page": {
+          "moduleId": 2884,
+          "async": false,
+          "exportedName": "sendFeedback",
+          "filename": "src/app/approva/actions.ts"
+        }
+      },
+      "exportedName": "sendFeedback",
+      "filename": "src/app/approva/actions.ts"
+    }
+  },
+  "edge": {}
+}

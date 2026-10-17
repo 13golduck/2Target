@@ -1,0 +1,89 @@
+{
+  "node": {
+    "00a4a9f3b6e7fe3ef421361f39b7bacacf48ad32ec": {
+      "workers": {
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 150918,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "logout",
+      "filename": "src/app/login/actions.ts"
+    },
+    "6081deea92077672afe8f57024852364d4349d530e": {
+      "workers": {
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 150918,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "loginStep",
+      "filename": "src/app/login/actions.ts"
+    },
+    "7883be4b4174d3f266953e41902b5c01a27c085358": {
+      "workers": {
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 150918,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        }
+      },
+      "exportedName": "reportClientError",
+      "filename": "src/app/(app)/error-actions.ts"
+    },
+    "6071f94dac9b596c2c9eb2d8f0d063cff1288d10f7": {
+      "workers": {
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 150918,
+          "async": false,
+          "exportedName": "changeSponsorship",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "exportedName": "changeSponsorship",
+      "filename": "src/app/(app)/ads-actions.ts"
+    },
+    "606d5252aa33e7f19d50d3669ce2462a54581fbd66": {
+      "workers": {
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 150918,
+          "async": false,
+          "exportedName": "findCities",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "exportedName": "findCities",
+      "filename": "src/app/(app)/ads-actions.ts"
+    },
+    "406b49f2d23f73ebe0611c034e6d1c948d1238176c": {
+      "workers": {
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 150918,
+          "async": false,
+          "exportedName": "startSponsorship",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "exportedName": "startSponsorship",
+      "filename": "src/app/(app)/ads-actions.ts"
+    },
+    "40ba68e750c1b7743f39f17534ac83e6dcd093305e": {
+      "workers": {
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 150918,
+          "async": false,
+          "exportedName": "refreshSponsorships",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "exportedName": "refreshSponsorships",
+      "filename": "src/app/(app)/ads-actions.ts"
+    }
+  },
+  "edge": {}
+}

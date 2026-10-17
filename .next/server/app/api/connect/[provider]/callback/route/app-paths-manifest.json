@@ -1,0 +1,3 @@
+{
+  "/api/connect/[provider]/callback/route": "app/api/connect/[provider]/callback/route.js"
+}

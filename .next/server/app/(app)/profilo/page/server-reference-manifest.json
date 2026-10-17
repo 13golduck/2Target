@@ -1,0 +1,113 @@
+{
+  "node": {
+    "00a4a9f3b6e7fe3ef421361f39b7bacacf48ad32ec": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 76837,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "logout",
+      "filename": "src/app/login/actions.ts"
+    },
+    "6081deea92077672afe8f57024852364d4349d530e": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 76837,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "loginStep",
+      "filename": "src/app/login/actions.ts"
+    },
+    "7883be4b4174d3f266953e41902b5c01a27c085358": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 76837,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        }
+      },
+      "exportedName": "reportClientError",
+      "filename": "src/app/(app)/error-actions.ts"
+    },
+    "4068af7f98737614af8c2163d1a0a6c4811851d32e": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 76837,
+          "async": false,
+          "exportedName": "confirmTotp",
+          "filename": "src/app/(app)/profilo/actions.ts"
+        }
+      },
+      "exportedName": "confirmTotp",
+      "filename": "src/app/(app)/profilo/actions.ts"
+    },
+    "40f19e9a415ce4ddd85775c8faf86caeb381a84320": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 76837,
+          "async": false,
+          "exportedName": "disableTotp",
+          "filename": "src/app/(app)/profilo/actions.ts"
+        }
+      },
+      "exportedName": "disableTotp",
+      "filename": "src/app/(app)/profilo/actions.ts"
+    },
+    "00373ab1bfcfa977a70201af056ae72ae220eeb064": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 76837,
+          "async": false,
+          "exportedName": "startTotpSetup",
+          "filename": "src/app/(app)/profilo/actions.ts"
+        }
+      },
+      "exportedName": "startTotpSetup",
+      "filename": "src/app/(app)/profilo/actions.ts"
+    },
+    "401664516b726ff3c5d2506bc883c967ca7f43c80b": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 76837,
+          "async": false,
+          "exportedName": "setWeeklyDigest",
+          "filename": "src/app/(app)/profilo/actions.ts"
+        }
+      },
+      "exportedName": "setWeeklyDigest",
+      "filename": "src/app/(app)/profilo/actions.ts"
+    },
+    "4068060dc0abfd2bbf95d37a2bfd54902d7d32df7b": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 76837,
+          "async": false,
+          "exportedName": "regenerateRecovery",
+          "filename": "src/app/(app)/profilo/actions.ts"
+        }
+      },
+      "exportedName": "regenerateRecovery",
+      "filename": "src/app/(app)/profilo/actions.ts"
+    },
+    "00318933fa153e38327922eccd8769892512f42738": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 76837,
+          "async": false,
+          "exportedName": "sendWeeklyDigestPreview",
+          "filename": "src/app/(app)/profilo/actions.ts"
+        }
+      },
+      "exportedName": "sendWeeklyDigestPreview",
+      "filename": "src/app/(app)/profilo/actions.ts"
+    }
+  },
+  "edge": {}
+}

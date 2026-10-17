@@ -1,0 +1,185 @@
+{
+  "node": {
+    "00a4a9f3b6e7fe3ef421361f39b7bacacf48ad32ec": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "logout",
+      "filename": "src/app/login/actions.ts"
+    },
+    "6081deea92077672afe8f57024852364d4349d530e": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "loginStep",
+      "filename": "src/app/login/actions.ts"
+    },
+    "7883be4b4174d3f266953e41902b5c01a27c085358": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        }
+      },
+      "exportedName": "reportClientError",
+      "filename": "src/app/(app)/error-actions.ts"
+    },
+    "402b169f32a316e0152840c5c1ef8b606eb7aab7fd": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "createItem",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "exportedName": "createItem",
+      "filename": "src/app/(app)/actions.ts"
+    },
+    "403366fe16e60b257ca648ff4791d84467c57d3360": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "createPlan",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "exportedName": "createPlan",
+      "filename": "src/app/(app)/actions.ts"
+    },
+    "60042ca9a549fae26358d31c0a2b59777251633612": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "rescheduleItem",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "exportedName": "rescheduleItem",
+      "filename": "src/app/(app)/actions.ts"
+    },
+    "40ab45f2abfff169af4d66779dfdc99d103329d5d2": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "planAiStatus",
+          "filename": "src/app/(app)/plan-ai-actions.ts"
+        }
+      },
+      "exportedName": "planAiStatus",
+      "filename": "src/app/(app)/plan-ai-actions.ts"
+    },
+    "40c4deefcf9dbd22b364fe41b2560d0b76a72a7f80": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "startPlanQuestions",
+          "filename": "src/app/(app)/plan-ai-actions.ts"
+        }
+      },
+      "exportedName": "startPlanQuestions",
+      "filename": "src/app/(app)/plan-ai-actions.ts"
+    },
+    "6013831b8280e80a6e8a00e573172b022e8477844f": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "startPlanGeneration",
+          "filename": "src/app/(app)/plan-ai-actions.ts"
+        }
+      },
+      "exportedName": "startPlanGeneration",
+      "filename": "src/app/(app)/plan-ai-actions.ts"
+    },
+    "60117dc104c68b5f6d233584d52c5f8ab9cb93bc47": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "setApproval",
+          "filename": "src/app/(app)/client-settings-actions.ts"
+        }
+      },
+      "exportedName": "setApproval",
+      "filename": "src/app/(app)/client-settings-actions.ts"
+    },
+    "40311d7753cfe6f3387599b3b5563cc08e568d2974": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "getApprovalLink",
+          "filename": "src/app/(app)/client-settings-actions.ts"
+        }
+      },
+      "exportedName": "getApprovalLink",
+      "filename": "src/app/(app)/client-settings-actions.ts"
+    },
+    "40e3d94740f12e925da1738588890d0e8422cc8fd0": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "sendForApproval",
+          "filename": "src/app/(app)/client-settings-actions.ts"
+        }
+      },
+      "exportedName": "sendForApproval",
+      "filename": "src/app/(app)/client-settings-actions.ts"
+    },
+    "40c7ae4fb6b6fb78fcbbebb31b0eee714e62cb4b67": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "importPlanItems",
+          "filename": "src/app/(app)/plan-import-actions.ts"
+        }
+      },
+      "exportedName": "importPlanItems",
+      "filename": "src/app/(app)/plan-import-actions.ts"
+    },
+    "408fb3245a1d5fc2b1050b1cb02e00a3e72335e705": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "planImportStatus",
+          "filename": "src/app/(app)/plan-import-actions.ts"
+        }
+      },
+      "exportedName": "planImportStatus",
+      "filename": "src/app/(app)/plan-import-actions.ts"
+    },
+    "40f0767e760990f54bd7e789c6407c75e040aa201e": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 886718,
+          "async": false,
+          "exportedName": "analyzePlanDocument",
+          "filename": "src/app/(app)/plan-import-actions.ts"
+        }
+      },
+      "exportedName": "analyzePlanDocument",
+      "filename": "src/app/(app)/plan-import-actions.ts"
+    }
+  },
+  "edge": {}
+}

@@ -1,0 +1,173 @@
+{
+  "node": {
+    "00a4a9f3b6e7fe3ef421361f39b7bacacf48ad32ec": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 823843,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "logout",
+      "filename": "src/app/login/actions.ts"
+    },
+    "6081deea92077672afe8f57024852364d4349d530e": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 823843,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "loginStep",
+      "filename": "src/app/login/actions.ts"
+    },
+    "7883be4b4174d3f266953e41902b5c01a27c085358": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 823843,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        }
+      },
+      "exportedName": "reportClientError",
+      "filename": "src/app/(app)/error-actions.ts"
+    },
+    "4003c5ac0244887b91cb04d5ac2e00768121bd085d": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 823843,
+          "async": false,
+          "exportedName": "connectMetaSystemUser",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "connectMetaSystemUser",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "400e1b6548ee97b0e2faf09f8d8b2dcb1856ce652a": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 823843,
+          "async": false,
+          "exportedName": "syncClientNow",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "syncClientNow",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "40510d0c004c2f0dc8ecb18626164415dacdbbc2cd": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 823843,
+          "async": false,
+          "exportedName": "removeConnection",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "removeConnection",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "4064ae3880665e8fd76fdf9f245e2747fd18da8b6f": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 823843,
+          "async": false,
+          "exportedName": "attachChannels",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "attachChannels",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "4083a0dde6b3a354c1524bbfeaa625137dbe13910b": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 823843,
+          "async": false,
+          "exportedName": "quickPost",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "quickPost",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "4098a8c1bdc7eb814eb8ade2199041b70aaff3add4": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 823843,
+          "async": false,
+          "exportedName": "addManualChannel",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "addManualChannel",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "4099d0a36dc93600cdefe85f964975777ed4bf2e86": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 823843,
+          "async": false,
+          "exportedName": "syncChannelNow",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "syncChannelNow",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "40a5a38f3e4d00428ce2a2239f625035de2970ebd8": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 823843,
+          "async": false,
+          "exportedName": "removeChannel",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "removeChannel",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "40cc4a9ece7906e9818e2e478d750e5ce62b792101": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 823843,
+          "async": false,
+          "exportedName": "assetsFor",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "assetsFor",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "40fc53444d457740b16a12e88eac3bbd5c6b2c474b": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 823843,
+          "async": false,
+          "exportedName": "loadAdAccounts",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "exportedName": "loadAdAccounts",
+      "filename": "src/app/(app)/ads-actions.ts"
+    },
+    "404ccc568c76557df4c76deb71330c5d72ed0365bb": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 823843,
+          "async": false,
+          "exportedName": "saveAdsSettings",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "exportedName": "saveAdsSettings",
+      "filename": "src/app/(app)/ads-actions.ts"
+    }
+  },
+  "edge": {}
+}

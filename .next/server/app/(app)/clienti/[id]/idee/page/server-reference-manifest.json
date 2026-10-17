@@ -1,0 +1,101 @@
+{
+  "node": {
+    "00a4a9f3b6e7fe3ef421361f39b7bacacf48ad32ec": {
+      "workers": {
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 599250,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "logout",
+      "filename": "src/app/login/actions.ts"
+    },
+    "6081deea92077672afe8f57024852364d4349d530e": {
+      "workers": {
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 599250,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "loginStep",
+      "filename": "src/app/login/actions.ts"
+    },
+    "7883be4b4174d3f266953e41902b5c01a27c085358": {
+      "workers": {
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 599250,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        }
+      },
+      "exportedName": "reportClientError",
+      "filename": "src/app/(app)/error-actions.ts"
+    },
+    "40a7744b4363be0de015c868a192a9af47d21d7682": {
+      "workers": {
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 599250,
+          "async": false,
+          "exportedName": "addIdea",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "exportedName": "addIdea",
+      "filename": "src/app/(app)/actions.ts"
+    },
+    "60f3a0a5bc740e0278ba3de27e6ca783de4a03ed95": {
+      "workers": {
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 599250,
+          "async": false,
+          "exportedName": "moveIdea",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "exportedName": "moveIdea",
+      "filename": "src/app/(app)/actions.ts"
+    },
+    "4025c8aea90b0e157b78ebc44570ee5618137d2db3": {
+      "workers": {
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 599250,
+          "async": false,
+          "exportedName": "planIdea",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "exportedName": "planIdea",
+      "filename": "src/app/(app)/actions.ts"
+    },
+    "408ed941af618c9bf17d9b2038451a4235d8fa8c55": {
+      "workers": {
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 599250,
+          "async": false,
+          "exportedName": "voteIdea",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "exportedName": "voteIdea",
+      "filename": "src/app/(app)/actions.ts"
+    },
+    "402588d11657dfef8d27c5098f619b507ffcd61ca1": {
+      "workers": {
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 599250,
+          "async": false,
+          "exportedName": "setIdeaStatus",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "exportedName": "setIdeaStatus",
+      "filename": "src/app/(app)/actions.ts"
+    }
+  },
+  "edge": {}
+}

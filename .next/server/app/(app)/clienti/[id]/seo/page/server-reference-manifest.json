@@ -1,0 +1,65 @@
+{
+  "node": {
+    "00a4a9f3b6e7fe3ef421361f39b7bacacf48ad32ec": {
+      "workers": {
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 153520,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "logout",
+      "filename": "src/app/login/actions.ts"
+    },
+    "6081deea92077672afe8f57024852364d4349d530e": {
+      "workers": {
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 153520,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "loginStep",
+      "filename": "src/app/login/actions.ts"
+    },
+    "7883be4b4174d3f266953e41902b5c01a27c085358": {
+      "workers": {
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 153520,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        }
+      },
+      "exportedName": "reportClientError",
+      "filename": "src/app/(app)/error-actions.ts"
+    },
+    "60091fe09b1b22448b50bb937efabd856da56ccdab": {
+      "workers": {
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 153520,
+          "async": false,
+          "exportedName": "saveBrandTerms",
+          "filename": "src/app/(app)/client-settings-actions.ts"
+        }
+      },
+      "exportedName": "saveBrandTerms",
+      "filename": "src/app/(app)/client-settings-actions.ts"
+    },
+    "60ef1b7b154e8f128330c9ed81e5b2b78f8d5c38b3": {
+      "workers": {
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 153520,
+          "async": false,
+          "exportedName": "startSeoAnalysis",
+          "filename": "src/app/(app)/seo-actions.ts"
+        }
+      },
+      "exportedName": "startSeoAnalysis",
+      "filename": "src/app/(app)/seo-actions.ts"
+    }
+  },
+  "edge": {}
+}

@@ -1,0 +1,89 @@
+{
+  "node": {
+    "00a4a9f3b6e7fe3ef421361f39b7bacacf48ad32ec": {
+      "workers": {
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 397878,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "logout",
+      "filename": "src/app/login/actions.ts"
+    },
+    "6081deea92077672afe8f57024852364d4349d530e": {
+      "workers": {
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 397878,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "loginStep",
+      "filename": "src/app/login/actions.ts"
+    },
+    "7883be4b4174d3f266953e41902b5c01a27c085358": {
+      "workers": {
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 397878,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        }
+      },
+      "exportedName": "reportClientError",
+      "filename": "src/app/(app)/error-actions.ts"
+    },
+    "4069d8691d0194e7a950b4b507f10d4906db4ffa0d": {
+      "workers": {
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 397878,
+          "async": false,
+          "exportedName": "deleteReview",
+          "filename": "src/app/(app)/design-actions.ts"
+        }
+      },
+      "exportedName": "deleteReview",
+      "filename": "src/app/(app)/design-actions.ts"
+    },
+    "4073607790453d3e16063ebe34b280b4bbddd37c42": {
+      "workers": {
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 397878,
+          "async": false,
+          "exportedName": "reviewUpload",
+          "filename": "src/app/(app)/design-actions.ts"
+        }
+      },
+      "exportedName": "reviewUpload",
+      "filename": "src/app/(app)/design-actions.ts"
+    },
+    "40d1687e532fc243fa218a30d59ee87345f3a80b04": {
+      "workers": {
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 397878,
+          "async": false,
+          "exportedName": "saveBrandKit",
+          "filename": "src/app/(app)/design-actions.ts"
+        }
+      },
+      "exportedName": "saveBrandKit",
+      "filename": "src/app/(app)/design-actions.ts"
+    },
+    "60e25c803959f6b849a5d51c5891553c174c844b46": {
+      "workers": {
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 397878,
+          "async": false,
+          "exportedName": "proposeBrandKit",
+          "filename": "src/app/(app)/design-actions.ts"
+        }
+      },
+      "exportedName": "proposeBrandKit",
+      "filename": "src/app/(app)/design-actions.ts"
+    }
+  },
+  "edge": {}
+}

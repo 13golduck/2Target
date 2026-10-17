@@ -1,0 +1,99 @@
+module.exports=[224774,(a,b,c)=>{"use strict";Object.defineProperty(c,"__esModule",{value:!0});var d={ACTION_HEADER:function(){return g},FLIGHT_HEADERS:function(){return q},NEXT_ACTION_NOT_FOUND_HEADER:function(){return x},NEXT_ACTION_REVALIDATED_HEADER:function(){return A},NEXT_DID_POSTPONE_HEADER:function(){return t},NEXT_HMR_REFRESH_HASH_COOKIE:function(){return l},NEXT_HMR_REFRESH_HEADER:function(){return k},NEXT_HTML_REQUEST_ID_HEADER:function(){return z},NEXT_INSTANT_PREFETCH_HEADER:function(){return o},NEXT_INSTANT_TEST_COOKIE:function(){return p},NEXT_IS_PRERENDER_HEADER:function(){return w},NEXT_REQUEST_ID_HEADER:function(){return y},NEXT_REWRITTEN_PATH_HEADER:function(){return u},NEXT_REWRITTEN_QUERY_HEADER:function(){return v},NEXT_ROUTER_PREFETCH_HEADER:function(){return i},NEXT_ROUTER_SEGMENT_PREFETCH_HEADER:function(){return j},NEXT_ROUTER_STALE_TIME_HEADER:function(){return s},NEXT_ROUTER_STATE_TREE_HEADER:function(){return h},NEXT_RSC_UNION_QUERY:function(){return r},NEXT_URL:function(){return m},RSC_CONTENT_TYPE_HEADER:function(){return n},RSC_HEADER:function(){return f}};for(var e in d)Object.defineProperty(c,e,{enumerable:!0,get:d[e]});let f="rsc",g="next-action",h="next-router-state-tree",i="next-router-prefetch",j="next-router-segment-prefetch",k="next-hmr-refresh",l="__next_hmr_refresh_hash__",m="next-url",n="text/x-component",o="next-instant-navigation-testing-prefetch",p="next-instant-navigation-testing",q=[f,h,i,k,j],r="_rsc",s="x-nextjs-stale-time",t="x-nextjs-postponed",u="x-nextjs-rewritten-path",v="x-nextjs-rewritten-query",w="x-nextjs-prerender",x="x-nextjs-action-not-found",y="x-nextjs-request-id",z="x-nextjs-html-request-id",A="x-action-revalidated";("function"==typeof c.default||"object"==typeof c.default&&null!==c.default)&&void 0===c.default.__esModule&&(Object.defineProperty(c.default,"__esModule",{value:!0}),Object.assign(c.default,c),b.exports=c.default)},237211,(a,b,c)=>{"use strict";Object.defineProperty(c,"__esModule",{value:!0});var d={djb2Hash:function(){return f},hexHash:function(){return g}};for(var e in d)Object.defineProperty(c,e,{enumerable:!0,get:d[e]});function f(a){let b=5381;for(let c=0;c<a.length;c++)b=(b<<5)+b+a.charCodeAt(c)|0;return b>>>0}function g(a){return f(a).toString(36).slice(0,5)}},773576,(a,b,c)=>{"use strict";function d(a){return a.startsWith("/")?a:`/${a}`}Object.defineProperty(c,"__esModule",{value:!0}),Object.defineProperty(c,"ensureLeadingSlash",{enumerable:!0,get:function(){return d}})},398698,(a,b,c)=>{"use strict";Object.defineProperty(c,"__esModule",{value:!0});var d={DEFAULT_SEGMENT_KEY:function(){return l},NOT_FOUND_SEGMENT_KEY:function(){return m},PAGE_SEGMENT_KEY:function(){return k},addSearchParamsIfPageSegment:function(){return i},computeSelectedLayoutSegment:function(){return j},getSegmentValue:function(){return f},getSelectedLayoutSegmentPath:function(){return function a(b,c,d=!0,e=[]){let g;if(d)g=b[1][c];else{let a=b[1];g=a.children??Object.values(a)[0]}if(!g)return e;let h=f(g[0]);return!h||h.startsWith(k)?e:(e.push(h),a(g,c,!1,e))}},isGroupSegment:function(){return g},isParallelRouteSegment:function(){return h}};for(var e in d)Object.defineProperty(c,e,{enumerable:!0,get:d[e]});function f(a){return Array.isArray(a)?a[1]:a}function g(a){return"("===a[0]&&a.endsWith(")")}function h(a){return a.startsWith("@")&&"@children"!==a}function i(a,b){if(a.includes(k)){let a=JSON.stringify(b);return"{}"!==a?k+"?"+a:k}return a}function j(a,b){if(!a||0===a.length)return null;let c="children"===b?a[0]:a[a.length-1];return c===l?null:c}let k="__PAGE__",l="__DEFAULT__",m="/_not-found"},5847,(a,b,c)=>{"use strict";Object.defineProperty(c,"__esModule",{value:!0});var d={compareAppPaths:function(){return i},normalizeAppPath:function(){return h},normalizeRscURL:function(){return j}};for(var e in d)Object.defineProperty(c,e,{enumerable:!0,get:d[e]});let f=a.r(773576),g=a.r(398698);function h(a){return(0,f.ensureLeadingSlash)(a.split("/").reduce((a,b,c,d)=>!b||(0,g.isGroupSegment)(b)||"@"===b[0]||("page"===b||"route"===b)&&c===d.length-1?a:`${a}/${b}`,""))}function i(a,b){let c=a.includes("/@"),d=b.includes("/@");return c&&!d?-1:!c&&d?1:a.localeCompare(b)}function j(a){return a.replace(/\.rsc($|\?)/,"$1")}},697908,(a,b,c)=>{"use strict";Object.defineProperty(c,"__esModule",{value:!0});var d={INTERCEPTION_ROUTE_MARKERS:function(){return g},extractInterceptionRouteInformation:function(){return i},isInterceptionRouteAppPath:function(){return h}};for(var e in d)Object.defineProperty(c,e,{enumerable:!0,get:d[e]});let f=a.r(5847),g=["(..)(..)","(.)","(..)","(...)"];function h(a){return void 0!==a.split("/").find(a=>g.find(b=>a.startsWith(b)))}function i(a){let b,c,d;for(let e of a.split("/"))if(c=g.find(a=>e.startsWith(a))){[b,d]=a.split(c,2);break}if(!b||!c||!d)throw Object.defineProperty(Error(`Invalid interception route: ${a}. Must be in the format /<intercepting route>/(..|...|..)(..)/<intercepted route>`),"__NEXT_ERROR_CODE",{value:"E269",enumerable:!1,configurable:!0});switch(b=(0,f.normalizeAppPath)(b),c){case"(.)":d="/"===b?`/${d}`:b+"/"+d;break;case"(..)":if("/"===b)throw Object.defineProperty(Error(`Invalid interception route: ${a}. Cannot use (..) marker at the root level, use (.) instead.`),"__NEXT_ERROR_CODE",{value:"E207",enumerable:!1,configurable:!0});d=b.split("/").slice(0,-1).concat(d).join("/");break;case"(...)":d="/"+d;break;case"(..)(..)":let e=b.split("/");if(e.length<=2)throw Object.defineProperty(Error(`Invalid interception route: ${a}. Cannot use (..)(..) marker at the root level or one level up.`),"__NEXT_ERROR_CODE",{value:"E486",enumerable:!1,configurable:!0});d=e.slice(0,-2).concat(d).join("/");break;default:throw Object.defineProperty(Error("Invariant: unexpected marker"),"__NEXT_ERROR_CODE",{value:"E112",enumerable:!1,configurable:!0})}return{interceptingRoute:b,interceptedRoute:d}}},643116,a=>{"use strict";function b(a){let b=Object.fromEntries(new Intl.DateTimeFormat("en-US",{timeZone:"Europe/Rome",hourCycle:"h23",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}).formatToParts(a).map(a=>[a.type,a.value]));return Math.round((Date.UTC(+b.year,b.month-1,+b.day,+b.hour,+b.minute)-a.getTime())/6e4)}a.s(["fromRomeInput",0,function(a){if(!a)return null;let c=new Date(`${a}:00Z`);return Number.isNaN(c.getTime())?null:new Date(c.getTime()-6e4*b(c))},"isoDaysAgo",0,a=>new Date(Date.now()-864e5*a).toISOString().slice(0,10),"nowDate",0,()=>new Date,"parseMetricInput",0,function(a,b){let c=String(a??"").trim().replace(/\./g,"").replace(",",".").replace("%","").replace("€","").trim();if(!c)return null;let d=Number(c);return Number.isFinite(d)?"%"===b&&(String(a).includes("%")||d>1)?d/100:d:null},"toRomeInput",0,function(a){return a?new Date(a.getTime()+6e4*b(a)).toISOString().slice(0,16):""}])},724470,a=>{"use strict";var b=a.i(93321),c=a.i(594758),d=a.i(837137);let e=`## Obiettivo
+Trasformare dati frammentati e osservazioni sui canali di comunicazione del cliente in un report strategico
+strutturato, autorevole e "pronto per la vendita". Il tono \xe8 rigoroso, propositivo, consulenziale (senza fuffa),
+chiaro ed estremamente attento ai dettagli di business.
+
+## Struttura del report
+Il documento si apre con un EXECUTIVE SUMMARY di una pagina (principio della piramide rovesciata): i 3 problemi
+principali e le 3 azioni prioritarie da fare subito. Se il cliente legge solo quella pagina deve comunque percepire
+il valore dell'intera consulenza. Seguono sempre questi 8 punti:
+1. Analisi degli strumenti di comunicazione esistenti (sito, social, canali fisici): "in cosa funziona" e "in cosa
+   potrebbe performare meglio", con metriche quando disponibili.
+2. Posizionamento, brand identity e tone of voice: posizionamento attuale, criticit\xe0, registro linguistico.
+3. Buyer persona: almeno 3 profili strategici con dati demografici, leve psicologiche, canali preferiti, valori.
+4. Canali utilizzati vs potenziale: tabella di sintesi sull'efficacia attuale di ogni canale rispetto al suo
+   potenziale strategico, con spiegazione qualitativa. Deve far vedere subito dove si spreca budget e dove c'\xe8
+   una "miniera d'oro" inutilizzata.
+5. Obiettivi di comunicazione lungo il funnel: Awareness, Consideration, Conversion, Retention/Loyalty, con
+   micro-obiettivi, strategie operative e KPI.
+6. Benchmark competitor: 3-5 competitor o realt\xe0 simili (nazionali o internazionali), ciascuno con mini-SWOT.
+7. Analisi SWOT del cliente.
+8. Best practice e consigli di crescita: azioni prioritarie e "quick wins" per colmare i gap.
+
+## Regole di stile
+- Niente generalizzazioni. Per ogni criticit\xe0 spiega SEMPRE l'impatto sul business (es. "pochi Reel riducono la
+  reach organica in un momento in cui l'algoritmo privilegia i video verticali, allontanando il target under 35").
+- Linguaggio tecnico ma accessibile: funnel, ROI, reach organica, buyer persona, touchpoint, brand equity.
+- Approccio proattivo: per ogni problema una soluzione concreta o una best practice di riferimento.
+- Registro adattato al cliente: istituzionale e formale per enti pubblici e associazioni nazionali; dinamico e
+  commerciale per startup e aziende di prodotto.
+
+## Framework da usare
+- SOSTAC (PR Smith): filo logico tra analisi e azioni. Situation = punti 1, 2, 3, 7; Objectives = punto 5;
+  Strategy = punti 5 e 8; Tactics = punti 4 e 5; Action = punto 8 (chi fa cosa); Control = KPI del punto 5.
+- See-Think-Do-Care (Avinash Kaushik): See = Awareness (pubblico ampio, nessun intento), Think = Consideration
+  (valutazione), Do = Conversion (pronto all'azione), Care = Retention (clienti ricorrenti).
+- StoryBrand (Donald Miller) per posizionamento e tone of voice: il cliente non \xe8 l'eroe ma la guida che d\xe0
+  all'eroe (la buyer persona) lo strumento (prodotto o servizio) per risolvere il suo problema.
+
+## Benchmark competitor
+Non una lista di nomi ma uno studio. Per ogni competitor:
+- Dati chiave: canali attivi, dimensione della community, engagement rate, se fa pubblicit\xe0 attiva.
+- Strengths: cosa fa eccezionalmente bene.
+- Weaknesses: dove sbaglia.
+- Leva strategica: la singola lezione o best practice che il cliente pu\xf2 copiare, adattare o migliorare.
+Confronta i numeri con quelli del cliente: un ER del 4% contro l'1% d\xe0 subito la misura del gap.
+
+## Dati e fonti (regola vincolante)
+- Usa solo dati trovati online, con la fonte, oppure forniti dal consulente.
+- Strumenti come SimilarWeb, Semrush, Phlanx o ShareLOV NON sono consultabili da te: non attribuire loro numeri.
+  Se un dato \xe8 una tua stima, scrivilo come "stima" e spiega come l'hai ottenuta (es. interazioni visibili sugli
+  ultimi 12 post / follower).
+- La Libreria inserzioni di Meta \xe8 pubblica: se riesci a consultarla indica se il competitor ha inserzioni attive,
+  altrimenti scrivi "non verificato".
+- Se un'evidenza merita una prova visiva (es. link in bio rotto) segnalalo: il consulente allegher\xe0 lo screenshot.
+`,f=`## Obiettivo
+Un piano editoriale social pronto da produrre e pubblicare: ogni contenuto ha data, formato, pilastro, layout,
+caption completa, hashtag e CTA. Nasce dal check-up (posizionamento, buyer persona, funnel, competitor, quick win)
+e dalle risposte del consulente; deve far capire al cliente perch\xe9 \xe8 fatto cos\xec.
+
+## Parte introduttiva (va nel brief del piano)
+- Intestazione: cliente, periodo, numero totale di contenuti divisi per formato, frequenza (es. "min. 3 a settimana,
+  mai la domenica").
+- Legenda e criteri: giorni fissi di pubblicazione per formato e perch\xe9 (es. Reel marted\xec e gioved\xec, Post/Carosello sabato).
+  Il primo contenuto presenta la pagina o il progetto, se il canale riparte o \xe8 nuovo.
+- Pilastri di contenuto (5-7) con una riga ciascuno: cosa sono e a cosa servono nel funnel. Il pilastro pi\xf9 frequente
+  \xe8 quello che il check-up indica come pi\xf9 efficace (anche sull'esempio dei competitor che funzionano).
+- "Perch\xe9 questa distribuzione": confronto con i competitor del check-up (frequenza, formati) e i pilastri che loro
+  non presidiano, legati a un vantaggio reale del cliente.
+- Pulsanti e call to action: bottone fisso della pagina e logica della CTA per fase (awareness = CTA leggera
+  "salva / scrivici in DM"; fiducia = verso il sito o il portfolio; considerazione = DM o modulo; promo = CTA diretta
+  con una scadenza vera, mai urgenza finta). Evitare "link in bio" generico per i contenuti ad alto intento.
+- Budget sponsorizzate: cifra mensile indicativa (dichiarata come ipotesi se mancano dati storici), quanti contenuti
+  sponsorizzare al mese, quali sono candidati (★) e perch\xe9, obiettivo della campagna per tipo di contenuto, targeting
+  (raggio geografico, et\xe0, interessi), fasi di spesa nel periodo.
+- Strategia di produzione: giornate di ripresa/foto consigliate e cosa raccogliere in ciascuna, materiale da chiedere
+  al cliente con una scadenza.
+
+## Calendario
+- Ogni contenuto: data, formato (Reel, Post singolo, Carosello, Storia), pilastro, titolo, layout e produzione
+  (inquadrature, durata, slide del carosello, testo in overlay), caption completa pronta da pubblicare, hashtag
+  (8-10: brand + settore + localit\xe0), CTA coerente con la fase.
+- Mix dei formati secondo il check-up: video verticali per la reach, caroselli per FAQ e contenuti da salvare.
+- Seguire la stagionalit\xe0 reale del settore e le ricorrenze utili (non tutte: solo quelle sensate per il cliente).
+- Segnare con "candidato sponsorizzazione" i contenuti pi\xf9 forti per la pubblicit\xe0.
+- Segnalare la "criticit\xe0 materiale" quando un contenuto richiede foto/video che potrebbero non esistere (es. prima/dopo),
+  con il livello di rischio e la data entro cui verificare; proporre l'alternativa se il materiale manca.
+
+## Regole di stile
+- Italiano, tono di voce del cliente (dal brand kit e dal check-up). Niente frasi fatte, niente emoji in eccesso.
+- Caption concrete e specifiche per il cliente: luoghi, servizi, prodotti, persone reali. Nessun dato inventato
+  (prezzi, premi, anni di attivit\xe0) se non viene dal check-up o dal consulente: in quel caso scrivere [da verificare].
+- Ogni caption \xe8 una base di partenza che il team adatta; i consigli tecnici vanno verificati con il cliente.
+
+## Note per il team (in fondo al brief)
+- Reel sempre con sottotitoli in overlay. Coerenza cromatica con il brand kit. Rivedere il piano dopo le prime
+  4 settimane sostituendo i pilastri che rendono meno.
+`;function g(a,e){async function f(){let[f]=await c.db.select().from(d.appSettings).where((0,b.eq)(d.appSettings.key,a)).limit(1);return f?.value??{current:1,versions:[{version:1,text:e,at:"predefinita"}]}}return{async get(){let a=await f(),b=a.versions.find(b=>b.version===a.current)??a.versions.at(-1);return{...b,isDefault:b.text===e}},async text(a){let b=await f();return(b.versions.find(b=>b.version===a)??b.versions.find(a=>a.version===b.current))?.text??e},async save(b,e){let g=await f(),h=b.trim();if(h===g.versions.find(a=>a.version===g.current)?.text)return g.current;let i=Math.max(...g.versions.map(a=>a.version))+1,j={current:i,versions:[...g.versions,{version:i,text:h,at:new Date().toISOString(),by:e}].slice(-30)};return await c.db.insert(d.appSettings).values({key:a,value:j,updatedBy:e}).onDuplicateKeyUpdate({set:{value:j,updatedBy:e}}),i}}}let h=g("checkup_method",e),i=g("plan_method",f),j=h.get,k=h.text,l=h.save;a.s(["DEFAULT_METHOD",0,e,"DEFAULT_PLAN_METHOD",0,f,"getMethodology",0,j,"methodologyText",0,k,"planMethod",0,i,"saveMethodology",0,l])},338589,a=>{"use strict";a.s(["CHECKUP_SECTIONS",0,[{key:"sintesi",title:"Executive Summary",fields:[{key:"diagnosi",label:"La diagnosi in una frase",kind:"testo"},{key:"problemi",label:"I 3 problemi principali e il loro impatto",kind:"elenco"},{key:"azioni",label:"Le 3 azioni prioritarie da fare subito",kind:"elenco"}],guide:["Se il cliente legge solo questa pagina deve capire il valore della consulenza."]},{key:"strumenti",title:"Analisi degli strumenti di comunicazione esistenti",fields:[{key:"canali",label:"Numeri per canale (follower, post, frequenza, ER, crescita)",kind:"dati"},{key:"funziona",label:"In cosa funziona",kind:"elenco"},{key:"migliorabile",label:"In cosa potrebbe performare meglio",kind:"elenco"},{key:"contenuti_top",label:"Contenuti più performanti e perché",kind:"testo"},{key:"offline",label:"Canali offline (vendita diretta, mercati, eventi)",kind:"testo"}],guide:["Il rapporto post/follower indica sforzo che non si converte?","Quali formati sono stati abbandonati (es. reel) e quando?","Il link in bio porta al sito?","Che tipo di contenuto rende di più (persone vs solo prodotto)? Di quante volte?"]},{key:"posizionamento",title:"Posizionamento, brand identity e tone of voice",fields:[{key:"attuale",label:"Posizionamento attuale",kind:"testo"},{key:"distintivi",label:"Elementi distintivi reali (metodo, persone, promessa)",kind:"elenco"},{key:"criticita",label:"Criticità del brand (manifesto, mission, payoff, ToV mancanti)",kind:"elenco"},{key:"tone_of_voice",label:"Tone of voice attuale e registro consigliato",kind:"testo"}],guide:["Riconoscimenti esterni utilizzabili come prova?","Il tono è tarato sul pubblico che vale di più?"]},{key:"persona",title:"Buyer persona",fields:[{key:"personas",label:"Profili in ordine di valore strategico",kind:"tabella"}],guide:["Chi è il vero destinatario se il canale indiretto pesa sul fatturato?","Quale dato interno manca?"]},{key:"canali",title:"Canali utilizzati vs potenziale",fields:[{key:"tabella",label:"Canale · utilizzo attuale · potenziale",kind:"tabella"},{key:"ruolo",label:"Ruolo di ogni canale nel percorso del cliente",kind:"testo"}],guide:["L'unico canale strutturato parla al pubblico giusto?"]},{key:"obiettivi",title:"Obiettivi di comunicazione per fase del funnel",fields:[{key:"premessa",label:"Ruolo della comunicazione nel modello di business",kind:"testo"},{key:"fasi",label:"Awareness, Consideration, Conversion, Retention: obiettivo, strategie, KPI",kind:"tabella"},{key:"attese",label:"Cosa ci aspettiamo dal cambiamento",kind:"elenco"}],guide:["I KPI di ogni fase entrano nel semaforo con target e punto di partenza."]},{key:"benchmark",title:"Benchmark competitor",fields:[{key:"competitor",label:"Schede competitor con mini SWOT e best practice",kind:"tabella"},{key:"sintesi",label:"Sintesi del benchmark",kind:"testo"}],guide:["Esiste un leader? Qual è la leva competitiva vera (non il prezzo)?"]},{key:"swot",title:"Analisi SWOT",fields:[{key:"s",label:"Punti di forza",kind:"elenco"},{key:"w",label:"Punti di debolezza",kind:"elenco"},{key:"o",label:"Opportunità",kind:"elenco"},{key:"t",label:"Minacce",kind:"elenco"}],guide:[]},{key:"best_practice",title:"Best practice e consigli di crescita",fields:[{key:"best_practice",label:"Best practice del cliente",kind:"elenco"},{key:"consigli",label:"Consigli di crescita",kind:"elenco"},{key:"priorita",label:"Priorità numero uno",kind:"testo"},{key:"confronto",label:"Cosa è cambiato rispetto al check-up precedente",kind:"testo"}],guide:[]}]])},25948,a=>{"use strict";var b=a.i(456457),c=a.i(728290),d=a.i(614186);a.s([],994186),a.i(994186),a.s(["00a4a9f3b6e7fe3ef421361f39b7bacacf48ad32ec",()=>b.logout,"60042ca9a549fae26358d31c0a2b59777251633612",()=>d.rescheduleItem,"6081deea92077672afe8f57024852364d4349d530e",()=>b.loginStep,"7883be4b4174d3f266953e41902b5c01a27c085358",()=>c.reportClientError],25948)},14035,a=>{a.v(b=>Promise.all(["server/chunks/ssr/src_lib_ads_ads_ts_0dxc-pa._.js"].map(b=>a.l(b))).then(()=>b(289681)))},824814,a=>{a.v(b=>Promise.all(["server/chunks/ssr/[root-of-the-server]__1hyhe2w._.js"].map(b=>a.l(b))).then(()=>b(77926)))},160075,a=>{a.v(b=>Promise.all(["server/chunks/ssr/[externals]__1mrsk-u._.js","server/chunks/ssr/node_modules_@anthropic-ai_sdk_tools_agent-toolset_node_mjs_1hdknbo._.js"].map(b=>a.l(b))).then(()=>b(12438)))}];
+
+//# sourceMappingURL=_0oqjwtq._.js.map

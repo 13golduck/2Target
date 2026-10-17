@@ -1,0 +1,101 @@
+{
+  "node": {
+    "00a4a9f3b6e7fe3ef421361f39b7bacacf48ad32ec": {
+      "workers": {
+        "app/(app)/utenti/page": {
+          "moduleId": 311043,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "logout",
+      "filename": "src/app/login/actions.ts"
+    },
+    "6081deea92077672afe8f57024852364d4349d530e": {
+      "workers": {
+        "app/(app)/utenti/page": {
+          "moduleId": 311043,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "loginStep",
+      "filename": "src/app/login/actions.ts"
+    },
+    "7883be4b4174d3f266953e41902b5c01a27c085358": {
+      "workers": {
+        "app/(app)/utenti/page": {
+          "moduleId": 311043,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        }
+      },
+      "exportedName": "reportClientError",
+      "filename": "src/app/(app)/error-actions.ts"
+    },
+    "40697ef817a783ddcdc7ee0e962fc896eb9a52cb12": {
+      "workers": {
+        "app/(app)/utenti/page": {
+          "moduleId": 311043,
+          "async": false,
+          "exportedName": "addUser",
+          "filename": "src/app/(app)/utenti/actions.ts"
+        }
+      },
+      "exportedName": "addUser",
+      "filename": "src/app/(app)/utenti/actions.ts"
+    },
+    "402c287f64c3da278775327e60cee288d12064685e": {
+      "workers": {
+        "app/(app)/utenti/page": {
+          "moduleId": 311043,
+          "async": false,
+          "exportedName": "updateUser",
+          "filename": "src/app/(app)/utenti/actions.ts"
+        }
+      },
+      "exportedName": "updateUser",
+      "filename": "src/app/(app)/utenti/actions.ts"
+    },
+    "40abfc693a0fd5a110bfa47e0b2c9fc4a22bfbe2a2": {
+      "workers": {
+        "app/(app)/utenti/page": {
+          "moduleId": 311043,
+          "async": false,
+          "exportedName": "resendInvite",
+          "filename": "src/app/(app)/utenti/actions.ts"
+        }
+      },
+      "exportedName": "resendInvite",
+      "filename": "src/app/(app)/utenti/actions.ts"
+    },
+    "4091ebd28f3a4b011846d21a2a49a2331942613b9c": {
+      "workers": {
+        "app/(app)/utenti/page": {
+          "moduleId": 311043,
+          "async": false,
+          "exportedName": "resetUserTotp",
+          "filename": "src/app/(app)/utenti/actions.ts"
+        }
+      },
+      "exportedName": "resetUserTotp",
+      "filename": "src/app/(app)/utenti/actions.ts"
+    },
+    "60ea43190c82486aa6c30d42e55e499f8c1cbf4bce": {
+      "workers": {
+        "app/(app)/utenti/page": {
+          "moduleId": 311043,
+          "async": false,
+          "exportedName": "setCanPublish",
+          "filename": "src/app/(app)/utenti/actions.ts"
+        }
+      },
+      "exportedName": "setCanPublish",
+      "filename": "src/app/(app)/utenti/actions.ts"
+    }
+  },
+  "edge": {}
+}

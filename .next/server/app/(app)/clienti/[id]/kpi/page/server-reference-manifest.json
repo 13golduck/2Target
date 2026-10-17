@@ -1,0 +1,77 @@
+{
+  "node": {
+    "00a4a9f3b6e7fe3ef421361f39b7bacacf48ad32ec": {
+      "workers": {
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 973938,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "logout",
+      "filename": "src/app/login/actions.ts"
+    },
+    "6081deea92077672afe8f57024852364d4349d530e": {
+      "workers": {
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 973938,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "loginStep",
+      "filename": "src/app/login/actions.ts"
+    },
+    "7883be4b4174d3f266953e41902b5c01a27c085358": {
+      "workers": {
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 973938,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        }
+      },
+      "exportedName": "reportClientError",
+      "filename": "src/app/(app)/error-actions.ts"
+    },
+    "40ef3aa4ad1584cca41b2bb10b758a92ec932a8826": {
+      "workers": {
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 973938,
+          "async": false,
+          "exportedName": "addKpi",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "exportedName": "addKpi",
+      "filename": "src/app/(app)/actions.ts"
+    },
+    "405a9586ae0da187930413b0303275ccecdfca6dbe": {
+      "workers": {
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 973938,
+          "async": false,
+          "exportedName": "deleteKpi",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "exportedName": "deleteKpi",
+      "filename": "src/app/(app)/actions.ts"
+    },
+    "40b2a99ca240ec9b2268949478435788bb14ca246e": {
+      "workers": {
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 973938,
+          "async": false,
+          "exportedName": "addMeasurement",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "exportedName": "addMeasurement",
+      "filename": "src/app/(app)/actions.ts"
+    }
+  },
+  "edge": {}
+}

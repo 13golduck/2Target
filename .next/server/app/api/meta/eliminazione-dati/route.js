@@ -1,0 +1,11 @@
+var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/meta/eliminazione-dati/route.js")
+R.c("server/chunks/node_modules_drizzle-orm_0d90als._.js")
+R.c("server/chunks/node_modules_next_1zdbrne._.js")
+R.c("server/chunks/[root-of-the-server]__0e40989._.js")
+R.c("server/chunks/[root-of-the-server]__02_2sm-._.js")
+R.c("server/chunks/node_modules_next_dist_13kw1hb._.js")
+R.c("server/chunks/_1zgv5eu._.js")
+R.c("server/chunks/_1rsg_y2._.js")
+R.c("server/chunks/_next-internal_server_app_api_meta_eliminazione-dati_route_actions_0uoulsw.js")
+R.m(689523)
+module.exports=R.m(689523).exports

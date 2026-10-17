@@ -1,0 +1,149 @@
+{
+  "node": {
+    "00a4a9f3b6e7fe3ef421361f39b7bacacf48ad32ec": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 229894,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "logout",
+      "filename": "src/app/login/actions.ts"
+    },
+    "6081deea92077672afe8f57024852364d4349d530e": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 229894,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "loginStep",
+      "filename": "src/app/login/actions.ts"
+    },
+    "7883be4b4174d3f266953e41902b5c01a27c085358": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 229894,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        }
+      },
+      "exportedName": "reportClientError",
+      "filename": "src/app/(app)/error-actions.ts"
+    },
+    "00a1dcb7148f059cd697edb8f1f3784c6c6c41e5cf": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 229894,
+          "async": false,
+          "exportedName": "requestSettingsCode",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "exportedName": "requestSettingsCode",
+      "filename": "src/app/(app)/impostazioni/actions.ts"
+    },
+    "408f0a30587b50cb2089f7289dd1d73b0373b2f567": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 229894,
+          "async": false,
+          "exportedName": "verifySettingsCode",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "exportedName": "verifySettingsCode",
+      "filename": "src/app/(app)/impostazioni/actions.ts"
+    },
+    "401a6d92c1750fd6fdf77212fee61db2b292accbc8": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 229894,
+          "async": false,
+          "exportedName": "updateMethodology",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "exportedName": "updateMethodology",
+      "filename": "src/app/(app)/impostazioni/actions.ts"
+    },
+    "4023cf66da1619483f47779a4f471d2fdbe15b592d": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 229894,
+          "async": false,
+          "exportedName": "updateLimits",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "exportedName": "updateLimits",
+      "filename": "src/app/(app)/impostazioni/actions.ts"
+    },
+    "40d2585a12f7191680278cc287fc3f539314def328": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 229894,
+          "async": false,
+          "exportedName": "saveIntegrations",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "exportedName": "saveIntegrations",
+      "filename": "src/app/(app)/impostazioni/actions.ts"
+    },
+    "4079a4cf0a32da36ee51f16e99bede194b966c0518": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 229894,
+          "async": false,
+          "exportedName": "setPublishingLive",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "exportedName": "setPublishingLive",
+      "filename": "src/app/(app)/impostazioni/actions.ts"
+    },
+    "40e35d1670a9abc09a56ee16fdacd89ad9f0306715": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 229894,
+          "async": false,
+          "exportedName": "saveMail",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "exportedName": "saveMail",
+      "filename": "src/app/(app)/impostazioni/actions.ts"
+    },
+    "00d6c7b406d8781ab6bf80b4ba3de5f4dc43c7e76b": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 229894,
+          "async": false,
+          "exportedName": "testMail",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "exportedName": "testMail",
+      "filename": "src/app/(app)/impostazioni/actions.ts"
+    },
+    "0019a68282278479a0d2a74d544b2a48906fb41077": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 229894,
+          "async": false,
+          "exportedName": "lockSettings",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "exportedName": "lockSettings",
+      "filename": "src/app/(app)/impostazioni/actions.ts"
+    }
+  },
+  "edge": {}
+}

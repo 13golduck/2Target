@@ -1,0 +1,3 @@
+{
+  "/api/sso/microsoft/callback/route": "app/api/sso/microsoft/callback/route.js"
+}
