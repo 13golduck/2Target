@@ -61,6 +61,24 @@ inserzioni su larga scala.
 finché la persona resta amministratore. In **Canali** compare la data di scadenza: prima di quella data
 basta premere di nuovo **Collega Meta** con lo stesso account.
 
+### Accesso permanente: utente di sistema del portfolio Golduck
+
+Per non dipendere dalla persona che ha collegato (cambio password, uscita dal team, scadenza):
+
+1. **Meta Business Suite** di Golduck → Impostazioni → **Utenti → Utenti di sistema** → Aggiungi
+   (nome «2Target», ruolo *Amministratore*).
+2. **Aggiungi risorse**: assegna all'utente di sistema l'**app 2Target** e, per ogni cliente, la **Pagina** e
+   l'**account Instagram** (controllo completo o almeno «Contenuti» + «Insight»).
+   Il cliente prima deve condividerle con il portfolio Golduck: dal suo Business Manager → Impostazioni →
+   Partner → *Assegna risorse a un partner* con l'ID del portfolio Golduck (oppure Golduck le richiede da
+   *Pagine → Aggiungi → Richiedi l'accesso*).
+3. **Genera nuovo token** sull'utente di sistema: app 2Target, scadenza **Mai**, permessi
+   `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `read_insights`, `instagram_basic`,
+   `instagram_manage_insights`, `instagram_content_publish`, `business_management` (+ `ads_read`/`ads_management` se servono le sponsorizzate).
+4. 2Target → **Impostazioni → Integrazioni → Meta → Token utente di sistema**: incolla e salva (resta cifrato).
+5. In **Canali** del cliente: **Accesso permanente (portfolio Golduck)** → scegli Pagina e Instagram.
+   I profili già collegati passano al nuovo accesso (stessi dati, nessun doppione).
+
 ---
 
 ## 2. Progetto Google (Search Console, Analytics 4, PageSpeed)
@@ -85,6 +103,27 @@ basta premere di nuovo **Collega Meta** con lo stesso account.
 5. **Credenziali → Crea credenziali → Chiave API**, limitala alla sola *PageSpeed Insights API*,
    copiala in `GOOGLE_PAGESPEED_KEY`. Senza chiave Google usa una quota condivisa che spesso è esaurita.
 
+### Scheda Google (Business Profile) e Google Ads
+
+- **Business Profile**: in Google Cloud abilita *My Business Account Management API*, *My Business Business
+  Information API*, *Business Profile Performance API* e (per le recensioni) *Google My Business API*.
+  Google concede queste API solo su richiesta: compila il modulo «Business Profile APIs access request»
+  per il progetto 2Target (di solito qualche settimana). Ambito: `.../auth/business.manage`.
+- **Google Ads**: abilita *Google Ads API*; nel centro clienti (MCC) di Golduck → Amministrazione → Centro API
+  richiedi il **developer token** (accesso «Base»). Inseriscilo in 2Target → Impostazioni → Integrazioni → Google,
+  con l'ID del centro clienti se gli account dei clienti sono collegati all'MCC. Ambito: `.../auth/adwords`
+  (2Target lo chiede solo quando il developer token è impostato). La versione delle API si cambia con
+  la variabile `GOOGLE_ADS_VERSION` (Google ne ritira una all'anno).
+- Aggiungi i due ambiti nella schermata di consenso OAuth e **ricollega l'account Google** di ogni cliente:
+  nella scelta dei canali compariranno anche le schede Google e gli account Google Ads.
+- La spesa Google Ads (account in euro) entra da sola ogni mese nei costi di marketing dei Lead.
+
+### Analisi SEO con l'AI
+
+Dalla pagina SEO del cliente («Analizza») e in automatico ogni mese dal giorno 3, dopo la sincronizzazione
+notturna: l'AI legge Search Console, Analytics 4, scheda Google, Google Ads e PageSpeed, scrive le priorità con
+i numeri e crea idee di contenuto nella bacheca Idee. Costo indicativo: pochi centesimi per cliente (Sonnet).
+
 **Chi collega l'account Google** deve avere accesso alla proprietà Search Console (anche solo
 "utente con accesso limitato") e alla proprietà GA4 (almeno "Visualizzatore") del cliente.
 Conviene farsi aggiungere dal cliente con un account Google di Golduck.
@@ -101,8 +140,66 @@ Conviene farsi aggiungere dal cliente con un account Google di Golduck.
 6. Copia **Client key** e **Client secret** in 2Target → Impostazioni → Integrazioni → TikTok.
 
 Il token TikTok dura 24 ore e il refresh token 365 giorni: 2Target li rinnova da solo a ogni sincronizzazione.
-La pubblicazione (prodotto **Content Posting API**, scope `video.upload` / `video.publish`) richiede una seconda revisione:
-finché l'app non è approvata TikTok pubblica solo in privato. Gli scope si possono estendere con la variabile `TIKTOK_SCOPES`.
+
+### Pubblicazione su TikTok (Content Posting API)
+
+1. Nell'app su developers.tiktok.com → **Add products → Content Posting API**, attiva **Direct Post** e lo scope `video.publish`.
+2. **URL properties**: verifica il dominio `2target.it` (TikTok scarica video e foto dagli indirizzi pubblici di 2Target).
+3. In 2Target → Impostazioni → Integrazioni → TikTok, campo **Permessi richiesti**:
+   `user.info.basic,user.info.stats,video.list,video.publish`. Poi in **Canali** ricollega l'account TikTok di ogni
+   cliente (finché non lo fai, la scheda dice «collegato senza permesso di pubblicare»).
+4. Prova in sandbox: finché TikTok non approva l'app i post escono **solo come privati** («Solo io»).
+5. **Audit**: registra un video dello schermo con l'intero flusso (collegamento dell'account in Canali, scheda
+   «Pubblica su TikTok» con account, visibilità, interazioni, contenuto commerciale, consensi e anteprima, post uscito)
+   e invia la richiesta da Content Posting API → *Apply for audit*. Ogni modifica a quella schermata può richiedere una nuova revisione.
+
+La scheda di pubblicazione segue le Content Sharing Guidelines di TikTok: legge l'account ogni volta, la visibilità
+si sceglie a mano tra quelle consentite (nessun valore predefinito), commenti/duetti/stitch partono spenti e si
+bloccano se l'account non li consente, c'è l'indicazione di contenuto commerciale («Il tuo brand» / «Contenuto
+sponsorizzato», che non può essere privato), il controllo della durata del video, l'anteprima e la dichiarazione di
+consenso (Music Usage Confirmation e, per i contenuti sponsorizzati, Branded Content Policy). TikTok pubblica un video
+(MP4, MOV o WebM) oppure da 1 a 35 foto JPEG/WebP; niente storie. Limite indicativo: circa 15 post al giorno per account.
+
+---
+
+## 2c. Instagram senza Facebook (login Instagram)
+
+Per i clienti con un profilo Instagram professionale (Business o Creator) **senza Pagina Facebook**.
+
+1. In Meta for Developers, nell'app 2Target → **Aggiungi prodotto → Instagram → API con login Instagram**.
+2. **Configura il login aziendale di Instagram**: aggiungi l'indirizzo di reindirizzamento
+   `https://2target.it/api/connect/instagram/callback` (e `http://localhost:3070/...` per le prove).
+3. Permessi: `instagram_business_basic`, `instagram_business_content_publish`, `instagram_business_manage_insights`
+   (per i profili dei clienti serve la revisione dell'app con accesso avanzato).
+4. Copia **ID app di Instagram** e **chiave segreta dell'app Instagram** (sono diversi da ID e chiave di Meta) in
+   2Target → Impostazioni → Integrazioni → Instagram senza Facebook.
+5. In **Canali** del cliente: **Collega Instagram senza Facebook** e accesso con le credenziali Instagram del cliente.
+
+Il token dura 60 giorni: 2Target lo rinnova da solo quando ne mancano meno di 10 (basta la sincronizzazione notturna).
+Statistiche e pubblicazione (post, carosello, reel, storie) funzionano come per Instagram collegato alla Pagina;
+le sponsorizzate restano solo per i post usciti tramite Pagina Facebook.
+
+## 2d. LinkedIn (pagine aziendali dei clienti)
+
+1. **linkedin.com/developers** → *Create app*: nome «2Target», Pagina LinkedIn **Golduck** (va verificata da un
+   amministratore della Pagina Golduck), logo, privacy policy.
+2. **Products** → richiedi **Community Management API** (compila il modulo: uso interno di un'agenzia per gestire
+   le pagine dei propri clienti; LinkedIn la concede prima in *Development tier*, poi con la revisione in *Standard tier*).
+   Nota: LinkedIn chiede che questo prodotto stia su un'app dedicata.
+3. **Auth** → *Authorized redirect URLs*: `https://2target.it/api/connect/linkedin/callback`.
+   Copia **Client ID** e **Primary Client Secret** in Impostazioni → Integrazioni → LinkedIn.
+4. Permessi chiesti (predefiniti): `r_basicprofile r_organization_admin r_organization_social w_organization_social rw_organization_admin`.
+   Se LinkedIn ne concede altri, si cambiano dal campo «Permessi richiesti».
+5. In **Canali** del cliente → **Collega LinkedIn** con l'account di chi è **amministratore** della pagina
+   aziendale del cliente (super admin o content admin) → scegli la pagina.
+
+Cosa arriva: follower, impression, copertura, clic e interazioni giorno per giorno (28 giorni), ultimi 30 post con
+le loro statistiche. Pubblicazione: testo, 1–20 foto o un video, a nome della pagina. Gli hashtag del testo
+diventano hashtag di LinkedIn.
+
+**Durata dell'accesso:** 60 giorni. Se LinkedIn concede all'app i refresh token (programma partner) 2Target lo
+rinnova da sola; altrimenti in Canali compare la scadenza e prima di quella data si ricollega.
+**Versione API:** LinkedIn ritira le versioni dopo circa un anno; si imposta con `LINKEDIN_API_VERSION` (AAAAMM).
 
 ## 3. Sincronizzazione automatica (Plesk)
 
@@ -128,6 +225,7 @@ In qualsiasi momento si può aggiornare a mano da **Canali → Aggiorna tutti i 
 | Search Console | clic, impressioni, posizione giorno per giorno (90 giorni), prime 100 ricerche e pagine | clic, impressioni, CTR, posizione media |
 | Analytics 4 | sessioni per canale, conversioni (eventi chiave) | visite da Google, conversioni |
 | PageSpeed | punteggi prestazioni, SEO, accessibilità, LCP/CLS | — |
+| LinkedIn | follower, impression, copertura, clic, interazioni (28 giorni), ultimi 30 post con statistiche | crescita follower |
 
 Un KPI si aggiorna da solo se la metrica è tra queste e nel KPI è indicato il canale
 (es. *Engagement rate* + *Instagram*). La misura del mese in corso viene riscritta a ogni
@@ -137,7 +235,7 @@ sincronizzazione; le misure inserite a mano non vengono toccate.
 
 - Pubblicazione dei post dalla scheda (permessi `instagram_content_publish`, `pages_manage_posts`).
 - Inserzioni Meta in lettura (`ads_read`) e moduli contatto (`leads_retrieval`) per il raccoglitore lead.
-- TikTok (Login Kit + Content Posting API, audit per la pubblicazione pubblica) e LinkedIn.
+- Audit TikTok per la pubblicazione pubblica (vedi 2b) e approvazione LinkedIn Community Management (vedi 2d).
 
 ---
 

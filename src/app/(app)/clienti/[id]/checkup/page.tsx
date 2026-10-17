@@ -1,10 +1,11 @@
 import { asc, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { aiRuns, checkupQuestions, checkupSections, checkups, clients } from "@/db/schema";
+import { aiRuns, checkupQuestions, checkupSections, checkups, clients, socialAccounts } from "@/db/schema";
 import { CHECKUP_SECTIONS } from "@/lib/checkup-template";
 import { isAiConfigured } from "@/lib/ai/claude";
 import { isRunning } from "@/lib/ai/jobs";
+import { isFoundationRunning } from "@/lib/ai/foundation-agent";
 import { CheckupView } from "./checkup-view";
 
 export const metadata = { title: "Check-up" };
@@ -43,6 +44,10 @@ export default async function CheckupPage({ params, searchParams }: { params: Pr
     ? await db.select().from(checkupQuestions).where(eq(checkupQuestions.checkupId, checkup.id)).orderBy(asc(checkupQuestions.round), asc(checkupQuestions.position))
     : [];
   const runs = checkup ? await db.select().from(aiRuns).where(eq(aiRuns.checkupId, checkup.id)).orderBy(asc(aiRuns.id)) : [];
+  // Canali già collegati: la base di lavoro mostra quali dei canali proposti mancano ancora
+  const connected = checkup?.foundation?.channels.length
+    ? await db.select({ platform: socialAccounts.platform, connected: socialAccounts.connected }).from(socialAccounts).where(eq(socialAccounts.clientId, clientId))
+    : [];
 
   return (
     <CheckupView
@@ -83,6 +88,24 @@ export default async function CheckupPage({ params, searchParams }: { params: Pr
               previousId: checkup.previousId,
               kpiSnapshot: checkup.kpiSnapshot ?? [],
               completedAt: checkup.completedAt?.toISOString() ?? null,
+              foundation: {
+                state: checkup.foundationState,
+                // «In corso» senza un processo che la segue (riavvio dell'app): si può rifare
+                running: isFoundationRunning(checkup.id),
+                progress: checkup.foundationProgress,
+                error: checkup.foundationError,
+                at: checkup.foundationAt?.toISOString() ?? null,
+                summary: checkup.foundation
+                  ? {
+                      ...checkup.foundation,
+                      channels: checkup.foundation.channels.map((ch) => ({
+                        ...ch,
+                        present: connected.some((x) => x.platform === ch.platform),
+                        connected: connected.some((x) => x.platform === ch.platform && x.connected),
+                      })),
+                    }
+                  : null,
+              },
             }
           : null
       }

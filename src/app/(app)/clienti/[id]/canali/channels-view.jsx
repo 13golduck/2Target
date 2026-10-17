@@ -43,6 +43,7 @@ import {
   syncChannelNow,
   addManualChannel,
   removeConnection,
+  connectMetaSystemUser,
 } from '../../../channel-actions';
 
 // ----------------------------------------------------------------------
@@ -55,18 +56,20 @@ export const CHANNEL = {
   youtube: { label: 'YouTube', icon: 'solar:play-circle-bold' },
   search_console: { label: 'Search Console', icon: 'socials:google' },
   ga4: { label: 'Analytics 4', icon: 'solar:chart-square-outline' },
-  business_profile: { label: 'Business Profile', icon: 'custom:location-fill' },
+  business_profile: { label: 'Scheda Google', icon: 'custom:location-fill' },
+  google_ads: { label: 'Google Ads', icon: 'socials:google' },
   website: { label: 'Sito web', icon: 'solar:monitor-bold' },
 };
 
 const PROVIDERS = [
   { key: 'meta', name: 'Meta', what: 'Instagram e pagine Facebook: profilo, follower, post e statistiche', icons: ['socials:instagram', 'socials:facebook'] },
-  { key: 'google', name: 'Google', what: 'Search Console (SEO) e Analytics 4 (traffico e conversioni)', icons: ['socials:google'] },
-  { key: 'tiktok', name: 'TikTok', what: 'Profilo, video e statistiche · pubblicazione dopo il controllo di TikTok', icons: ['socials:tiktok'] },
-  { key: 'linkedin', name: 'LinkedIn', what: 'Pagina aziendale · richiede l\'approvazione di LinkedIn', icons: ['socials:linkedin'], soon: true },
+  { key: 'google', name: 'Google', what: 'Search Console, Analytics 4, scheda Google (Business Profile) e Google Ads', icons: ['socials:google'] },
+  { key: 'instagram', name: 'Instagram senza Facebook', what: 'Per i profili professionali senza Pagina Facebook: accesso con Instagram, statistiche e pubblicazione', icons: ['socials:instagram'] },
+  { key: 'tiktok', name: 'TikTok', what: 'Profilo, video e statistiche · pubblicazione di video e foto', icons: ['socials:tiktok'] },
+  { key: 'linkedin', name: 'LinkedIn', what: 'Pagina aziendale: follower, statistiche, post e pubblicazione (accede chi amministra la pagina)', icons: ['socials:linkedin'] },
 ];
 
-export function ChannelsView({ clientId, error, configured, connections, channels, picker, canConnect, ads }) {
+export function ChannelsView({ clientId, error, configured, connections, channels, picker, canConnect, ads, todo, metaSystem }) {
   const router = useRouter();
   const [syncing, startSync] = useTransition();
   const [manual, setManual] = useState(false);
@@ -85,6 +88,18 @@ export function ChannelsView({ clientId, error, configured, connections, channel
     <Stack spacing={3}>
       <AutoRefresh active={anyPending} />
       {error && <Alert severity="error" onClose={() => router.replace(`/clienti/${clientId}/canali`)}>{error}</Alert>}
+      {todo?.channels.length > 0 && (
+        <Alert severity="info" icon={<Iconify icon="solar:notes-bold-duotone" />}>
+          <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+            Dal check-up{todo.period ? ` di ${todo.period}` : ''}: {todo.channels.length === 1 ? '1 canale da sistemare' : `${todo.channels.length} canali da sistemare`}
+          </Typography>
+          {todo.channels.map((t) => (
+            <Typography key={t.platform} variant="body2">
+              <b>{CHANNEL[t.platform]?.label ?? t.platform}</b> · {t.action === 'collegare' ? 'da collegare' : t.action === 'aprire' ? 'da aprire' : 'da riattivare'} · {t.why}
+            </Typography>
+          ))}
+        </Alert>
+      )}
 
       {/* Collegamenti */}
       <Box>
@@ -99,7 +114,7 @@ export function ChannelsView({ clientId, error, configured, connections, channel
             const mine = connections.filter((c) => c.provider === p.key);
             const ready = configured[p.key];
             return (
-              <Grid key={p.key} size={{ xs: 12, sm: 6, lg: 3 }}>
+              <Grid key={p.key} size={{ xs: 12, sm: 6, lg: 4 }}>
                 <Card sx={{ p: 2.5, height: 1, display: 'flex', flexDirection: 'column', gap: 1.5, opacity: p.soon ? 0.7 : 1 }}>
                   <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                     {p.icons.map((i) => <Iconify key={i} icon={i} width={26} />)}
@@ -114,7 +129,19 @@ export function ChannelsView({ clientId, error, configured, connections, channel
                         <Typography variant="body2" noWrap>{c.accountName}</Typography>
                         <Typography variant="caption" sx={{ color: c.status === 'attivo' ? 'text.secondary' : 'error.main' }}>
                           {/* Meta: i token delle pagine collegate non scadono; serve ricollegare solo se Meta revoca l'accesso */}
-                          {c.status === 'attivo' ? (p.key === 'meta' ? 'collegato · pagine attive senza scadenza' : p.key === 'tiktok' ? 'collegato · accesso rinnovato in automatico' : 'collegato') : 'da ricollegare'}
+                          {c.status !== 'attivo'
+                            ? 'da ricollegare'
+                            : p.key === 'meta' && c.permanent
+                              ? 'accesso permanente del portfolio Golduck'
+                              : p.key === 'meta'
+                                ? 'collegato · pagine attive senza scadenza'
+                              : (p.key === 'tiktok' || p.key === 'linkedin') && !c.canPublish
+                                ? 'collegato senza permesso di pubblicare: ricollegalo'
+                                : p.key === 'linkedin' && c.expiresAt
+                                  ? `collegato · accesso fino al ${fmtDate(new Date(c.expiresAt))}`
+                                : p.key === 'tiktok' || p.key === 'instagram'
+                                  ? 'collegato · accesso rinnovato in automatico'
+                                  : 'collegato'}
                         </Typography>
                       </Box>
                       <Tooltip title="Scegli i canali">
@@ -130,6 +157,17 @@ export function ChannelsView({ clientId, error, configured, connections, channel
                       </Box>
                     </Stack>
                   ))}
+                  {/* Meta: accesso permanente tramite il portfolio Golduck, per i clienti che vi hanno condiviso le loro risorse */}
+                  {p.key === 'meta' && metaSystem && canConnect && !mine.some((c) => c.permanent) && (
+                    <Box component="form" action={connectMetaSystemUser}>
+                      <input type="hidden" name="clientId" value={clientId} />
+                      <Tooltip title="Per le Pagine e gli Instagram che il cliente ha condiviso con il portfolio business di Golduck: l'accesso non scade e non dipende da chi l'ha collegato.">
+                        <Button type="submit" fullWidth variant="soft" color="primary" startIcon={<Iconify icon="solar:shield-check-bold" />}>
+                          Accesso permanente (portfolio Golduck)
+                        </Button>
+                      </Tooltip>
+                    </Box>
+                  )}
                   {p.soon ? null : !canConnect ? (
                     <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                       Collegano gli account solo gli amministratori e chi è abilitato a pubblicare.
@@ -354,7 +392,7 @@ function PickerDialog({ picker, onClose }) {
           <DialogTitle>Quali canali sono di questo cliente?</DialogTitle>
           <DialogContent>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-              Account {picker.provider === 'meta' ? 'Meta' : picker.provider === 'tiktok' ? 'TikTok' : 'Google'}: <b>{picker.accountName}</b>. Seleziona solo pagine, profili e
+              Account {{ meta: 'Meta', tiktok: 'TikTok', instagram: 'Instagram', linkedin: 'LinkedIn' }[picker.provider] ?? 'Google'}: <b>{picker.accountName}</b>. Seleziona solo pagine, profili e
               proprietà di questo cliente: lo stesso account può gestirne anche altri.
             </Typography>
             {picker.assets.length === 0 ? (

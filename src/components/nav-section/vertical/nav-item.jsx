@@ -221,7 +221,7 @@ const ItemCaptionText = styled('span', { shouldForwardProp })(({ theme }) => ({
 /**
  * @slot info
  */
-const ItemInfo = styled('span', { shouldForwardProp })(({ theme }) => ({
+const ItemInfo = styled('span', { shouldForwardProp })(() => ({
   ...navItemStyles.info,
 }));
 

@@ -17,6 +17,8 @@ export type IntegrationKeys = {
   metaAppId: string;
   metaAppSecret: string;
   metaConfigId: string;
+  /** Utente di sistema del portfolio business di Golduck: token che non scade, per i clienti che danno accesso al portfolio. */
+  metaSystemUserToken: string;
   googleClientId: string;
   googleClientSecret: string;
   googlePageSpeedKey: string;
@@ -24,6 +26,19 @@ export type IntegrationKeys = {
   /** TikTok for Developers: app 2Target (Login Kit + Display API). */
   tiktokClientKey: string;
   tiktokClientSecret: string;
+  /** Permessi chiesti a TikTok (vuoto = predefiniti): con la pubblicazione attiva si aggiunge video.publish. */
+  tiktokScopes: string;
+  /** Instagram con login Instagram (clienti senza Pagina Facebook): ID e chiave dell'app Instagram, diversi da quelli di Meta. */
+  instagramAppId: string;
+  instagramAppSecret: string;
+  /** Google Ads: developer token del centro clienti (MCC) di Golduck e, se gli account dei clienti sono sotto l'MCC, il suo ID. */
+  googleAdsDeveloperToken: string;
+  googleAdsLoginCustomerId: string;
+  /** LinkedIn: app 2Target con il prodotto Community Management API (pagine aziendali dei clienti). */
+  linkedinClientId: string;
+  linkedinClientSecret: string;
+  /** Permessi chiesti a LinkedIn (vuoto = predefiniti, separati da spazio o virgola). */
+  linkedinScopes: string;
   /** Accesso con Microsoft (SSO Golduck): app registrata in Microsoft Entra, un solo tenant. */
   msTenantId: string;
   msClientId: string;
@@ -32,17 +47,26 @@ export type IntegrationKeys = {
   publishLiveHost: string;
 };
 
-export const SECRET_FIELDS = ["metaAppSecret", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret"] as const;
+export const SECRET_FIELDS = ["metaAppSecret", "metaSystemUserToken", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret", "instagramAppSecret", "googleAdsDeveloperToken", "linkedinClientSecret"] as const;
 const ENV: Record<keyof IntegrationKeys, string> = {
   metaAppId: "META_APP_ID",
   metaAppSecret: "META_APP_SECRET",
   metaConfigId: "META_CONFIG_ID",
+  metaSystemUserToken: "META_SYSTEM_USER_TOKEN",
   googleClientId: "GOOGLE_CLIENT_ID",
   googleClientSecret: "GOOGLE_CLIENT_SECRET",
   googlePageSpeedKey: "GOOGLE_PAGESPEED_KEY",
   anthropicApiKey: "ANTHROPIC_API_KEY",
   tiktokClientKey: "TIKTOK_CLIENT_KEY",
   tiktokClientSecret: "TIKTOK_CLIENT_SECRET",
+  tiktokScopes: "TIKTOK_SCOPES",
+  instagramAppId: "INSTAGRAM_APP_ID",
+  googleAdsDeveloperToken: "GOOGLE_ADS_DEVELOPER_TOKEN",
+  googleAdsLoginCustomerId: "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
+  instagramAppSecret: "INSTAGRAM_APP_SECRET",
+  linkedinClientId: "LINKEDIN_CLIENT_ID",
+  linkedinClientSecret: "LINKEDIN_CLIENT_SECRET",
+  linkedinScopes: "LINKEDIN_SCOPES",
   msTenantId: "MS_TENANT_ID",
   msClientId: "MS_CLIENT_ID",
   msClientSecret: "MS_CLIENT_SECRET",

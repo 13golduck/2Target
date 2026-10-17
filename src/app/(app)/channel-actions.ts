@@ -10,20 +10,33 @@ import { requireWriter, userCanPublish } from "@/lib/auth";
 import { forgetFromClient, siteKey } from "@/lib/integrations/client-channels";
 import { decryptSecret, encryptSecret } from "@/lib/secret-box";
 import * as google from "@/lib/integrations/google";
+import * as instagram from "@/lib/integrations/instagram";
+import * as linkedin from "@/lib/integrations/linkedin";
 import * as meta from "@/lib/integrations/meta";
 import * as tiktok from "@/lib/integrations/tiktok";
 import { accessToken, syncChannel, syncClient, updateKpisFromData } from "@/lib/integrations/sync";
 import { audit } from "@/lib/audit";
+import { META } from "@/lib/integrations/config";
 
 const path = (clientId: number) => `/clienti/${clientId}/canali`;
+const PROVIDER_LABEL: Record<string, string> = { meta: "Meta", google: "Google", tiktok: "TikTok", instagram: "Instagram", linkedin: "LinkedIn" };
 
 /** Canali disponibili per un collegamento (letti dalla piattaforma, senza token verso il browser). */
 export async function assetsFor(connectionId: number) {
   await requireWriter();
   const [conn] = await db.select().from(connections).where(eq(connections.id, connectionId));
   if (!conn) return { conn: null, assets: [] as { key: string; kind: string; handle: string; name: string; pictureUrl?: string }[] };
-  const token = conn.provider === "tiktok" ? await accessToken(conn) : decryptSecret(conn.accessTokenEnc)!;
-  const raw = conn.provider === "meta" ? await meta.listAssets(token) : conn.provider === "tiktok" ? await tiktok.listAssets(token) : await google.listAssets(token);
+  const token = ["tiktok", "instagram", "linkedin"].includes(conn.provider) ? await accessToken(conn) : decryptSecret(conn.accessTokenEnc)!;
+  const raw =
+    conn.provider === "meta"
+      ? await meta.listAssets(token)
+      : conn.provider === "tiktok"
+        ? await tiktok.listAssets(token)
+        : conn.provider === "instagram"
+          ? await instagram.listAssets(token)
+          : conn.provider === "linkedin"
+            ? await linkedin.listAssets(token)
+            : await google.listAssets(token);
   return {
     conn,
     assets: raw.map((a) => ({ key: `${a.kind}|${a.externalId}`, kind: a.kind, handle: a.handle, name: a.name, pictureUrl: "pictureUrl" in a ? a.pictureUrl : undefined })),
@@ -37,7 +50,7 @@ export async function attachChannels(f: FormData) {
   const [conn] = await db.select().from(connections).where(eq(connections.id, connectionId));
   if (!conn) return;
   const chosen = new Set(f.getAll("asset").map(String));
-  const token = conn.provider === "tiktok" ? await accessToken(conn) : decryptSecret(conn.accessTokenEnc)!;
+  const token = ["tiktok", "instagram", "linkedin"].includes(conn.provider) ? await accessToken(conn) : decryptSecret(conn.accessTokenEnc)!;
 
   const ids: number[] = [];
   const refused: string[] = [];
@@ -57,11 +70,20 @@ export async function attachChannels(f: FormData) {
       if (other) refused.push(`@${a.handle} è già collegato al cliente ${other}`);
       else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, a.pictureUrl, encryptSecret(a.pageToken)));
     }
-  } else if (conn.provider === "tiktok") {
-    for (const a of await tiktok.listAssets(token)) {
+  } else if (conn.provider === "tiktok" || conn.provider === "instagram") {
+    // Un solo profilo per collegamento; Instagram usa il token dell'utente (si rinnova da solo), non un token di Pagina
+    for (const a of conn.provider === "tiktok" ? await tiktok.listAssets(token) : await instagram.listAssets(token)) {
       if (!chosen.has(`${a.kind}|${a.externalId}`)) continue;
       const other = await owner(a.kind, a.externalId);
       if (other) refused.push(`@${a.handle} è già collegato al cliente ${other}`);
+      else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, a.pictureUrl, null));
+    }
+  } else if (conn.provider === "linkedin") {
+    // Pagine aziendali: si legge e si pubblica con il token di chi le amministra
+    for (const a of await linkedin.listAssets(token)) {
+      if (!chosen.has(`${a.kind}|${a.externalId}`)) continue;
+      const other = await owner(a.kind, a.externalId);
+      if (other) refused.push(`${a.name} è già collegata al cliente ${other}`);
       else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, a.pictureUrl, null));
     }
   } else {
@@ -83,7 +105,7 @@ export async function attachChannels(f: FormData) {
     userId: me.id,
     category: "canali",
     action: "canali.collegati",
-    description: `Collegati ${ids.length} canali da ${conn.provider === "meta" ? "Meta" : conn.provider === "tiktok" ? "TikTok" : "Google"} (${conn.accountName})${refused.length ? ` · ${refused.length} rifiutati perché di un altro cliente` : ""}`,
+    description: `Collegati ${ids.length} canali da ${PROVIDER_LABEL[conn.provider]} (${conn.accountName})${refused.length ? ` · ${refused.length} rifiutati perché di un altro cliente` : ""}`,
     clientId: conn.clientId,
     meta: refused.length ? { rifiutati: refused } : null,
   });
@@ -157,7 +179,7 @@ export async function removeConnection(f: FormData) {
   // I canali restano (con i dati storici) ma risultano scollegati
   await db.update(socialAccounts).set({ connected: false, assetTokenEnc: null }).where(eq(socialAccounts.connectionId, conn.id));
   await db.delete(connections).where(eq(connections.id, conn.id));
-  await audit({ userId: me.id, category: "canali", action: "collegamento.rimosso", description: `Scollegato l'account ${conn.provider === "meta" ? "Meta" : "Google"} «${conn.accountName}»`, clientId: conn.clientId });
+  await audit({ userId: me.id, category: "canali", action: "collegamento.rimosso", description: `Scollegato l'account ${PROVIDER_LABEL[conn.provider]} «${conn.accountName}»`, clientId: conn.clientId });
   revalidatePath(path(conn.clientId));
 }
 
@@ -200,4 +222,48 @@ export async function addManualChannel(f: FormData) {
   }
   revalidatePath(path(clientId));
   return { ok: true };
+}
+
+/**
+ * Collega le Pagine e gli Instagram del cliente tramite l'utente di sistema del portfolio Golduck: accesso che non
+ * scade e non dipende dalla persona (il cliente condivide le sue risorse con il portfolio Golduck, Golduck le assegna
+ * all'utente di sistema). Poi si scelgono i profili come per un collegamento normale; quelli già collegati passano
+ * al nuovo accesso.
+ */
+export async function connectMetaSystemUser(f: FormData) {
+  const me = await requireWriter();
+  if (!(await userCanPublish(me))) throw new Error("Solo gli amministratori e chi è abilitato a pubblicare possono collegare profili ai clienti");
+  const clientId = Number(f.get("clientId"));
+  const token = META.systemUserToken;
+  if (!clientId) return;
+  if (!token) redirect(`${path(clientId)}?errore=${encodeURIComponent("Manca il token dell'utente di sistema: un amministratore lo inserisce in Impostazioni → Integrazioni → Meta")}`);
+  let su: Awaited<ReturnType<typeof meta.systemUser>>;
+  try {
+    su = await meta.systemUser(token);
+  } catch (e) {
+    redirect(`${path(clientId)}?errore=${encodeURIComponent(`Meta: ${(e as Error).message}`)}`);
+  }
+  const values = {
+    clientId,
+    provider: "meta" as const,
+    externalUserId: `system:${su.id}`,
+    accountName: `Portfolio Golduck (${su.name})`,
+    accessTokenEnc: encryptSecret(token),
+    refreshTokenEnc: null,
+    expiresAt: su.expiresAt,
+    scopes: null,
+    status: "attivo" as const,
+    lastError: null,
+    connectedBy: me.id,
+  };
+  await db
+    .insert(connections)
+    .values(values)
+    .onDuplicateKeyUpdate({ set: { accountName: values.accountName, accessTokenEnc: values.accessTokenEnc, expiresAt: values.expiresAt, status: "attivo", lastError: null } });
+  const [row] = await db
+    .select({ id: connections.id })
+    .from(connections)
+    .where(and(eq(connections.clientId, clientId), eq(connections.provider, "meta"), eq(connections.externalUserId, values.externalUserId)));
+  await audit({ userId: me.id, category: "canali", action: "collegamento.portfolio", description: `Collegato l'accesso permanente di Meta tramite il portfolio Golduck (${su.name})`, clientId, target: `collegamento:${row.id}` });
+  redirect(`${path(clientId)}?scegli=${row.id}`);
 }

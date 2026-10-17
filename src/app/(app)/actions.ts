@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -13,6 +13,8 @@ import { kpiSnapshot } from "@/lib/queries";
 import { audit, diff } from "@/lib/audit";
 import { ensureChannelsFromClient } from "@/lib/integrations/client-channels";
 import { syncPendingPublications } from "@/lib/publishing/sync";
+import { isAiConfigured } from "@/lib/ai/claude";
+import { startFoundation } from "@/lib/ai/foundation-agent";
 
 const str = (f: FormData, k: string) => {
   const v = String(f.get(k) ?? "").trim();
@@ -117,7 +119,7 @@ export async function setCheckupStatus(f: FormData) {
   const id = int(f, "checkupId")!;
   const status = oneOf(["bozza", "in_revisione", "consegnato"] as const, str(f, "status"));
   if (!status) return;
-  const [c] = await db.select({ clientId: s.checkups.clientId, kpiSnapshot: s.checkups.kpiSnapshot }).from(s.checkups).where(eq(s.checkups.id, id));
+  const [c] = await db.select({ clientId: s.checkups.clientId, kpiSnapshot: s.checkups.kpiSnapshot, foundationState: s.checkups.foundationState }).from(s.checkups).where(eq(s.checkups.id, id));
   await db
     .update(s.checkups)
     .set({
@@ -129,6 +131,8 @@ export async function setCheckupStatus(f: FormData) {
     .where(eq(s.checkups.id, id));
   const STATUS_LABEL = { bozza: "Bozza", in_revisione: "In revisione", consegnato: "Consegnato" };
   await audit({ userId: me.id, category: "checkup", action: "checkup.stato", description: `Check-up portato a «${STATUS_LABEL[status]}»`, clientId: c.clientId, target: `checkup:${id}` });
+  // Alla consegna il check-up prepara la base delle altre sezioni (una volta sola: poi si rifà a mano)
+  if (status === "consegnato" && c.foundationState === "nessuna" && isAiConfigured()) await startFoundation(id, me.id);
   revalidatePath(`/clienti/${c.clientId}/checkup`);
 }
 

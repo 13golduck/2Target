@@ -21,6 +21,7 @@ import DialogContent from '@mui/material/DialogContent';
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
+import { EvidenceHint } from 'src/components/evidence-hint';
 
 import { addIdea, moveIdea, planIdea, voteIdea, setIdeaStatus } from '../../../actions';
 
@@ -223,6 +224,7 @@ function IdeaCard({ idea, onPlan, onMove, canPlan }) {
         {idea.format && <Label color={FORMAT_COLOR[idea.format] ?? 'default'}>{idea.format}</Label>}
         {idea.stage && <Label variant="outlined">{idea.stage}</Label>}
         <Label variant="outlined" color="default">da {ORIGIN[idea.origin]}</Label>
+        {idea.evidence != null && <EvidenceHint evidence={idea.evidence || 'Proposta alla consegna del check-up'} label="Dal check-up" />}
       </Stack>
       <Stack direction="row" sx={{ alignItems: 'center' }}>
         <Box component="form" action={voteIdea} sx={{ display: 'flex', alignItems: 'center' }}>

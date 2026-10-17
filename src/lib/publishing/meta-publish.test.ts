@@ -34,7 +34,17 @@ describe("checkPublishable", () => {
     expect(checkPublishable("facebook", "post", [jpg, mp4], "")).toMatch(/un solo video/);
     expect(checkPublishable("facebook", "carosello", [jpg, png, jpg], "")).toBeNull();
   });
-  it("Altre piattaforme: non ancora", () => {
-    expect(checkPublishable("tiktok", "reel", [mp4], "")).toMatch(/solo su Facebook e Instagram/);
+  it("TikTok: un video oppure solo foto", () => {
+    expect(checkPublishable("tiktok", "reel", [mp4], "")).toBeNull();
+    expect(checkPublishable("tiktok", "post", [jpg, mp4], "")).toMatch(/un solo video/);
+  });
+  it("LinkedIn: testo, foto (fino a 20) o un video; niente storie", () => {
+    expect(checkPublishable("linkedin", "post", [jpg], "")).toBeNull();
+    expect(checkPublishable("linkedin", "post", [], "Solo testo")).toBeNull();
+    expect(checkPublishable("linkedin", "post", [], " ")).toMatch(/Scrivi un testo/);
+    expect(checkPublishable("linkedin", "post", [jpg, mp4], "")).toMatch(/un solo video/);
+    expect(checkPublishable("linkedin", "storia", [jpg], "")).toMatch(/non ha le storie/);
+    expect(checkPublishable("linkedin", "post", [], "x".repeat(3001))).toMatch(/3\.000/);
+    expect(checkPublishable("youtube", "post", [jpg], "")).toMatch(/TikTok e LinkedIn/);
   });
 });

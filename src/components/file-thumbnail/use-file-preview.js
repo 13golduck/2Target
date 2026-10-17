@@ -1,42 +1,24 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useMemo, useEffect } from 'react';
 
 // ----------------------------------------------------------------------
 
+// L'anteprima si ricava dal file durante il render (niente setState in un effetto);
+// l'effetto serve solo a liberare l'URL temporaneo quando il file cambia o il componente sparisce.
+
 export function useFilePreview(file) {
-  const objectUrlRef = useRef(null);
-  const [previewUrl, setPreviewUrl] = useState('');
-
-  useEffect(() => {
-    // Cleanup old object URL
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-      objectUrlRef.current = null;
-    }
-
-    if (file instanceof File) {
-      const objectUrl = URL.createObjectURL(file);
-      objectUrlRef.current = objectUrl;
-      setPreviewUrl(objectUrl);
-    } else if (typeof file === 'string') {
-      setPreviewUrl(file);
-    } else {
-      setPreviewUrl('');
-    }
-
-    return () => {
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = null;
-      }
-    };
+  const previewUrl = useMemo(() => {
+    if (file instanceof File) return URL.createObjectURL(file);
+    return typeof file === 'string' ? file : '';
   }, [file]);
 
-  return {
-    previewUrl,
-    setPreviewUrl,
-  };
+  useEffect(() => {
+    if (!(file instanceof File)) return undefined;
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [file, previewUrl]);
+
+  return { previewUrl };
 }
 
 // ----------------------------------------------------------------------
@@ -46,36 +28,15 @@ export function revokeObjectUrls(urls) {
 }
 
 export function useFilesPreview(files) {
-  const objectUrlsRef = useRef([]);
-  const [filesPreview, setFilesPreview] = useState([]);
+  const filesPreview = useMemo(
+    () => files.map((file) => ({ file, previewUrl: file instanceof File ? URL.createObjectURL(file) : file })),
+    [files]
+  );
 
-  useEffect(() => {
-    // Cleanup old object URLs
-    revokeObjectUrls(objectUrlsRef.current);
-    objectUrlsRef.current = [];
+  useEffect(
+    () => () => revokeObjectUrls(filesPreview.filter((p) => p.file instanceof File).map((p) => p.previewUrl)),
+    [filesPreview]
+  );
 
-    const previews = files.map((file) => {
-      const isFile = file instanceof File;
-      const previewUrl = isFile ? URL.createObjectURL(file) : file;
-
-      if (isFile) objectUrlsRef.current.push(previewUrl);
-
-      return {
-        file,
-        previewUrl,
-      };
-    });
-
-    setFilesPreview(previews);
-
-    return () => {
-      revokeObjectUrls(objectUrlsRef.current);
-      objectUrlsRef.current = [];
-    };
-  }, [files]);
-
-  return {
-    filesPreview,
-    setFilesPreview,
-  };
+  return { filesPreview };
 }

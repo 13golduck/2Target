@@ -7,6 +7,7 @@ import Card from '@mui/material/Card';
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import CardHeader from '@mui/material/CardHeader';
 import Typography from '@mui/material/Typography';
@@ -19,7 +20,7 @@ import { Iconify } from 'src/components/iconify';
 import { toast } from 'src/components/snackbar';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
-import { confirmTotp, disableTotp, startTotpSetup, regenerateRecovery } from './actions';
+import { confirmTotp, disableTotp, startTotpSetup, setWeeklyDigest, regenerateRecovery, sendWeeklyDigestPreview } from './actions';
 import { askConfirm } from 'src/components/custom-dialog';
 
 // ----------------------------------------------------------------------
@@ -50,6 +51,23 @@ export function ProfileView({ user }) {
           {user.lastLoginAt && <Label variant="outlined">Ultimo accesso {fmtDateTime(new Date(user.lastLoginAt))}</Label>}
         </Stack>
       </Card>
+
+      {user.weeklyDigest != null && (
+        <Card sx={{ mb: 3 }}>
+          <CardHeader
+            avatar={<Iconify icon="solar:letter-bold" width={28} sx={{ color: user.weeklyDigest ? 'primary.main' : 'text.disabled' }} />}
+            title="Riepilogo settimanale"
+            subheader="Ogni lunedì un’email con cosa è uscito, cosa non è uscito, cosa manca da approvare e cosa esce nei prossimi 7 giorni"
+            action={<Switch checked={user.weeklyDigest} disabled={pending} onChange={(e) => run(() => setWeeklyDigest(e.target.checked), () => toast.success(e.target.checked ? 'Riepilogo attivato' : 'Riepilogo disattivato'))} />}
+            sx={{ flexWrap: 'wrap', gap: 1, '& .MuiCardHeader-action': { m: 0, alignSelf: 'center' } }}
+          />
+          <Box sx={{ px: 3, pb: 2.5, pt: 1 }}>
+            <Button size="small" variant="outlined" color="inherit" disabled={pending} startIcon={<Iconify icon="solar:letter-outline" />} onClick={() => run(sendWeeklyDigestPreview, (r) => toast.success(`Anteprima inviata a ${r.email}`))}>
+              Mandami un’anteprima ora
+            </Button>
+          </Box>
+        </Card>
+      )}
 
       <Card>
         <CardHeader

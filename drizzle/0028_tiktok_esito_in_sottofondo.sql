@@ -1,0 +1,1 @@
+ALTER TABLE `publications` ADD `remote_id` varchar(120);

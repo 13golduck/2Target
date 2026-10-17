@@ -2,6 +2,8 @@
 // e l'app le applica da sola all'avvio (src/instrumentation.ts).
 
 import type { CheckupReport } from "../lib/checkup-report";
+import type { CheckupFoundation } from "../lib/checkup-foundation";
+import type { TikTokOptions } from "../lib/publishing/tiktok-rules";
 import type { BrandKitData, CreativeBrief, DesignReview } from "../lib/design-types";
 import { REASONING, REGISTERS } from "../lib/checkup-report";
 import {
@@ -54,6 +56,8 @@ export const users = mysqlTable("users", {
   totpRecovery: json("totp_recovery").$type<string[]>(),
   /** Può programmare e pubblicare sui profili dei clienti (Super admin e Administrator possono sempre). */
   canPublish: boolean("can_publish").notNull().default(false),
+  /** Riepilogo settimanale via email (uscite, contenuti non usciti, prossima settimana). Non per i Viewer. */
+  weeklyDigest: boolean("weekly_digest").notNull().default(true),
   lastLoginAt: datetime("last_login_at"),
   /** Ultima email di invito inviata (null = mai invitato). */
   invitedAt: datetime("invited_at"),
@@ -108,6 +112,8 @@ export const clients = mysqlTable("clients", {
   reportEmail: varchar("report_email", { length: 255 }),
   reportMonthly: boolean("report_monthly").notNull().default(false),
   reportLastMonth: varchar("report_last_month", { length: 7 }),
+  /** Parole del brand per separare le ricerche con il nome del cliente (oltre a nome e dominio), separate da virgola. */
+  brandTerms: varchar("brand_terms", { length: 500 }),
   createdAt: created(),
 });
 
@@ -122,10 +128,10 @@ export const userClients = mysqlTable(
 );
 
 // ── Collegamenti alle piattaforme e canali ────────────────────────────
-export const PROVIDERS = ["meta", "google", "tiktok", "linkedin"] as const;
+export const PROVIDERS = ["meta", "google", "tiktok", "linkedin", "instagram"] as const;
 export const CHANNEL_KINDS = [
   "instagram", "facebook", "tiktok", "linkedin", "youtube",
-  "search_console", "ga4", "business_profile", "website",
+  "search_console", "ga4", "business_profile", "website", "google_ads",
 ] as const;
 
 /** Accesso concesso da un utente su una piattaforma (token cifrati). Uno per account collegato. */
@@ -208,12 +214,24 @@ export const socialPosts = mysqlTable(
 );
 
 /** Classifiche SEO del periodo (query e pagine da Search Console, punteggi PageSpeed). */
+/**
+ * Fotografie dei dati Google per periodo. Search Console: ricerche e pagine (periodo e periodo precedente),
+ * dispositivi, totali a confronto; Analytics 4: pagine di atterraggio, campagne, conversioni;
+ * Business Profile: recensioni; Google Ads: campagne; PageSpeed: punteggi.
+ */
+export const SEO_SNAPSHOT_KINDS = [
+  "queries", "pages", "pagespeed",
+  "queries_prev", "pages_prev", "devices", "summary",
+  "landing_pages", "campaigns", "conversions",
+  "gbp_reviews", "ads_campaigns",
+] as const;
+
 export const seoSnapshots = mysqlTable(
   "seo_snapshots",
   {
     id: int("id").autoincrement().primaryKey(),
     socialAccountId: int("social_account_id").notNull().references(() => socialAccounts.id, { onDelete: "cascade" }),
-    kind: mysqlEnum("kind", ["queries", "pages", "pagespeed"]).notNull(),
+    kind: mysqlEnum("kind", SEO_SNAPSHOT_KINDS).notNull(),
     periodStart: date("period_start", { mode: "string" }).notNull(),
     periodEnd: date("period_end", { mode: "string" }).notNull(),
     rows: json("rows").$type<Record<string, unknown>[]>().notNull(),
@@ -224,6 +242,7 @@ export const seoSnapshots = mysqlTable(
 
 // ── 1. Check-up ──────────────────────────────────────────────────────
 export const AI_MODES = ["opus", "sonnet", "misto"] as const;
+export const FOUNDATION_STATES = ["nessuna", "in_corso", "pronta", "errore"] as const;
 export const AI_STATES = ["da_avviare", "ricognizione", "domande", "ricerca", "scrittura", "pronto", "errore", "interrotto"] as const;
 
 export const checkups = mysqlTable("checkups", {
@@ -259,6 +278,12 @@ export const checkups = mysqlTable("checkups", {
   deliveredAt: datetime("delivered_at"),
   /** Archiviato: resta nello storico ma non compare tra quelli su cui si lavora. */
   archivedAt: datetime("archived_at"),
+  /** Base di lavoro preparata alla consegna (KPI, canali, rubriche, idee, bozza di piano): stato e riepilogo. */
+  foundationState: mysqlEnum("foundation_state", FOUNDATION_STATES).notNull().default("nessuna"),
+  foundationProgress: text("foundation_progress"),
+  foundationError: text("foundation_error"),
+  foundation: json("foundation").$type<CheckupFoundation>(),
+  foundationAt: datetime("foundation_at"),
 });
 
 /** Domande dell'AI al consulente e risposte, per giro. */
@@ -391,6 +416,9 @@ export const kpis = mysqlTable(
     criticalRatio: num("critical_ratio").notNull().default(0.6),
     minSample: num("min_sample"),
     active: boolean("active").notNull().default(true),
+    /** Check-up che l'ha proposto (null = inserito a mano) e le evidenze del check-up da cui nasce. */
+    checkupId: int("checkup_id").references(() => checkups.id, { onDelete: "set null" }),
+    evidence: text("evidence"),
     createdAt: created(),
   },
   (t) => [index("kpis_client").on(t.clientId)],
@@ -418,6 +446,9 @@ export const contentPillars = mysqlTable("content_pillars", {
   clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
   name: varchar("name", { length: 160 }).notNull(),
   description: text("description"),
+  /** Check-up che l'ha proposta (null = inserita a mano) e le evidenze da cui nasce. */
+  checkupId: int("checkup_id").references(() => checkups.id, { onDelete: "set null" }),
+  evidence: text("evidence"),
 });
 
 export const ideas = mysqlTable(
@@ -434,6 +465,9 @@ export const ideas = mysqlTable(
     pillarId: int("pillar_id").references(() => contentPillars.id, { onDelete: "set null" }),
     origin: mysqlEnum("origin", ["team", "ai", "cliente"]).notNull().default("team"),
     parentId: int("parent_id"),
+    /** Check-up che l'ha proposta (null = del team o del piano AI) e le evidenze da cui nasce. */
+    checkupId: int("checkup_id").references(() => checkups.id, { onDelete: "set null" }),
+    evidence: text("evidence"),
     createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: created(),
     updatedAt: updated(),
@@ -472,6 +506,8 @@ export const editorialPlans = mysqlTable("editorial_plans", {
   adsBudget: money("ads_budget"),
   brief: text("brief"),
   status: mysqlEnum("status", ["bozza", "da_approvare", "approvato", "in_corso", "chiuso"]).notNull().default("bozza"),
+  /** Bozza preparata dal check-up alla consegna (null = creato dal team o dal piano AI). */
+  checkupId: int("checkup_id").references(() => checkups.id, { onDelete: "set null" }),
   createdAt: created(),
 });
 
@@ -770,7 +806,11 @@ export const publications = mysqlTable(
     format: mysqlEnum("format", FORMATS).notNull(),
     caption: text("caption"),
     mediaIds: json("media_ids").$type<number[]>().notNull(),
+    /** Impostazioni scelte per la piattaforma (TikTok: visibilità, interazioni, contenuto commerciale). */
+    options: json("options").$type<TikTokOptions>(),
     attempts: int("attempts").notNull().default(0),
+    /** TikTok: publish_id dell'invio avviato, per controllarne l'esito (e non ripubblicare) nei giri successivi. */
+    remoteId: varchar("remote_id", { length: 120 }),
     externalId: varchar("external_id", { length: 120 }),
     permalink: varchar("permalink", { length: 500 }),
     error: text("error"),
@@ -831,6 +871,32 @@ export const adSpendDaily = mysqlTable(
     spendEur: money("spend_eur").notNull(),
   },
   (t) => [primaryKey({ columns: [t.campaignId, t.day] })],
+);
+
+// ── Analisi SEO con l'AI ─────────────────────────────────────────────
+/** Analisi mensile (o su richiesta) dei dati Google del cliente: priorità e idee di contenuto. */
+export interface SeoAnalysisData {
+  headline: string;
+  summary: string;
+  priorities: { title: string; area: string; impact: "alto" | "medio" | "basso"; effort: "alto" | "medio" | "basso"; why: string; action: string; data: string }[];
+  ideas: { title: string; body: string; format: string; stage: string; query: string }[];
+  /** Fonti che c'erano (Search Console, Analytics 4, scheda Google, Google Ads, PageSpeed). */
+  sources: string[];
+}
+
+export const seoAnalyses = mysqlTable(
+  "seo_analyses",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+    data: json("data").$type<SeoAnalysisData>().notNull(),
+    /** Idee create nella bacheca da questa analisi. */
+    ideasCreated: int("ideas_created").notNull().default(0),
+    trigger: mysqlEnum("trigger", ["manuale", "mensile"]).notNull().default("manuale"),
+    createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: created(),
+  },
+  (t) => [index("seo_analyses_client").on(t.clientId, t.createdAt)],
 );
 
 // ── Approvazione del cliente via link ────────────────────────────────

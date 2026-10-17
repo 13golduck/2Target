@@ -33,6 +33,7 @@ export default async function IdeasPage({ params }: { params: Promise<{ id: stri
         stage: i.stage,
         status: i.status,
         origin: i.origin,
+        evidence: i.checkupId ? (i.evidence ?? "") : null,
         score: Number(votes.find((v) => v.ideaId === i.id)?.score ?? 0),
       }))}
       plans={plans}

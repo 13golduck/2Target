@@ -7,8 +7,13 @@ import { getJson, qs } from "./http";
 // Flusso: login Facebook → token utente a lunga durata (~60 giorni) → pagine gestite con i loro
 // token (non scadono) → account Instagram professionale collegato a ogni pagina.
 
-const graph = (path: string, params: Record<string, string | number | undefined> = {}) =>
-  `https://graph.facebook.com/${META.version}/${path}?${qs(params)}`;
+/** Profili Instagram collegati con il login Instagram (senza Pagina Facebook): stesse chiamate su graph.instagram.com. */
+export type GraphHost = "facebook" | "instagram";
+const graphOn =
+  (host: GraphHost) =>
+  (path: string, params: Record<string, string | number | undefined> = {}) =>
+    `https://graph.${host}.com/${META.version}/${path}?${qs(params)}`;
+const graph = graphOn("facebook");
 
 export function authorizeUrl(state: string, request?: Request) {
   return `https://www.facebook.com/${META.version}/dialog/oauth?${qs({
@@ -45,6 +50,25 @@ export async function exchangeCode(code: string, request?: Request) {
     externalUserId: me.id,
     accountName: me.name,
   };
+}
+
+/**
+ * Utente di sistema del portfolio business di Golduck (Meta Business Suite → Impostazioni → Utenti di sistema).
+ * Il token non scade e non dipende dalla persona che ha collegato: le Pagine e gli account Instagram che i clienti
+ * condividono con il portfolio Golduck e che vengono assegnati all'utente di sistema si leggono con me/accounts.
+ */
+export async function systemUser(token: string) {
+  const me = await getJson<{ id: string; name: string }>(graph("me", { fields: "id,name", access_token: token }));
+  // Scadenza del token: 0 = mai (controllo con il token dell'app, se le chiavi ci sono)
+  let expiresAt: Date | null = null;
+  if (META.appId && META.appSecret) {
+    const dbg = await getJson<{ data?: { expires_at?: number; is_valid?: boolean } }>(
+      graph("debug_token", { input_token: token, access_token: `${META.appId}|${META.appSecret}` }),
+    ).catch(() => null);
+    if (dbg?.data?.is_valid === false) throw new Error("Il token dell'utente di sistema non è valido: generane uno nuovo in Meta Business Suite");
+    if (dbg?.data?.expires_at) expiresAt = new Date(dbg.data.expires_at * 1000);
+  }
+  return { id: me.id, name: me.name, expiresAt };
 }
 
 export interface MetaAsset {
@@ -116,7 +140,8 @@ export interface PostData {
 const today = () => new Date().toISOString().slice(0, 10);
 
 /** Instagram: follower di oggi, reach giornaliera degli ultimi 28 giorni, ultimi 50 post con statistiche. */
-export async function syncInstagram(igId: string, token: string) {
+export async function syncInstagram(igId: string, token: string, host: GraphHost = "facebook") {
+  const graph = graphOn(host);
   const daily: DailyValue[] = [];
   const profile = await getJson<{ followers_count?: number; media_count?: number }>(
     graph(igId, { fields: "followers_count,media_count", access_token: token }),

@@ -176,6 +176,41 @@
       "when": 1792103629568,
       "tag": "0024_approvazione_report",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1792170058218,
+      "tag": "0025_base_dal_checkup",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1792173262516,
+      "tag": "0026_pubblicazione_tiktok_instagram",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "5",
+      "when": 1792178330270,
+      "tag": "0027_google_approfondito",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "5",
+      "when": 1792186646430,
+      "tag": "0028_tiktok_esito_in_sottofondo",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1792186860204,
+      "tag": "0029_calendario_e_riepilogo",
+      "breakpoints": true
     }
   ]
 }

@@ -1,10 +1,11 @@
-import { and, asc, gte, inArray, isNotNull, ne } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNotNull, ne } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
 import { db } from "@/db";
-import { clients, editorialItems } from "@/db/schema";
+import { clients, editorialItems, publications, socialAccounts } from "@/db/schema";
 import { requireUser, visibleClientIds } from "@/lib/auth";
 import { nowDate } from "@/lib/format";
+import { exitState } from "@/lib/publishing/exit-state";
 import { canWrite, isViewer } from "@/lib/roles";
 import { GlobalCalendar } from "./global-calendar";
 
@@ -33,11 +34,28 @@ export default async function CalendarPage() {
         .where(and(inArray(editorialItems.clientId, list.map((c) => c.id)), isNotNull(editorialItems.scheduledAt), gte(editorialItems.scheduledAt, since), ne(editorialItems.status, "annullato")))
     : [];
 
+  // Stato reale dell'uscita: dalle pubblicazioni sui profili (programmata, in corso, uscita, non uscita)
+  const pubs = items.length
+    ? await db
+        .select({ itemId: publications.itemId, status: publications.status, permalink: publications.permalink, error: publications.error, platform: socialAccounts.platform, handle: socialAccounts.handle })
+        .from(publications)
+        .innerJoin(socialAccounts, eq(socialAccounts.id, publications.socialAccountId))
+        .where(and(inArray(publications.itemId, items.map((i) => i.id)), ne(publications.status, "annullata")))
+    : [];
+
   return (
     <GlobalCalendar
       clients={list}
       readOnly={!canWrite(me.role)}
-      items={items.map((i) => ({ ...i, scheduledAt: i.scheduledAt!.toISOString() }))}
+      items={items.map((i) => {
+        const mine = pubs.filter((p) => p.itemId === i.id);
+        return {
+          ...i,
+          scheduledAt: i.scheduledAt!.toISOString(),
+          exit: exitState(mine),
+          channels: mine.map((p) => ({ platform: p.platform, handle: p.handle, status: p.status, permalink: p.permalink, error: p.error?.slice(0, 200) ?? null })),
+        };
+      })}
     />
   );
 }

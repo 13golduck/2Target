@@ -1,7 +1,7 @@
 import { asc, inArray } from "drizzle-orm";
 
 import { db } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireClientAccess } from "@/lib/auth";
 import { canWrite } from "@/lib/roles";
 import { kpiMeasurements } from "@/db/schema";
 import { METRICS } from "@/lib/kpi-catalog";
@@ -11,8 +11,9 @@ import { KpiView } from "./kpi-view";
 export const metadata = { title: "KPI" };
 
 export default async function KpiPage({ params }: { params: Promise<{ id: string }> }) {
-  const readOnly = !canWrite((await requireUser()).role);
   const clientId = Number((await params).id);
+  // Controllo anche qui, non solo nel layout: i Viewer vedono solo i propri clienti
+  const readOnly = !canWrite((await requireClientAccess(clientId)).role);
   const rows = await kpisWithStatus([clientId]);
   const history = rows.length
     ? await db
@@ -32,6 +33,7 @@ export default async function KpiPage({ params }: { params: Promise<{ id: string
     baseline: k.baseline,
     target: k.target,
     minSample: k.minSample,
+    evidence: k.checkupId ? (k.evidence ?? "") : null,
     status: k.evaluation.status,
     score: k.evaluation.score,
     message: k.evaluation.message,

@@ -48,18 +48,49 @@ const GROUPS = [
         name: 'metaConfigId',
         label: 'ID configurazione (Facebook Login for Business)',
       },
+      {
+        name: 'metaSystemUserToken',
+        label: 'Token utente di sistema (portfolio Golduck, facoltativo: accesso permanente)',
+        secret: true,
+      },
+    ],
+  },
+  {
+    key: 'linkedin',
+    title: 'LinkedIn (pagine aziendali dei clienti)',
+    icon: 'socials:linkedin',
+    where:
+      'linkedin.com/developers → app 2Target (legata alla Pagina LinkedIn di Golduck) → Auth: Client ID e Primary Client Secret; aggiungi l’indirizzo di reindirizzamento qui sotto. Prodotto: Community Management API (va richiesto e approvato da LinkedIn).',
+    callback: '/api/connect/linkedin/callback',
+    fields: [
+      { name: 'linkedinClientId', label: 'Client ID' },
+      { name: 'linkedinClientSecret', label: 'Client secret', secret: true },
+      { name: 'linkedinScopes', label: 'Permessi richiesti (vuoto = predefiniti)' },
     ],
   },
   {
     key: 'tiktok',
-    title: 'TikTok (profilo, video e statistiche dei clienti)',
+    title: 'TikTok (profilo, video, statistiche e pubblicazione)',
     icon: 'socials:tiktok',
     where:
-      'developers.tiktok.com → Manage apps → app 2Target → App details: Client key e Client secret. In Login Kit aggiungi l’indirizzo di reindirizzamento qui sotto; prodotti: Login Kit e Display API.',
+      'developers.tiktok.com → Manage apps → app 2Target → App details: Client key e Client secret. In Login Kit aggiungi l’indirizzo di reindirizzamento qui sotto; prodotti: Login Kit, Display API e Content Posting API. Per pubblicare scrivi nei permessi «user.info.basic,user.info.stats,video.list,video.publish» e ricollega gli account TikTok dei clienti.',
     callback: '/api/connect/tiktok/callback',
     fields: [
       { name: 'tiktokClientKey', label: 'Client key' },
       { name: 'tiktokClientSecret', label: 'Client secret', secret: true },
+      { name: 'tiktokScopes', label: 'Permessi richiesti (vuoto = senza pubblicazione)' },
+    ],
+  },
+  {
+    key: 'instagram',
+    title: 'Instagram senza Facebook (login Instagram)',
+    icon: 'socials:instagram',
+    where:
+      'Meta for Developers → app 2Target → Instagram → Configurazione dell’API con login Instagram: ID app di Instagram e chiave segreta dell’app Instagram (diversi da quelli di Meta qui sopra). Aggiungi l’indirizzo di reindirizzamento qui sotto in «Configura il login aziendale di Instagram».',
+    callback: '/api/connect/instagram/callback',
+    fields: [
+      { name: 'instagramAppId', label: 'ID app di Instagram' },
+      { name: 'instagramAppSecret', label: 'Chiave segreta dell’app Instagram', secret: true },
     ],
   },
   {
@@ -85,9 +116,10 @@ const GROUPS = [
   },
   {
     key: 'google',
-    title: 'Google (Search Console, Analytics, PageSpeed)',
+    title: 'Google (Search Console, Analytics, scheda Google, Google Ads, PageSpeed)',
     icon: 'socials:google',
-    where: 'Google Cloud → progetto 2Target → API e servizi → Credenziali.',
+    where:
+      'Google Cloud → progetto 2Target → API e servizi → Credenziali. Google Ads: centro clienti (MCC) di Golduck → Amministrazione → Centro API → developer token; l’ID del centro clienti serve se gli account dei clienti sono collegati all’MCC. Dopo aver aggiunto il developer token ricollega gli account Google dei clienti.',
     callback: '/api/connect/google/callback',
     fields: [
       { name: 'googleClientId', label: 'ID client OAuth' },
@@ -101,6 +133,8 @@ const GROUPS = [
         label: 'Chiave API PageSpeed',
         secret: true,
       },
+      { name: 'googleAdsDeveloperToken', label: 'Google Ads: developer token', secret: true },
+      { name: 'googleAdsLoginCustomerId', label: 'Google Ads: ID del centro clienti (MCC)' },
     ],
   },
 ];

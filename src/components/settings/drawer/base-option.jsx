@@ -76,7 +76,7 @@ const TopContainer = styled('div')(({ theme }) => ({
   justifyContent: 'space-between',
 }));
 
-const BottomContainer = styled('div')(({ theme }) => ({
+const BottomContainer = styled('div')(() => ({
   width: '100%',
   display: 'flex',
   alignItems: 'center',
