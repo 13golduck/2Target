@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/db";
-import { CHANNEL_KINDS, clients, connections, socialAccounts } from "@/db/schema";
+import { CHANNEL_KINDS, clients, connections, editorialItems, socialAccounts } from "@/db/schema";
 import { requireWriter, userCanPublish } from "@/lib/auth";
 import { forgetFromClient, siteKey } from "@/lib/integrations/client-channels";
 import { decryptSecret, encryptSecret } from "@/lib/secret-box";
@@ -266,4 +266,31 @@ export async function connectMetaSystemUser(f: FormData) {
     .where(and(eq(connections.clientId, clientId), eq(connections.provider, "meta"), eq(connections.externalUserId, values.externalUserId)));
   await audit({ userId: me.id, category: "canali", action: "collegamento.portfolio", description: `Collegato l'accesso permanente di Meta tramite il portfolio Golduck (${su.name})`, clientId, target: `collegamento:${row.id}` });
   redirect(`${path(clientId)}?scegli=${row.id}`);
+}
+
+/**
+ * Post veloce da un profilo (Canali → Nuovo post): crea una scheda fuori piano, già approvata, con il testo scritto,
+ * e apre la pubblicazione con quel profilo già scelto. Media, anteprima e conferma restano quelli dell'editor.
+ */
+export async function quickPost(f: FormData) {
+  const me = await requireWriter();
+  if (!(await userCanPublish(me))) return { error: "Pubblicano solo gli amministratori e chi è abilitato" };
+  const [ch] = await db.select().from(socialAccounts).where(eq(socialAccounts.id, Number(f.get("channelId"))));
+  if (!ch || !["instagram", "facebook"].includes(ch.platform)) return { error: "Profilo non valido" };
+  const caption = String(f.get("caption") ?? "").trim();
+  const format = String(f.get("format") ?? "post");
+  const title = caption.split("\n")[0].slice(0, 80) || "Post veloce";
+  const [r] = await db.insert(editorialItems).values({
+    clientId: ch.clientId,
+    planId: null,
+    title,
+    platform: ch.platform as "instagram" | "facebook",
+    format: (["post", "carosello", "reel", "storia"].includes(format) ? format : "post") as "post",
+    caption: caption || null,
+    status: "approvato",
+    scheduledAt: new Date(),
+    internalNotes: "Post veloce creato da Canali (fuori dal piano editoriale)",
+  });
+  await audit({ userId: me.id, category: "contenuti", action: "pubblicazione.veloce", description: `Post veloce per ${ch.platform} «${ch.name ?? ch.handle}»`, clientId: ch.clientId, target: `pubblicazione:${r.insertId}` });
+  redirect(`/pubblicazioni/${r.insertId}?canale=${ch.id}#pubblica`);
 }

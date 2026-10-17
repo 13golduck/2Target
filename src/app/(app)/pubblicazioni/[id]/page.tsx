@@ -23,10 +23,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return { title: item?.title ?? "Pubblicazione" };
 }
 
-export default async function ItemPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ salvato?: string }> }) {
+export default async function ItemPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ salvato?: string; canale?: string }> }) {
   const me = await requireWriter();
   const id = Number((await params).id);
-  const { salvato } = await searchParams;
+  const { salvato, canale } = await searchParams;
   const [item] = await db.select().from(s.editorialItems).where(eq(s.editorialItems.id, id));
   if (!item) notFound();
   const [client] = await db.select({ id: s.clients.id, name: s.clients.name }).from(s.clients).where(eq(s.clients.id, item.clientId));
@@ -76,6 +76,7 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
       publishing={{
         canPublish: canPublishWith(me.role, meRow?.canPublish),
         dryRun: isDryRun(),
+        preselect: canale ? Number(canale) : null,
         scheduledAt: item.scheduledAt?.toISOString() ?? null,
         scheduledFuture: !!item.scheduledAt && item.scheduledAt.getTime() > nowDate().getTime() + 60_000,
         channels: channels.map((c) => ({

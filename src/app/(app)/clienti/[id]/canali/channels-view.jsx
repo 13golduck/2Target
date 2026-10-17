@@ -42,6 +42,7 @@ import {
   attachChannels,
   syncChannelNow,
   addManualChannel,
+  quickPost,
   removeConnection,
   connectMetaSystemUser,
 } from '../../../channel-actions';
@@ -207,7 +208,7 @@ export function ChannelsView({ clientId, error, configured, connections, channel
           <Grid container spacing={3}>
             {channels.map((c) => (
               <Grid key={c.id} size={{ xs: 12, lg: c.recentPosts.length ? 12 : 6 }}>
-                <ChannelCard channel={c} />
+                <ChannelCard channel={c} canPublish={canConnect} />
               </Grid>
             ))}
           </Grid>
@@ -222,8 +223,10 @@ export function ChannelsView({ clientId, error, configured, connections, channel
 
 // ----------------------------------------------------------------------
 
-function ChannelCard({ channel: c }) {
+function ChannelCard({ channel: c, canPublish }) {
   const [pending, start] = useTransition();
+  const [posting, setPosting] = useState(false);
+  const canPost = canPublish && c.connected && ['instagram', 'facebook'].includes(c.platform);
   const meta = CHANNEL[c.platform] ?? { label: c.platform, icon: 'solar:link-bold' };
 
   const sync = () =>
@@ -301,7 +304,12 @@ function ChannelCard({ channel: c }) {
           )
         }
         action={
-          <Stack direction="row">
+          <Stack direction="row" sx={{ alignItems: 'center' }}>
+            {canPost && (
+              <Button size="small" variant="contained" startIcon={<Iconify icon="solar:pen-bold" />} onClick={() => setPosting(true)} sx={{ mr: 1 }}>
+                Nuovo post
+              </Button>
+            )}
             {syncable && (
               <Tooltip title={c.platform === 'website' ? 'Analizza di nuovo con PageSpeed' : 'Aggiorna ora'}>
                 <IconButton onClick={sync} loading={pending}><Iconify icon="solar:restart-bold" /></IconButton>
@@ -328,6 +336,7 @@ function ChannelCard({ channel: c }) {
           ))}
         </Stack>
       )}
+      {posting && <QuickPostDialog channel={c} onClose={() => setPosting(false)} />}
       {c.recentPosts.length > 0 && (
         <>
           <Divider sx={{ borderStyle: 'dashed' }} />
@@ -482,6 +491,64 @@ function ManualDialog({ clientId, open, onClose }) {
           <Button type="submit" variant="contained" loading={pending}>Aggiungi</Button>
         </DialogActions>
       </Box>
+    </Dialog>
+  );
+}
+
+// ----------------------------------------------------------------------
+// Post veloce: testo e formato qui, poi si apre la pubblicazione con il profilo già scelto per foto/video e invio.
+
+function QuickPostDialog({ channel, onClose }) {
+  const [caption, setCaption] = useState('');
+  const [format, setFormat] = useState('post');
+  const [pending, start] = useTransition();
+  const label = CHANNEL[channel.platform]?.label ?? channel.platform;
+
+  const submit = () =>
+    start(async () => {
+      const fd = new FormData();
+      fd.set('channelId', channel.id);
+      fd.set('caption', caption);
+      fd.set('format', format);
+      const r = await quickPost(fd);
+      if (r?.error) toast.error(r.error);
+    });
+
+  return (
+    <Dialog open onClose={pending ? undefined : onClose} fullWidth maxWidth="sm">
+      <DialogTitle>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <Iconify icon={CHANNEL[channel.platform]?.icon} />
+          <span>Nuovo post su {label} · {channel.name ?? channel.handle}</span>
+        </Stack>
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <TextField select label="Formato" value={format} onChange={(e) => setFormat(e.target.value)} fullWidth>
+            <MenuItem value="post">Post (foto)</MenuItem>
+            <MenuItem value="carosello">Carosello</MenuItem>
+            <MenuItem value="reel">Reel / video</MenuItem>
+            {channel.platform === 'instagram' && <MenuItem value="storia">Storia</MenuItem>}
+          </TextField>
+          <TextField
+            label="Testo del post"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            multiline
+            minRows={6}
+            autoFocus
+            fullWidth
+            helperText={`${caption.length} / 2.200 · al passo dopo carichi foto o video, vedi l'anteprima e pubblichi (subito o programmato)`}
+          />
+          <Alert severity="info">Il post resta fuori dal piano editoriale ed è già considerato approvato.</Alert>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={pending}>Annulla</Button>
+        <Button variant="contained" onClick={submit} loading={pending} disabled={!caption.trim()} endIcon={<Iconify icon="eva:arrow-ios-forward-fill" />}>
+          Continua
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 }

@@ -211,6 +211,13 @@
       "when": 1792186860204,
       "tag": "0029_calendario_e_riepilogo",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "5",
+      "when": 1792224215283,
+      "tag": "0030_profili_social",
+      "breakpoints": true
     }
   ]
 }

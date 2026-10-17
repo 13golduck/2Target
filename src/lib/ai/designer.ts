@@ -37,7 +37,7 @@ Regole:
   },
 ];
 
-async function clientContext(clientId: number) {
+export async function clientContext(clientId: number) {
   const [client] = await db.select().from(clients).where(eq(clients.id, clientId));
   const [kit] = await db.select().from(brandKits).where(eq(brandKits.clientId, clientId));
   const [last] = await db.select({ id: checkups.id }).from(checkups).where(eq(checkups.clientId, clientId)).orderBy(desc(checkups.id)).limit(1);

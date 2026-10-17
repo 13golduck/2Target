@@ -916,3 +916,24 @@ export const itemFeedback = mysqlTable(
   },
   (t) => [index("item_feedback_item").on(t.itemId, t.createdAt)],
 );
+
+// ── Profili social: creazione guidata e completezza ─────────────────
+export const PROFILE_PLATFORMS = ["facebook", "instagram", "tiktok", "google_business"] as const;
+
+/** Kit di creazione (testi, scelte) e ultimo controllo di completezza per piattaforma. */
+export const profileSetups = mysqlTable(
+  "profile_setups",
+  {
+    clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+    platform: mysqlEnum("platform", PROFILE_PLATFORMS).notNull(),
+    /** Testi e scelte del kit (nome, username, categoria, bio, pulsante, primi post…). */
+    kit: json("kit").$type<Record<string, unknown>>(),
+    /** Passi della procedura già fatti. */
+    steps: json("steps").$type<Record<string, boolean>>(),
+    /** Ultimo controllo del profilo collegato. */
+    health: json("health").$type<{ score: number; checkedAt: string; items: { key: string; label: string; ok: boolean; value?: string | null; fixable?: boolean; hint?: string }[] }>(),
+    updatedBy: int("updated_by").references(() => users.id, { onDelete: "set null" }),
+    updatedAt: updated(),
+  },
+  (t) => [primaryKey({ columns: [t.clientId, t.platform] })],
+);

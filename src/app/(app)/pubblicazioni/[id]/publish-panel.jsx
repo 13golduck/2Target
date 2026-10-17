@@ -114,10 +114,11 @@ function ChannelAvatar({ channel, size = 36 }) {
   );
 }
 
-export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, scheduledFuture, channels, media, publications }) {
+export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, scheduledFuture, channels, media, publications, preselect }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [selected, setSelected] = useState([]);
+  // Post veloce da Canali: il profilo scelto arriva già selezionato
+  const [selected, setSelected] = useState(() => (preselect && channels.some((c) => c.id === preselect && c.ready) ? [preselect] : []));
   const [progress, setProgress] = useState(null);
   const [tiktok, setTiktok] = useState(EMPTY_TIKTOK);
   const [tiktokValid, setTiktokValid] = useState(false);
@@ -209,7 +210,7 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
   };
 
   return (
-    <Card>
+    <Card id="pubblica" sx={preselect ? { border: 2, borderColor: 'primary.main' } : undefined}>
       <CardHeader
         avatar={<Iconify icon="custom:send-fill" width={24} sx={{ color: 'primary.main' }} />}
         title="Pubblica sui profili del cliente"
