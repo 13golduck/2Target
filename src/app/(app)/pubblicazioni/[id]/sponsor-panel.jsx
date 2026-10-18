@@ -103,7 +103,7 @@ export function SponsorPanel({ clientId, itemId, hasMedia, canPublish, dryRun, a
         subheader={
           ads.adAccountId
             ? `Account ${ads.adAccountName ?? ads.adAccountId} · ${ads.payer === 'golduck' ? 'paga Golduck e rifattura al cliente' : 'paga il cliente'}`
-            : 'Scegli prima l\'account pubblicitario in Canali → Sponsorizzate'
+            : 'Scegli prima l\'account pubblicitario: Canali → riquadro «Sponsorizzate Meta»'
         }
         action={
           <Stack direction="row" spacing={1}>

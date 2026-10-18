@@ -38,8 +38,8 @@ export function MonthlyReportView({ token, report: r }) {
           <Button size="small" variant="outlined" color="inherit" href={`/api/report-video/${token}`} startIcon={<Iconify icon="solar:videocamera-record-bold" />}>
             Video del mese
           </Button>
-          <Button size="small" variant="contained" onClick={() => window.print()} startIcon={<Iconify icon="solar:download-bold" />} sx={{ bgcolor: C.ink, '&:hover': { bgcolor: '#000' } }}>
-            PDF
+          <Button size="small" variant="contained" onClick={() => window.print()} startIcon={<Iconify icon="solar:printer-minimalistic-bold" />} sx={{ bgcolor: C.ink, '&:hover': { bgcolor: '#000' } }}>
+            Stampa o salva in PDF
           </Button>
         </Stack>
       </Box>

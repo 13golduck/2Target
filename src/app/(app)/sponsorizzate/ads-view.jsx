@@ -17,6 +17,7 @@ import TableRow from "@mui/material/TableRow";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableHead from "@mui/material/TableHead";
+import TableContainer from "@mui/material/TableContainer";
 import TextField from "@mui/material/TextField";
 import CardHeader from "@mui/material/CardHeader";
 import Typography from "@mui/material/Typography";
@@ -152,7 +153,7 @@ export function AdsView({ month, dryRun, canPublish, kpi, advice, daily, adClien
         {canPublish && !adClients.length && (
           <Alert severity="info">
             Per creare una campagna scegli prima l&apos;account pubblicitario
-            del cliente in Canali → Sponsorizzate.
+            del cliente: apri la sua pagina Canali e, nel riquadro «Sponsorizzate Meta», scegli l’account pubblicitario.
           </Alert>
         )}
 
@@ -189,7 +190,9 @@ export function AdsView({ month, dryRun, canPublish, kpi, advice, daily, adClien
             }
           />
           {rebill.length ? (
-            <Table size="small" sx={{ mt: 2 }}>
+            // Su telefono la tabella scorre di lato invece di uscire dallo schermo
+            <TableContainer sx={{ mt: 2 }}>
+            <Table size="small">
               <TableHead>
                 <TableRow>
                   <TableCell>Cliente</TableCell>
@@ -232,6 +235,7 @@ export function AdsView({ month, dryRun, canPublish, kpi, advice, daily, adClien
                 </TableRow>
               </TableBody>
             </Table>
+            </TableContainer>
           ) : (
             <EmptyContent
               title="Niente da rifatturare"

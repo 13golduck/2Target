@@ -165,7 +165,7 @@ export const TECH_ARTICLES: GuideArticle[] = [
     keywords: ["report", "pdf", "video", "mese", "cliente", "email", "stampa"],
     blocks: [
       { p: "Il report mensile racconta al cliente com'è andato il mese: follower, copertura, post usciti, contatti arrivati e obiettivi (KPI) con il semaforo." },
-      { steps: ["Apri il cliente → **Panoramica** → riquadro **Report, avvisi e approvazione**.", "Accendi **Report mensile automatico al cliente** e scrivi la sua email.", "Premi **Salva**. Con **Anteprima** lo vedi prima; con **Mandala a me** lo ricevi tu."] },
+      { steps: ["Apri il cliente → **Panoramica** → riquadro **Report, avvisi e approvazione**.", "Accendi **Report mensile automatico al cliente** e scrivi la sua email.", "Premi **Salva**. Con **Anteprima** lo vedi prima; con **Inviami una prova** lo ricevi tu."] },
       { p: "Il report parte da solo il 3 di ogni mese con i dati del mese chiuso. Da **Report del mese** → **Apri (PDF e video)** apri la pagina del mese scelto: si stampa in PDF e contiene un video verticale da condividere nelle storie." },
       { tip: "Nello stesso riquadro **Avvisa il cliente quando un post esce** gli manda il link di ogni post appena pubblicato." },
     ],

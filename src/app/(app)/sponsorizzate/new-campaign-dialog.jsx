@@ -215,7 +215,7 @@ export function NewCampaignDialog({ clients, clientId: initialClient, itemId: in
         {loading && <Typography variant="body2" sx={{ color: 'text.secondary' }}>Carico le schede del cliente…</Typography>}
 
         {src && !src.client.adAccountId && (
-          <Alert severity="warning">Questo cliente non ha un account pubblicitario: impostalo in Canali → Sponsorizzate.</Alert>
+          <Alert severity="warning">Questo cliente non ha un account pubblicitario: apri la sua pagina Canali e, nel riquadro «Sponsorizzate Meta», scegli l’account pubblicitario.</Alert>
         )}
         {src && src.client.adAccountId && !src.hasPage && (
           <Alert severity="warning" sx={{ mb: 2 }}>Meta richiede la Pagina Facebook del cliente per ogni inserzione: collegala in Canali (in simulazione si può provare lo stesso).</Alert>

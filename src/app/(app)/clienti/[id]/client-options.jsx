@@ -98,7 +98,7 @@ export function ClientOptions({ clientId, options, readOnly }) {
           <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
             <Button size="small" variant="contained" onClick={save} loading={busy}>Salva</Button>
             <Button size="small" onClick={show} disabled={busy}>Anteprima</Button>
-            <Button size="small" color="inherit" onClick={test} disabled={busy}>Mandala a me</Button>
+            <Button size="small" color="inherit" onClick={test} disabled={busy}>Inviami una prova</Button>
           </Stack>
         )}
         <Stack direction="row" spacing={1} sx={{ pt: 1, borderTop: 1, borderColor: 'divider', alignItems: 'center' }}>
