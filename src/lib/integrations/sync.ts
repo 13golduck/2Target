@@ -279,6 +279,13 @@ export async function syncClient(clientId: number) {
   } catch (e) {
     errors.push(`Sponsorizzate: ${(e as Error).message}`);
   }
+  // Concorrenti su Instagram: un'istantanea al giorno (salta quelli già letti oggi)
+  try {
+    const { refreshCompetitorSnapshots } = await import("@/lib/competitors-data");
+    for (const e of (await refreshCompetitorSnapshots(clientId)).errors) errors.push(`Concorrenti: ${e}`);
+  } catch (e) {
+    errors.push(`Concorrenti: ${(e as Error).message}`);
+  }
   await updateKpisFromData(clientId);
   return errors;
 }
