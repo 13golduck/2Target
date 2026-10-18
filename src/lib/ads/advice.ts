@@ -92,7 +92,7 @@ export function buildAdvice(campaigns: AdviceCampaign[], clients: AdviceClient[]
         clientId: c.clientId,
         campaignId: c.id,
         title: `«${c.name}»: pochi clic`,
-        detail: `Solo il ${((clicks / impressions) * 100).toLocaleString("it-IT", { maximumFractionDigits: 2 })}% di chi la vede clicca (sotto lo 0,8%). Prova una foto più chiara, un titolo con il beneficio o un'offerta concreta.`,
+        detail: `Clic sulle visualizzazioni: ${((clicks / impressions) * 100).toLocaleString("it-IT", { maximumFractionDigits: 2 })}% (sotto lo 0,8%). Prova una foto più chiara, un titolo con il beneficio o un'offerta concreta.`,
       });
     }
 
