@@ -202,6 +202,31 @@ export function ItemView({ saved, client, item, issues, series, personas, option
                     error={caption.length > 2200}
                   />
                   <TextField name="hashtags" label="Hashtag · separati da spazio" value={hashtags} onChange={(e) => setHashtags(e.target.value)} placeholder="#architetto #ristrutturazione" fullWidth helperText={`${hashtags.split(/\s+/).filter((h) => h.startsWith('#')).length} hashtag`} />
+                  <TextField
+                    name="firstComment"
+                    label="Primo commento · facoltativo"
+                    defaultValue={item.firstComment ?? ''}
+                    multiline
+                    minRows={2}
+                    fullWidth
+                    helperText="Esce come primo commento subito dopo il post, su Instagram e Facebook (non nelle storie): utile per hashtag o link."
+                  />
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' } }}>
+                    <TextField
+                      name="collaborators"
+                      label="Coautori Instagram · facoltativo"
+                      defaultValue={(item.collaborators ?? []).map((c) => `@${c}`).join(', ')}
+                      placeholder="@studio.rossi, @mario_bianchi"
+                      fullWidth
+                      helperText="Fino a 3 profili: il post compare anche sul loro profilo se accettano l'invito."
+                    />
+                    <FormControlLabel
+                      control={<Switch name="tagLocation" defaultChecked={item.tagLocation} />}
+                      label="Tagga la sede"
+                      title="Su Instagram il post riporta il luogo della Pagina Facebook collegata (serve un indirizzo sulla Pagina)"
+                      sx={{ flexShrink: 0 }}
+                    />
+                  </Stack>
                   <TextField name="cta" label="CTA · invito all'azione nel testo" defaultValue={item.cta ?? ''} placeholder="es. Chiamami per una prima consulenza" fullWidth />
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                     <TextField select name="ctaDestination" label="Dove porta la CTA" value={destination} onChange={(e) => setDestination(e.target.value)} fullWidth>

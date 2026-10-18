@@ -12,6 +12,7 @@ import { METRIC_BY_KEY } from "@/lib/kpi-catalog";
 import { kpiSnapshot } from "@/lib/queries";
 import { audit, diff } from "@/lib/audit";
 import { ensureChannelsFromClient } from "@/lib/integrations/client-channels";
+import { parseCollaborators } from "@/lib/publishing/extras";
 import { syncPendingPublications } from "@/lib/publishing/sync";
 import { isAiConfigured } from "@/lib/ai/claude";
 import { startFoundation } from "@/lib/ai/foundation-agent";
@@ -318,6 +319,9 @@ export async function saveItem(f: FormData) {
     cta: str(f, "cta"),
     ctaDestination: oneOf(s.CTA_DESTINATIONS, str(f, "ctaDestination")),
     ctaUrl: str(f, "ctaUrl"),
+    firstComment: str(f, "firstComment"),
+    collaborators: parseCollaborators(str(f, "collaborators")).valid,
+    tagLocation: f.get("tagLocation") === "on",
     referencesUrls: str(f, "referencesUrls"),
     needsClientMaterial: f.get("needsClientMaterial") === "on",
     productionNotes: str(f, "productionNotes"),
