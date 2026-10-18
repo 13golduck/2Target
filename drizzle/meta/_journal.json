@@ -232,6 +232,13 @@
       "when": 1792348018956,
       "tag": "0032_sponsorizzate_complete",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "5",
+      "when": 1792357458367,
+      "tag": "0033_video_per_i_social",
+      "breakpoints": true
     }
   ]
 }

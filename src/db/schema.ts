@@ -804,6 +804,12 @@ export const mediaAssets = mysqlTable(
     height: int("height"),
     /** Ordine nel carosello. */
     position: int("position").notNull().default(0),
+    /** Video: durata letta da FFmpeg e codifica. */
+    durationSec: decimal("duration_sec", { precision: 10, scale: 2, mode: "number" }),
+    videoCodec: varchar("video_codec", { length: 30 }),
+    /** Video: conversione per i social (in_lavorazione finché FFmpeg non ha finito). */
+    processState: mysqlEnum("process_state", ["pronto", "in_lavorazione", "errore"]).notNull().default("pronto"),
+    processNote: varchar("process_note", { length: 300 }),
     createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: created(),
   },
