@@ -281,6 +281,13 @@
       "when": 1792361142299,
       "tag": "0039_istantanee_concorrenti",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "5",
+      "when": 1792361877852,
+      "tag": "0040_notifiche_push",
+      "breakpoints": true
     }
   ]
 }

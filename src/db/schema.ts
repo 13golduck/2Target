@@ -756,6 +756,19 @@ export const marketingCosts = mysqlTable(
 );
 
 // ── Impostazioni dell'app (limiti di spesa AI, interruttori) ─────────
+/** Telefoni e browser dove l'utente ha attivato le notifiche (Web Push). Una riga per dispositivo. */
+export const pushSubscriptions = mysqlTable("push_subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  /** Indirizzo del servizio push del browser: identifica il dispositivo. */
+  endpoint: varchar("endpoint", { length: 700 }).notNull().unique(),
+  p256dh: varchar("p256dh", { length: 200 }).notNull(),
+  auth: varchar("auth", { length: 100 }).notNull(),
+  device: varchar("device", { length: 120 }),
+  lastSentAt: datetime("last_sent_at"),
+  createdAt: created(),
+});
+
 export const appSettings = mysqlTable("app_settings", {
   key: varchar("key", { length: 80 }).primaryKey(),
   value: json("value").notNull(),
