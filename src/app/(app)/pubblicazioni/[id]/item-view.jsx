@@ -446,7 +446,7 @@ export function ItemView({ saved, client, item, issues, series, personas, option
         <PublishPanel item={item} client={client} {...publishing} />
       </Box>
 
-      {/* Sponsorizzate dei post già pubblicati */}
+      {/* Sponsorizzate: post già pubblicati e campagne nuove dalla scheda */}
       <Box sx={{ mt: 3, '&:empty': { display: 'none' } }}>
         <SponsorPanel {...sponsoring} />
       </Box>

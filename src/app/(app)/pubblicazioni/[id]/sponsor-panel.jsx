@@ -33,6 +33,7 @@ import { Iconify } from 'src/components/iconify';
 import { askConfirm } from 'src/components/custom-dialog';
 
 import { findCities, startSponsorship, changeSponsorship, refreshSponsorships } from '../../ads-actions';
+import { NewCampaignDialog } from '../../sponsorizzate/new-campaign-dialog';
 
 // ----------------------------------------------------------------------
 // Sponsorizzazione di un post già pubblicato da 2Target, con budget totale, durata, zona ed età.
@@ -52,18 +53,25 @@ export const AD_OBJECTIVE = {
   traffico: { label: 'Traffico', hint: 'Clic verso il link del post (serve un link)' },
 };
 
-export const RESULT_LABEL = { impressioni: 'Impressioni', copertura: 'Copertura', clic: 'Clic', interazioni: 'Interazioni', clic_link: 'Clic sul link' };
+// Etichette anche per gli obiettivi delle campagne nuove (la sponsorizzazione di un post ha solo i tre sopra)
+const OBJECTIVE_LABEL = { ...Object.fromEntries(Object.entries(AD_OBJECTIVE).map(([k, o]) => [k, o.label])), contatti: 'Contatti' };
+const KIND_LABEL = { boost: 'Post sponsorizzato', campagna: 'Campagna', contatti: 'Modulo contatti' };
+
+export const RESULT_LABEL = { impressioni: 'Impressioni', copertura: 'Copertura', clic: 'Clic', interazioni: 'Interazioni', clic_link: 'Clic sul link', contatti: 'Contatti' };
+
+const placementIcons = (p) => (p === 'entrambi' ? ['socials:facebook', 'socials:instagram'] : [p === 'instagram' ? 'socials:instagram' : 'socials:facebook']);
 
 const money = (n, c = 'EUR') => (n ?? 0).toLocaleString('it-IT', { style: 'currency', currency: c });
 
-export function SponsorPanel({ clientId, canPublish, dryRun, ads, publications, campaigns }) {
+export function SponsorPanel({ clientId, itemId, hasMedia, canPublish, dryRun, ads, publications, campaigns }) {
   const router = useRouter();
   const [open, setOpen] = useState(null);
+  const [creating, setCreating] = useState(false);
   const [busy, startBusy] = useTransition();
   const [refreshing, startRefresh] = useTransition();
   const published = publications.filter((p) => p.status === 'pubblicata' && ['facebook', 'instagram'].includes(p.platform));
 
-  if (!published.length && !campaigns.length) return null;
+  if (!published.length && !campaigns.length && !(hasMedia && canPublish)) return null;
 
   const act = async (c, action) => {
     const texts = {
@@ -100,11 +108,18 @@ export function SponsorPanel({ clientId, canPublish, dryRun, ads, publications, 
             : 'Scegli prima l\'account pubblicitario in Canali → Sponsorizzate'
         }
         action={
-          campaigns.some((c) => !c.simulated) && (
-            <Button size="small" startIcon={<Iconify icon="solar:restart-bold" />} onClick={refresh} loading={refreshing}>
-              Aggiorna
-            </Button>
-          )
+          <Stack direction="row" spacing={1}>
+            {campaigns.some((c) => !c.simulated) && (
+              <Button size="small" startIcon={<Iconify icon="solar:restart-bold" />} onClick={refresh} loading={refreshing}>
+                Aggiorna
+              </Button>
+            )}
+            {canPublish && hasMedia && (
+              <Button size="small" variant="outlined" startIcon={<Iconify icon="mingcute:add-line" />} disabled={!ads.adAccountId} onClick={() => setCreating(true)}>
+                Nuova campagna
+              </Button>
+            )}
+          </Stack>
         }
       />
       <Stack spacing={2} sx={{ p: 3, pt: 2 }}>
@@ -147,6 +162,7 @@ export function SponsorPanel({ clientId, canPublish, dryRun, ads, publications, 
       </Stack>
 
       {open && <LaunchDialog clientId={clientId} ads={ads} publication={open} onClose={() => setOpen(null)} onDone={() => router.refresh()} />}
+      {creating && <NewCampaignDialog clientId={clientId} itemId={itemId} onClose={() => setCreating(false)} onDone={() => router.refresh()} />}
     </Card>
   );
 }
@@ -156,15 +172,20 @@ export function SponsorPanel({ clientId, canPublish, dryRun, ads, publications, 
 export function CampaignRow({ c, canPublish, busy, onAction, showClient }) {
   const st = AD_STATUS[c.status];
   const pct = c.budget ? Math.min(100, (c.spend / c.budget) * 100) : 0;
-  const results = Object.entries(c.results ?? {}).filter(([, v]) => v > 0);
+  // La frequenza non è un risultato: si mostra a parte
+  const results = Object.entries(c.results ?? {}).filter(([k, v]) => v > 0 && k !== 'frequenza');
   return (
     <Box>
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-        <Iconify icon={c.platform === 'instagram' ? 'socials:instagram' : 'socials:facebook'} width={20} />
+        {placementIcons(c.platform).map((icon) => (
+          <Iconify key={icon} icon={icon} width={20} />
+        ))}
         <Typography variant="subtitle2" sx={{ flex: 1, minWidth: 160 }}>
           {showClient ? `${c.clientName} · ` : ''}
-          {AD_OBJECTIVE[c.objective]?.label ?? c.objective} · {money(c.budget, c.currency)} · {fmtDate(c.startAt)} → {fmtDate(c.endAt)}
+          {c.name ? `${c.name} · ` : ''}
+          {OBJECTIVE_LABEL[c.objective] ?? c.objective} · {money(c.budget, c.currency)} · {fmtDate(c.startAt)} → {fmtDate(c.endAt)}
         </Typography>
+        {c.kind && c.kind !== 'boost' && <Label variant="outlined">{KIND_LABEL[c.kind]}</Label>}
         {c.simulated && <Label variant="soft">Simulazione</Label>}
         <Label variant="soft" color={c.payer === 'golduck' ? 'warning' : 'default'}>{c.payer === 'golduck' ? 'Paga Golduck' : 'Paga cliente'}</Label>
         <Label variant="soft" color={st?.color}>{st?.label ?? c.status}</Label>
@@ -192,7 +213,9 @@ export function CampaignRow({ c, canPublish, busy, onAction, showClient }) {
       </Stack>
       <Typography variant="caption" component="p" sx={{ color: 'text.secondary', mt: 0.5 }}>
         {c.targeting?.city ? `${c.targeting.city.name} +${c.targeting.city.radiusKm} km` : 'Tutta Italia'} · {c.targeting?.ageMin}-{c.targeting?.ageMax} anni
+        {c.targeting?.gender && c.targeting.gender !== 'tutti' ? ` · ${c.targeting.gender}` : ''}
         {results.length > 0 && ` · ${results.map(([k, v]) => `${RESULT_LABEL[k] ?? k}: ${v.toLocaleString('it-IT')}`).join(' · ')}`}
+        {c.results?.frequenza > 0 && ` · frequenza ${c.results.frequenza.toLocaleString('it-IT')}`}
         {c.lastSyncAt && ` · aggiornato ${fmtDateTime(c.lastSyncAt)}`}
       </Typography>
       {c.error && <Alert severity="error" sx={{ mt: 1 }}>{c.error}</Alert>}

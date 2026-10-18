@@ -104,6 +104,9 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
       }}
       sponsoring={{
         clientId: item.clientId,
+        itemId: item.id,
+        // Con foto o video si può creare una campagna nuova anche se il post non è stato pubblicato
+        hasMedia: media.length > 0,
         canPublish: canPublishWith(me.role, meRow?.canPublish),
         dryRun: isDryRun(),
         ads: { ...ads, ...exposure },
