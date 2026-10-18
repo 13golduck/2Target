@@ -55,5 +55,10 @@ async function run(request: Request) {
     description: `Aggiornamento automatico dei canali: ${list.length} clienti in ${Math.round((Date.now() - started) / 1000)} s${withErrors.length ? ` · ${withErrors.length} con errori` : " · tutto ok"}`,
     meta: withErrors.length ? { errori: Object.fromEntries(withErrors) } : null,
   });
+  // Il dettaglio (nomi dei clienti, errori di sincronizzazione) torna solo a chi ha la chiave CRON_SECRET:
+  // l'operazione pianificata di Plesk senza chiave riceve solo l'esito, non dati dei clienti. L'esito completo
+  // resta comunque nell'audit trail. Per avere i log nell'operazione pianificata: usa un comando curl con
+  // l'header "Authorization: Bearer $CRON_SECRET".
+  if (!ok) return NextResponse.json({ ok: true, clienti: list.length, conErrori: withErrors.length });
   return NextResponse.json({ ok: true, report, reports, weekly });
 }
