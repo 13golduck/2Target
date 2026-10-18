@@ -9,6 +9,7 @@ import { appSettings, auditLogs, publications, users } from "@/db/schema";
 import { appUrl } from "@/lib/integrations/config";
 import { sendMail } from "@/lib/mail";
 import { ensureMediaDir } from "@/lib/media";
+import { pushToEmails } from "@/lib/push";
 import { backupDir, backupState, listBackups } from "./backup";
 import { healthChecks, type Check } from "./health";
 
@@ -99,6 +100,10 @@ export async function maybeWatch(now = new Date()) {
   const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
   const html = `<p>2Target ha rilevato:</p><ul>${fresh.map((p) => `<li><b>${esc(p.label)}</b>: ${esc(p.detail)}</li>`).join("")}</ul><p><a href="${link}">Apri lo stato del sistema</a></p>`;
   for (const a of admins) await sendMail(a.email, subject, text, html).catch((e) => console.error("[sorveglianza] email non inviata:", e));
+  await pushToEmails(
+    admins.map((a) => a.email),
+    { title: subject, body: fresh.map((p) => p.label).join(" · "), url: "/impostazioni#sistema", tag: "sistema" },
+  ).catch((e) => console.error("[sorveglianza] notifica push non riuscita:", e));
   for (const p of fresh) sent[p.key] = now.toISOString();
   await saveSetting(ALERTS_KEY, sent);
 }

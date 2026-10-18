@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { clients, leads, users } from "@/db/schema";
 import { appUrl } from "@/lib/integrations/config";
 import { sendMail } from "@/lib/mail";
+import { pushToEmails } from "@/lib/push";
 
 // Lead in tempo reale: appena un contatto arriva (modulo del sito subito, moduli di Meta alla lettura ogni 15 minuti)
 // parte un'email al responsabile del cliente, o agli amministratori se il cliente non ha un responsabile.
@@ -90,6 +91,12 @@ export async function notifyNewLeads(clientId: number, leadIds: number[]) {
       : (await db.select({ email: users.email }).from(users).where(and(inArray(users.role, ["superadmin", "admin"]), eq(users.active, true)))).map((u) => u.email);
     const mail = leadEmail(client.name, list, `${appUrl()}/clienti/${clientId}/lead`);
     for (const addr of to) await sendMail(addr, mail.subject, mail.text, mail.html);
+    await pushToEmails(to, {
+      title: list.length === 1 ? `Nuovo lead per ${client.name}` : `${list.length} nuovi lead per ${client.name}`,
+      body: list.length === 1 ? (list[0].name ?? list[0].email ?? "Apri per i dettagli") : "Apri per vederli tutti",
+      url: `/clienti/${clientId}/lead`,
+      tag: `lead-${clientId}`,
+    });
   } catch (e) {
     console.error("[lead] avviso non riuscito:", e);
   }

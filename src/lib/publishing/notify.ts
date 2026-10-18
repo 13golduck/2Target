@@ -5,6 +5,8 @@ import { db } from "@/db";
 import { clients, editorialItems, publications, socialAccounts, users } from "@/db/schema";
 import { appUrl } from "@/lib/integrations/config";
 import { sendMail } from "@/lib/mail";
+import { platformName } from "@/lib/platforms";
+import { pushToEmails } from "@/lib/push";
 import { isDryRun } from "./meta-publish";
 
 // Esito delle pubblicazioni, comunicato una volta sola per esito:
@@ -99,6 +101,10 @@ export async function notifyPublicationOutcome(id: number) {
         ? [author.email]
         : (await db.select({ email: users.email }).from(users).where(and(inArray(users.role, ["superadmin", "admin"]), eq(users.active, true)))).map((u) => u.email);
       for (const addr of to) await sendMail(addr, mail.subject, mail.text, mail.html);
+      // Anche sul telefono di chi ha attivato le notifiche: un post non uscito va sistemato presto
+      await pushToEmails(to, { title: `Non uscito: ${item.title}`, body: `${client.name} · ${platformName(channel.platform)} @${channel.handle}`, url: `/pubblicazioni/${pub.itemId}`, tag: `pub-${pub.id}` }).catch((e) =>
+        console.error("[pubblicazioni] notifica push non riuscita:", e),
+      );
       return;
     }
 
