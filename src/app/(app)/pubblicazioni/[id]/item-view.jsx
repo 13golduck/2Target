@@ -31,7 +31,7 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { toast } from 'src/components/snackbar';
-import { confirmClick } from 'src/components/custom-dialog';
+import { askConfirm, confirmClick } from 'src/components/custom-dialog';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { BriefPanel } from './brief-panel';
@@ -78,11 +78,24 @@ export function ItemView({ saved, client, item, issues, series, personas, option
   const [scheduledAt, setScheduledAt] = useState(item.scheduledAt ?? '');
   const [shots, setShots] = useState(item.shotList.length ? item.shotList : [{ scena: '', fonte: 'cliente' }]);
 
+  // Cambiare lo stato salva subito la pubblicazione: «Approvato» deve valere senza ricordarsi di premere Salva
+  const formRef = useRef(null);
+  const saveAfterStatus = useRef(false);
+  const changeStatus = (next) => {
+    saveAfterStatus.current = true;
+    setStatus(next);
+  };
+  useEffect(() => {
+    if (!saveAfterStatus.current) return;
+    saveAfterStatus.current = false;
+    formRef.current?.requestSubmit();
+  }, [status]);
+
   const notified = useRef(false);
   useEffect(() => {
     if (saved && !notified.current) {
       notified.current = true;
-      toast.success('Scheda salvata');
+      toast.success('Pubblicazione salvata');
     }
   }, [saved]);
 
@@ -112,7 +125,7 @@ export function ItemView({ saved, client, item, issues, series, personas, option
 
   return (
     <DashboardContent maxWidth="xl">
-      <Box component="form" action={saveItem}>
+      <Box component="form" action={saveItem} ref={formRef}>
         <input type="hidden" name="id" value={item.id} />
         <input type="hidden" name="status" value={status} />
 
@@ -153,7 +166,7 @@ export function ItemView({ saved, client, item, issues, series, personas, option
                   {n > 0 && <Box sx={{ width: 24, height: 2, bgcolor: reached ? 'primary.main' : 'divider' }} />}
                   <Chip
                     label={L.status[s]}
-                    onClick={() => setStatus(s)}
+                    onClick={() => s !== status && changeStatus(s)}
                     color={status === s ? 'primary' : 'default'}
                     variant={reached ? 'filled' : 'outlined'}
                     icon={reached && status !== s ? <Iconify icon="eva:checkmark-fill" width={16} /> : undefined}
@@ -166,7 +179,10 @@ export function ItemView({ saved, client, item, issues, series, personas, option
             <Chip
               size="small"
               label="Annullato"
-              onClick={() => setStatus(status === 'annullato' ? 'bozza' : 'annullato')}
+              onClick={async () => {
+                if (status !== 'annullato' && !(await askConfirm({ tone: 'warning', title: 'Annullare questa pubblicazione?', content: 'Non uscirà più. Puoi riportarla in bozza quando vuoi.', confirmText: 'Annulla la pubblicazione', cancelText: 'Indietro' }))) return;
+                changeStatus(status === 'annullato' ? 'bozza' : 'annullato');
+              }}
               color={status === 'annullato' ? 'error' : 'default'}
               variant={status === 'annullato' ? 'filled' : 'outlined'}
             />

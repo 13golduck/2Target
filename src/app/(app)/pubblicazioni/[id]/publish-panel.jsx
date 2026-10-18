@@ -384,7 +384,7 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
             {!canPublish ? (
               <Alert severity="info">Non sei abilitato a pubblicare. Un amministratore può abilitarti da Utenti.</Alert>
             ) : !approved ? (
-              <Alert severity="info">Per programmarla, porta la scheda in stato «Approvato» e salvala.</Alert>
+              <Alert severity="info">Per programmarla, porta la pubblicazione in «Approvato» (lo stato in alto): si salva da sola.</Alert>
             ) : (
               <Stack spacing={1}>
                 <Button
