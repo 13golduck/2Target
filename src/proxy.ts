@@ -7,7 +7,7 @@ import { authConfig } from "@/lib/auth.config";
 const { auth } = NextAuth(authConfig);
 
 // /api/cron: sveglie pianificate, con limiti di frequenza (e chiave CRON_SECRET per gli usi immediati); /api/lead riceve i moduli dei siti dei clienti (chiave per cliente)
-const PUBLIC = ["/login", "/chi-siamo", "/approva", "/report-mensile", "/api/report-video", "/privacy", "/termini", "/eliminazione-dati", "/api/auth", "/api/sso", "/api/meta/eliminazione-dati", "/api/cron", "/api/lead", "/api/stato"];
+const PUBLIC = ["/login", "/chi-siamo", "/approva", "/report-mensile", "/api/report-video", "/privacy", "/termini", "/eliminazione-dati", "/api/auth", "/api/sso", "/api/meta/eliminazione-dati", "/api/cron", "/api/lead", "/api/stato", "/sw.js", "/manifest.webmanifest"];
 const SIGNED_MEDIA = /^\/api\/media\/[\w-]{22}\/[\w-]+\.(jpg|png|mp4|mov)$/;
 
 export default auth((request) => {

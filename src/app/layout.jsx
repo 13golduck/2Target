@@ -15,6 +15,9 @@ export const metadata = {
   title: { default: "2Target", template: "%s · 2Target" },
   description: "Check-up, strategia, piano editoriale e KPI dei clienti Golduck",
   robots: { index: false, follow: false },
+  // Installabile come app (schermata Home di iPhone e Android): serve per le notifiche sul telefono
+  appleWebApp: { capable: true, title: "2Target", statusBarStyle: "default" },
+  icons: { apple: "/icon-192.png" },
 };
 
 export const viewport = { width: "device-width", initialScale: 1, themeColor: "#CDA434" };

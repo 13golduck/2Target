@@ -7,8 +7,11 @@ const nextConfig: NextConfig = {
   // Revisione grafica: le immagini (massimo 5 MB) arrivano via Server Action
   experimental: { serverActions: { bodySizeLimit: "6mb" } },
   async headers() {
-    if (process.env.NODE_ENV !== "production") return [];
+    // Il service worker delle notifiche si aggiorna sempre (mai una versione vecchia in cache)
+    const serviceWorker = { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }] };
+    if (process.env.NODE_ENV !== "production") return [serviceWorker];
     return [
+      serviceWorker,
       {
         source: "/:path*",
         headers: [
