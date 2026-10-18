@@ -50,6 +50,9 @@ import {
 
 // ----------------------------------------------------------------------
 
+// Tipi di post come li chiamano le piattaforme → come li chiamiamo noi
+const MEDIA_TYPE = { IMAGE: 'foto', VIDEO: 'video', CAROUSEL_ALBUM: 'carosello', REEL: 'reel', REELS: 'reel', POST: 'post', TEXT: 'testo', TEXT_POST: 'testo', STORY: 'storia', SHORT: 'short' };
+
 export const CHANNEL = {
   instagram: { label: 'Instagram', icon: 'socials:instagram' },
   facebook: { label: 'Facebook', icon: 'socials:facebook' },
@@ -247,7 +250,7 @@ function ChannelCard({ channel: c, canPublish }) {
     c.platform === 'instagram' || c.platform === 'facebook'
       ? [
           { label: 'Follower', value: c.stats.followers },
-          { label: 'Reach 30 gg', value: c.platform === 'instagram' ? c.stats.reach30 : null },
+          { label: 'Persone raggiunte (30 gg)', value: c.platform === 'instagram' ? c.stats.reach30 : null },
           { label: 'Post letti', value: c.stats.posts },
         ]
       : c.platform === 'youtube'
@@ -266,7 +269,7 @@ function ChannelCard({ channel: c, canPublish }) {
         ? [
             { label: 'Clic 30 gg', value: c.stats.clicks30 },
             { label: 'Impressioni 30 gg', value: c.stats.impressions30 },
-            { label: 'CTR', value: c.stats.impressions30 ? `${((c.stats.clicks30 / c.stats.impressions30) * 100).toFixed(1)}%` : null },
+            { label: '% di clic', value: c.stats.impressions30 ? `${((c.stats.clicks30 / c.stats.impressions30) * 100).toLocaleString('it-IT', { maximumFractionDigits: 1 })}%` : null },
           ]
         : c.platform === 'ga4'
           ? [
@@ -278,7 +281,7 @@ function ChannelCard({ channel: c, canPublish }) {
                 { label: 'Prestazioni', value: c.pagespeed.performance, score: true },
                 { label: 'SEO', value: c.pagespeed.seo, score: true },
                 { label: 'Accessibilità', value: c.pagespeed.accessibility, score: true },
-                { label: 'LCP', value: c.pagespeed.lcp },
+                { label: 'Tempo di caricamento', value: c.pagespeed.lcp },
               ]
             : [];
 
@@ -309,7 +312,7 @@ function ChannelCard({ channel: c, canPublish }) {
           ) : c.lastSyncAt ? (
             `Aggiornato ${fmtDateTime(new Date(c.lastSyncAt))}`
           ) : syncable ? (
-            'Mai sincronizzato'
+            'Dati non ancora scaricati'
           ) : (
             c.platform === 'website' ? c.handle : `@${c.handle} · collega l'account per leggere i dati`
           )
@@ -363,13 +366,13 @@ function ChannelCard({ channel: c, canPublish }) {
                   )}
                 </Box>
                 <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
-                  {p.publishedAt ? fmtDate(p.publishedAt, { day: 'numeric', month: 'short' }) : ''} · {p.mediaType?.toLowerCase()}
+                  {p.publishedAt ? fmtDate(p.publishedAt, { day: 'numeric', month: 'short' }) : ''} · {MEDIA_TYPE[p.mediaType?.toUpperCase()] ?? p.mediaType?.toLowerCase()}
                 </Typography>
                 <Typography variant="caption" sx={{ display: 'block' }}>
-                  {p.metrics.reach != null && <>reach {p.metrics.reach.toLocaleString('it-IT')} · </>}
-                  {p.metrics.views != null && <>{p.metrics.views.toLocaleString('it-IT')} visual. · </>}
+                  {p.metrics.reach != null && <>{p.metrics.reach.toLocaleString('it-IT')} persone raggiunte · </>}
+                  {p.metrics.views != null && <>{p.metrics.views.toLocaleString('it-IT')} visualizzazioni · </>}
                   {(p.metrics.total_interactions ?? (p.metrics.likes ?? 0) + (p.metrics.comments ?? 0) + (p.metrics.shares ?? 0)).toLocaleString('it-IT')} interazioni
-                  {p.metrics.saved != null && <> · {p.metrics.saved} salv.</>}
+                  {p.metrics.saved != null && <> · {p.metrics.saved} salvataggi</>}
                 </Typography>
               </Link>
             ))}

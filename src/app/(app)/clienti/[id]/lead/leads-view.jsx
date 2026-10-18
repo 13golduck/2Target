@@ -83,7 +83,7 @@ export function LeadsView({ clientId, period, periods, stats, bySource, byCampai
     { label: 'Nuovi clienti', value: num(stats.customers), sub: `conversione ${pct(stats.leadToCustomer)} dei lead del periodo`, icon: 'solar:cup-star-bold' },
     { label: 'Costo acquisizione cliente', value: eur(stats.cac), sub: stats.avgDaysToClose != null ? `${num(stats.avgDaysToClose)} giorni per chiudere` : ' ', icon: 'solar:user-plus-bold' },
     { label: 'Ricavi', value: eur(stats.revenue), sub: `valore medio ${eur(stats.avgDeal)}`, icon: 'eva:trending-up-fill' },
-    { label: 'ROI marketing', value: pct(stats.roi), sub: `ROAS inserzioni ${stats.roas == null ? '—' : `${num(stats.roas, 1)}×`}`, icon: 'solar:chart-square-outline', color: stats.roi == null ? undefined : stats.roi >= 0 ? 'success.main' : 'error.main' },
+    { label: 'Ritorno sul marketing', value: pct(stats.roi), sub: `resa delle inserzioni ${stats.roas == null ? '—' : `${num(stats.roas, 1)}×`}`, icon: 'solar:chart-square-outline', color: stats.roi == null ? undefined : stats.roi >= 0 ? 'success.main' : 'error.main' },
   ];
 
   return (
@@ -242,7 +242,7 @@ function CampaignTable({ rows }) {
                 <TableCell align="right">Costo acquisizione</TableCell>
                 <TableCell align="right">Ricavi</TableCell>
                 <TableCell align="right">Aperti</TableCell>
-                <TableCell align="right">ROAS</TableCell>
+                <TableCell align="right">Resa (ricavi/spesa)</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -271,7 +271,7 @@ function CampaignTable({ rows }) {
         </TableContainer>
       </Scrollbar>
       <Typography variant="caption" component="p" sx={{ color: 'text.secondary', p: 2 }}>
-        ROAS = ricavi dei clienti acquisiti / spesa della campagna: sopra ×1 la campagna si è ripagata. Inserisci il valore quando segni un lead come «vinto».
+        Resa = ricavi dei clienti acquisiti diviso la spesa della campagna: sopra ×1 la campagna si è ripagata. Inserisci il valore quando sposti il contatto in «Clienti».
       </Typography>
     </Card>
   );
@@ -350,7 +350,7 @@ function Pipeline({ leads, onOpen, readOnly = false }) {
 
   return (
     <Box>
-      <Typography variant="h6" sx={{ mb: 0.5 }}>Pipeline</Typography>
+      <Typography variant="h6" sx={{ mb: 0.5 }}>A che punto sono i contatti</Typography>
       <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
         Trascina i lead da una fase all&apos;altra oppure tocca una scheda per aprirla e cambiarne la fase. Lead aperti e quelli chiusi nel periodo.
       </Typography>
@@ -472,11 +472,18 @@ function IntakeCard({ clientId, intake, lostReasons }) {
           {intake ? (
             <>
               <TextField label="Indirizzo di raccolta" value={intake} size="small" slotProps={{ input: { readOnly: true, endAdornment: <IconButton size="small" onClick={() => copy(intake)}><Iconify icon="solar:copy-bold" width={18} /></IconButton> } }} />
-              <Alert severity="info" icon={false} sx={{ fontSize: 13 }}>
-                Gli UTM della pagina (utm_source, utm_medium, utm_campaign) vanno inviati come campi: la fonte si riconosce da sola
-                (es. facebook + cpc → Inserzioni Meta). Il campo nascosto <code>website</code> blocca lo spam.
-              </Alert>
-              <Box component="pre" sx={{ m: 0, p: 1.5, borderRadius: 1, bgcolor: 'background.neutral', fontSize: 12, overflow: 'auto', maxHeight: 180 }}>{snippet}</Box>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Manda questo indirizzo a chi gestisce il sito del cliente: i contatti dei moduli arriveranno qui da soli.
+              </Typography>
+              {/* Dettagli per chi fa il sito: chiusi, per non confondere chi non è tecnico */}
+              <Box component="details" sx={{ '& summary': { cursor: 'pointer', typography: 'body2', fontWeight: 600 } }}>
+                <summary>Istruzioni per chi fa il sito</summary>
+                <Alert severity="info" icon={false} sx={{ fontSize: 13, mt: 1 }}>
+                  Gli UTM della pagina (utm_source, utm_medium, utm_campaign) vanno inviati come campi: la fonte si riconosce da sola
+                  (es. facebook + cpc → Inserzioni Meta). Il campo nascosto <code>website</code> blocca lo spam.
+                </Alert>
+                <Box component="pre" sx={{ m: 0, mt: 1, p: 1.5, borderRadius: 1, bgcolor: 'background.neutral', fontSize: 12, overflow: 'auto', maxHeight: 180 }}>{snippet}</Box>
+              </Box>
               <Stack direction="row" spacing={1}>
                 <Button size="small" startIcon={<Iconify icon="solar:copy-bold" />} onClick={() => copy(snippet)}>Copia esempio modulo</Button>
                 <Box component="form" action={regenerateLeadToken} onSubmit={(e) => confirmSubmit(e, { tone: 'warning', title: 'Rigenerare l’indirizzo?', content: 'Il vecchio indirizzo smetterà di funzionare: i moduli del sito andranno aggiornati con quello nuovo.', confirmText: 'Rigenera' })}>
