@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getJson, qs } from "./http";
+import { YT_DESCRIPTION_MAX, YT_TITLE_MAX } from "./limits";
 import type { DailyValue, PostData } from "./meta";
 
 // YouTube via il collegamento Google (permessi youtube.readonly e yt-analytics.readonly).
@@ -112,4 +113,49 @@ export async function syncYouTube(token: string, channelId: string) {
   }
 
   return { daily, posts };
+}
+
+// ── Pubblicazione Shorts ─────────────────────────────────────────────
+// Serve il permesso youtube.upload (attivo solo dopo la verifica dell'app da parte di Google).
+// Il file si carica dal disco di 2Target con un upload «ripristinabile»: prima i metadati, poi i byte.
+
+/**
+ * Titolo (dal titolo della scheda o dalla prima riga del testo) e descrizione con #Shorts.
+ * YouTube rifiuta < e > nei titoli: si tolgono. Funzione pura, coperta dai test.
+ */
+export function shortsMetadata(o: { title?: string | null; caption: string }) {
+  const clean = (s: string) => s.replace(/[<>]/g, "").trim();
+  const firstLine = o.caption.split("\n").find((l) => l.trim()) ?? "";
+  let title = clean(o.title || firstLine) || "Video";
+  if (!/#shorts\b/i.test(title) && title.length + 8 <= YT_TITLE_MAX) title = `${title} #Shorts`;
+  const description = /#shorts\b/i.test(o.caption) ? o.caption : `${o.caption}\n\n#Shorts`.trim();
+  return { title: title.slice(0, YT_TITLE_MAX), description: clean(description).slice(0, YT_DESCRIPTION_MAX) };
+}
+
+export async function uploadShort(o: { token: string; path: string; mime: string; title?: string | null; caption: string; heartbeat?: () => Promise<void> }) {
+  const { readFile } = await import("node:fs/promises");
+  const bytes = await readFile(o.path);
+  const meta = shortsMetadata(o);
+  const start = await fetch(`https://www.googleapis.com/upload/youtube/v3/videos?${qs({ uploadType: "resumable", part: "snippet,status" })}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${o.token}`,
+      "Content-Type": "application/json; charset=UTF-8",
+      "X-Upload-Content-Type": o.mime,
+      "X-Upload-Content-Length": String(bytes.length),
+    },
+    body: JSON.stringify({
+      snippet: { title: meta.title, description: meta.description, categoryId: "22" },
+      // Video pubblico, non destinato ai bambini (dichiarazione obbligatoria)
+      status: { privacyStatus: "public", selfDeclaredMadeForKids: false },
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  const location = start.headers.get("location");
+  if (!start.ok || !location) throw new Error(`YouTube non ha accettato il caricamento: ${(await start.text()).slice(0, 300) || `HTTP ${start.status}`}`);
+  await o.heartbeat?.().catch(() => undefined);
+  const put = await fetch(location, { method: "PUT", headers: { "Content-Type": o.mime, "Content-Length": String(bytes.length) }, body: bytes, signal: AbortSignal.timeout(15 * 60_000) });
+  const body = (await put.json().catch(() => null)) as { id?: string; error?: { message?: string } } | null;
+  if (!put.ok || !body?.id) throw new Error(`Caricamento su YouTube non riuscito: ${body?.error?.message ?? `HTTP ${put.status}`}`);
+  return { externalId: body.id, permalink: `https://www.youtube.com/shorts/${body.id}` };
 }

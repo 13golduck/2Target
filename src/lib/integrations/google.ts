@@ -3,6 +3,7 @@ import { ensureIntegrationKeys } from "@/lib/integrations/keys";
 
 import { GOOGLE, callbackUrl } from "./config";
 import { ApiError, getJson, qs } from "./http";
+import { GBP_SUMMARY_MAX } from "./limits";
 import type { DailyValue } from "./meta";
 import * as youtube from "./youtube";
 
@@ -513,4 +514,29 @@ export async function pageSpeed(url: string, strategy: "mobile" | "desktop" = "m
     tbt: audit["total-blocking-time"]?.displayValue ?? null,
     fieldData: r.loadingExperience?.overall_category ?? null,
   };
+}
+
+// ── Post sulla scheda Google ─────────────────────────────────────────
+// API v4 localPosts (ancora la sola che pubblica «novità»): servono business.manage e l'accesso
+// alle API della scheda approvato da Google per il progetto.
+
+/** Corpo del post «Novità»: testo, una foto facoltativa e il pulsante «Scopri di più» se c'è un link. Funzione pura. */
+export function gbpPostBody(o: { caption: string; imageUrl?: string | null; link?: string | null }) {
+  return {
+    languageCode: "it",
+    topicType: "STANDARD",
+    summary: o.caption.slice(0, GBP_SUMMARY_MAX),
+    ...(o.imageUrl && { media: [{ mediaFormat: "PHOTO", sourceUrl: o.imageUrl }] }),
+    ...(o.link && { callToAction: { actionType: "LEARN_MORE", url: o.link } }),
+  };
+}
+
+/** externalId della scheda: «accounts/A/locations/L». */
+export async function publishBusinessPost(o: { token: string; externalId: string; caption: string; imageUrl?: string | null; link?: string | null }) {
+  const post = await getJson<{ name: string; searchUrl?: string }>(`https://mybusiness.googleapis.com/v4/${o.externalId}/localPosts`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${o.token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(gbpPostBody(o)),
+  });
+  return { externalId: post.name, permalink: post.searchUrl ?? null };
 }
