@@ -70,6 +70,9 @@ const HELP = {
   '/profili': 'profili-social',
 };
 
+// Per il cliente (Viewer) parole semplici al posto delle sigle
+const VIEWER_LABEL = { '/kpi': 'Obiettivi', '/lead': 'Contatti', '/seo': 'Sito e Google' };
+
 // Sezioni visibili al Viewer (cliente): grafici e risultati
 const VIEWER_TABS = ['/kpi', '/lead', '/seo'];
 
@@ -104,7 +107,7 @@ export function ClientHeader({ client, clients, viewer = false, hiddenTabs, chil
       );
     }
     tabs.forEach((t) =>
-      items.push(<Tab key={t.href} value={t.href} label={t.label} icon={<Iconify icon={t.icon} />} iconPosition="start" component={RouterLink} href={base + t.href} />),
+      items.push(<Tab key={t.href} value={t.href} label={(viewer && VIEWER_LABEL[t.href]) || t.label} icon={<Iconify icon={t.icon} />} iconPosition="start" component={RouterLink} href={base + t.href} />),
     );
   });
 

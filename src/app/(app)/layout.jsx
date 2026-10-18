@@ -74,9 +74,10 @@ export default async function AppLayout({ children }) {
         icon: c.logoAt ? <ClientLogo id={c.id} version={c.logoAt.getTime()} name={c.name} /> : <NavIcon name="ic-user" />,
         children: (viewer
           ? [
-              { title: "KPI", path: `/clienti/${c.id}/kpi` },
-              { title: "Lead", path: `/clienti/${c.id}/lead`, feature: "lead" },
-              { title: "SEO", path: `/clienti/${c.id}/seo`, feature: "seo" },
+              // Per il cliente parole semplici al posto delle sigle
+              { title: "Obiettivi", path: `/clienti/${c.id}/kpi` },
+              { title: "Contatti", path: `/clienti/${c.id}/lead`, feature: "lead" },
+              { title: "Sito e Google", path: `/clienti/${c.id}/seo`, feature: "seo" },
             ]
           : [
               { title: "Panoramica", path: `/clienti/${c.id}` },
