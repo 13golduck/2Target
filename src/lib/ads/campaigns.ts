@@ -6,6 +6,7 @@ import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { db } from "@/db";
 import { adCampaigns, adLeadForms, clients, editorialItems, leadEvents, leads, mediaAssets, socialAccounts, type AdCreative, type AdTargeting } from "@/db/schema";
 import { audit } from "@/lib/audit";
+import { notifyNewLeads } from "@/lib/lead-notify";
 import { mediaPath, publicMediaUrl } from "@/lib/media";
 import { isDryRun } from "@/lib/publishing/meta-publish";
 import { decryptSecret } from "@/lib/secret-box";
@@ -221,6 +222,7 @@ export async function syncLeadForms(clientId: number) {
 
   let added = 0;
   const errors: string[] = [];
+  const freshIds: number[] = [];
   for (const f of forms) {
     try {
       // Si rilegge con un giorno di margine: Meta può consegnare i contatti con ritardo
@@ -254,6 +256,7 @@ export async function syncLeadForms(clientId: number) {
         // affectedRows: 1 = inserito, 0 = già c'era
         if (r[0].affectedRows === 1) {
           fresh++;
+          freshIds.push(r[0].insertId);
           await db.insert(leadEvents).values({ leadId: r[0].insertId, toStage: "nuovo", at: receivedAt });
         }
       }
@@ -271,5 +274,33 @@ export async function syncLeadForms(clientId: number) {
       await db.update(adLeadForms).set({ error: message.slice(0, 1000) }).where(eq(adLeadForms.id, f.id));
     }
   }
+  // Un solo avviso per giro di lettura: con molti contatti insieme diventa un riepilogo
+  await notifyNewLeads(clientId, freshIds);
   return { added, errors };
+}
+
+// Lettura ravvicinata dei moduli (ogni 15 minuti) invece che solo nella sincronizzazione notturna
+export const LEAD_SYNC_EVERY_MS = 15 * 60_000;
+const lg = globalThis as unknown as { __leadSyncAt?: number; __leadSyncRunning?: boolean };
+
+/**
+ * Chiamata a ogni giro dello scheduler (ogni minuto, e da /api/cron/publish che Plesk chiama ogni 5):
+ * legge i moduli di tutti i clienti al massimo ogni 15 minuti, uno alla volta.
+ */
+export async function maybeSyncAllLeadForms(now = Date.now()) {
+  if (lg.__leadSyncRunning || now - (lg.__leadSyncAt ?? 0) < LEAD_SYNC_EVERY_MS) return;
+  lg.__leadSyncRunning = true;
+  lg.__leadSyncAt = now;
+  try {
+    const owners = await db
+      .selectDistinct({ clientId: adLeadForms.clientId })
+      .from(adLeadForms)
+      .where(and(eq(adLeadForms.simulated, false), isNotNull(adLeadForms.metaFormId)));
+    for (const o of owners) {
+      const r = await syncLeadForms(o.clientId).catch((e) => ({ added: 0, errors: [String(e)] }));
+      if (r.errors.length) console.error(`[lead] moduli Meta del cliente ${o.clientId}:`, r.errors.join(" | "));
+    }
+  } finally {
+    lg.__leadSyncRunning = false;
+  }
 }
