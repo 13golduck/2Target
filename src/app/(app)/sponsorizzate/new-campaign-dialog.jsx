@@ -194,7 +194,7 @@ export function NewCampaignDialog({ clients, clientId: initialClient, itemId: in
 
   return (
     <Dialog open fullWidth maxWidth="md" onClose={sending ? undefined : onClose}>
-      <DialogTitle>Nuova campagna</DialogTitle>
+      <DialogTitle>Nuova sponsorizzata</DialogTitle>
       <DialogContent>
         <Stepper activeStep={step} alternativeLabel sx={{ mb: 3, mt: 1 }}>
           {STEPS.map((s) => (

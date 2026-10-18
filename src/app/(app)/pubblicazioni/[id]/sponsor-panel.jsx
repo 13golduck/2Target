@@ -1,5 +1,6 @@
 'use client';
 
+import { SPONSOR_ACTION_TEXT } from '../../sponsorizzate/sponsor-texts';
 import { ErrorText } from 'src/components/error-text';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -75,17 +76,13 @@ export function SponsorPanel({ clientId, itemId, hasMedia, canPublish, dryRun, a
   if (!published.length && !campaigns.length && !(hasMedia && canPublish)) return null;
 
   const act = async (c, action) => {
-    const texts = {
-      pausa: { title: 'Mettere in pausa la sponsorizzata?', content: 'Smette di spendere finché non la riattivi.', confirmText: 'Metti in pausa' },
-      riprendi: { title: 'Riattivare la sponsorizzata?', content: 'Riprende a spendere il budget residuo fino alla data di fine.', confirmText: 'Riattiva' },
-      termina: { title: 'Terminare la sponsorizzata?', content: 'Si ferma per sempre: per ripartire serve una nuova sponsorizzata.', confirmText: 'Termina', tone: 'error' },
-    };
-    if (!(await askConfirm({ tone: 'warning', ...texts[action] }))) return;
+    const text = SPONSOR_ACTION_TEXT[action];
+    if (!(await askConfirm(text))) return;
     startBusy(async () => {
       const r = await changeSponsorship(c.id, action);
       if (r.error) toast.error(r.error);
       else {
-        toast.success('Fatto');
+        toast.success(text.done);
         router.refresh();
       }
     });
@@ -117,7 +114,7 @@ export function SponsorPanel({ clientId, itemId, hasMedia, canPublish, dryRun, a
             )}
             {canPublish && hasMedia && (
               <Button size="small" variant="outlined" startIcon={<Iconify icon="mingcute:add-line" />} disabled={!ads.adAccountId} onClick={() => setCreating(true)}>
-                Nuova campagna
+                Nuova sponsorizzata
               </Button>
             )}
           </Stack>

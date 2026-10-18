@@ -1,5 +1,6 @@
 "use client";
 
+import { SPONSOR_ACTION_TEXT } from "./sponsor-texts";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
@@ -104,23 +105,15 @@ export function AdsView({ month, dryRun, canPublish, kpi, advice, daily, adClien
   };
 
   const act = async (c, action) => {
-    const texts = {
-      pausa: "Mettere in pausa la sponsorizzata?",
-      riprendi: "Riattivare la sponsorizzata?",
-      termina: "Terminare la sponsorizzata? Non si potrà riattivare.",
-    };
-    if (
-      !(await askConfirm({
-        tone: action === "termina" ? "error" : "warning",
-        title: texts[action],
-        confirmText: "Conferma",
-      }))
-    )
-      return;
+    const text = SPONSOR_ACTION_TEXT[action];
+    if (!(await askConfirm(text))) return;
     startBusy(async () => {
       const r = await changeSponsorship(c.id, action);
       if (r.error) toast.error(r.error);
-      else router.refresh();
+      else {
+        toast.success(text.done);
+        router.refresh();
+      }
     });
   };
 
@@ -152,7 +145,7 @@ export function AdsView({ month, dryRun, canPublish, kpi, advice, daily, adClien
               disabled={!adClients.length}
               onClick={() => setCreating(true)}
             >
-              Nuova campagna
+              Nuova sponsorizzata
             </Button>
           )}
         </Stack>
@@ -282,7 +275,7 @@ export function AdsView({ month, dryRun, canPublish, kpi, advice, daily, adClien
             ) : (
               <EmptyContent
                 title="Nessuna sponsorizzata"
-                description="Crea una campagna con «Nuova campagna», oppure sponsorizza un post dalla pagina della pubblicazione."
+                description="Crea una sponsorizzata con «Nuova sponsorizzata», oppure sponsorizza un post dalla pagina della pubblicazione."
                 sx={{ py: 5 }}
               />
             )}
