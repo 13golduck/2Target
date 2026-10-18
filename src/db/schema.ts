@@ -409,6 +409,32 @@ export const competitors = mysqlTable("competitors", {
   createdAt: created(),
 });
 
+/**
+ * Istantanea giornaliera di un concorrente su Instagram (API Business Discovery di Meta): numeri pubblici
+ * dell'account professionale, per seguirne l'andamento e confrontarlo con il cliente.
+ */
+export const competitorSnapshots = mysqlTable(
+  "competitor_snapshots",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    competitorId: int("competitor_id").notNull().references(() => competitors.id, { onDelete: "cascade" }),
+    day: date("day", { mode: "string" }).notNull(),
+    username: varchar("username", { length: 60 }).notNull(),
+    followers: int("followers"),
+    mediaCount: int("media_count"),
+    /** Post a settimana negli ultimi post letti (×10, per tenere un decimale senza float). */
+    postsPerWeekX10: int("posts_per_week_x10"),
+    avgInteractions: int("avg_interactions"),
+    /** Engagement rate in centesimi di punto (2,35% = 235). */
+    erBp: int("er_bp"),
+    reelsShare: int("reels_share"),
+    lastPostAt: datetime("last_post_at"),
+    topPosts: json("top_posts").$type<{ permalink: string; interactions: number; type: string; at: string }[]>(),
+    createdAt: created(),
+  },
+  (t) => [uniqueIndex("competitor_snapshots_day").on(t.competitorId, t.day)],
+);
+
 // ── 2. Strategia ─────────────────────────────────────────────────────
 export const objectives = mysqlTable("objectives", {
   id: int("id").autoincrement().primaryKey(),
