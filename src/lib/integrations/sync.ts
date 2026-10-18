@@ -237,6 +237,9 @@ export async function syncClient(clientId: number) {
   try {
     const { syncAds } = await import("@/lib/ads/ads");
     for (const e of await syncAds(clientId)) errors.push(`Sponsorizzate: ${e}`);
+    // Contatti arrivati dai moduli di Meta (lead ads) → Lead del cliente
+    const { syncLeadForms } = await import("@/lib/ads/campaigns");
+    for (const e of (await syncLeadForms(clientId)).errors) errors.push(`Moduli contatti: ${e}`);
   } catch (e) {
     errors.push(`Sponsorizzate: ${(e as Error).message}`);
   }

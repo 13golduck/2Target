@@ -148,8 +148,8 @@ export async function campaignInsights(userToken: string, campaignId: string, si
       limit: 400,
       access_token: userToken,
     }),
-    get<{ data: { spend?: string; impressions?: string; reach?: string; clicks?: string; actions?: Action[] }[] }>(`${campaignId}/insights`, {
-      fields: "spend,impressions,reach,clicks,actions",
+    get<{ data: { spend?: string; impressions?: string; reach?: string; clicks?: string; frequency?: string; actions?: Action[] }[] }>(`${campaignId}/insights`, {
+      fields: "spend,impressions,reach,clicks,frequency,actions",
       date_preset: "maximum",
       access_token: userToken,
     }),
@@ -166,6 +166,10 @@ export async function campaignInsights(userToken: string, campaignId: string, si
       clic: Number(t.clicks ?? 0),
       interazioni: act("post_engagement"),
       clic_link: act("link_click"),
+      // Contatti dai moduli: Meta li conta come "lead" (o raggruppati sul modulo nativo)
+      contatti: act("lead") || act("onsite_conversion.lead_grouped"),
+      // Quante volte in media la stessa persona ha visto l'inserzione (serve ai consigli: pubblico saturo)
+      frequenza: Math.round(Number(t.frequency ?? 0) * 100) / 100,
     },
     effectiveStatus: info.effective_status,
   };
