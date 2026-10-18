@@ -15,6 +15,9 @@ const DAY = 86_400_000;
 
 type Snapshot = typeof competitorSnapshots.$inferSelect;
 
+const LENS_EXPIRED = /oauth|access token|session has expired|error validating/i;
+export const LENS_EXPIRED_MESSAGE = "Il profilo Instagram che 2Target usa per leggere i concorrenti non è più collegato: ricollega la Pagina Facebook di un cliente (o di Golduck) da Canali";
+
 const toMetrics = (s: Snapshot): CompetitorMetrics => ({
   followers: s.followers,
   mediaCount: s.mediaCount,
@@ -63,8 +66,14 @@ export async function refreshCompetitorSnapshots(clientId: number, opts: { force
       await db.insert(competitorSnapshots).values({ competitorId: c.id, day, ...values }).onDuplicateKeyUpdate({ set: values });
       done++;
     } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      // Token della lente scaduto o revocato: inutile provare gli altri, va ricollegato quel profilo
+      if (LENS_EXPIRED.test(message)) {
+        errors.push(LENS_EXPIRED_MESSAGE);
+        break;
+      }
       // Profilo personale, inesistente o rinominato: Meta non lo restituisce
-      errors.push(`${c.name} (@${username}): ${e instanceof Error ? e.message.slice(0, 160) : e}`);
+      errors.push(`${c.name} (@${username}): ${message.slice(0, 160)}`);
     }
   }
   return { done, errors };

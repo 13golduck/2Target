@@ -54,7 +54,7 @@ export function metricsFromPosts(followers: number | null, mediaCount: number | 
 
 export type CompareRow = { name: string; metrics: CompetitorMetrics };
 
-const it = (n: number) => n.toLocaleString("it-IT", { maximumFractionDigits: 1 });
+const it = (n: number) => n.toLocaleString("it-IT", { maximumFractionDigits: 1, useGrouping: "always" });
 const median = (xs: number[]) => {
   const s = [...xs].sort((a, b) => a - b);
   return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
