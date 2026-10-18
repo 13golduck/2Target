@@ -12,6 +12,7 @@ import * as google from "./google";
 import * as instagram from "./instagram";
 import * as linkedin from "./linkedin";
 import * as meta from "./meta";
+import * as siteHealth from "./site-health";
 import * as tiktok from "./tiktok";
 import type { DailyValue, PostData } from "./meta";
 import * as youtube from "./youtube";
@@ -141,13 +142,23 @@ export async function syncChannel(channel: Channel) {
   await ensureIntegrationKeys();
   try {
     if (channel.platform === "website") {
-      const result = await google.pageSpeed(channel.handle, "mobile");
-      const day = new Date().toISOString().slice(0, 10);
-      await db.insert(seoSnapshots).values({ socialAccountId: channel.id, kind: "pagespeed", periodStart: day, periodEnd: day, rows: [result] });
-      await saveDaily(channel.id, [
-        ...(result.performance != null ? [{ day, metric: "pagespeed_performance", value: result.performance }] : []),
-        ...(result.seo != null ? [{ day, metric: "pagespeed_seo", value: result.seo }] : []),
-      ]);
+      // PageSpeed e controllo salute sono indipendenti: la quota esaurita del PageSpeed non deve impedire
+      // di sapere se il certificato è scaduto o il dominio è stato dirottato (e viceversa).
+      let pageSpeedError: unknown = null;
+      try {
+        const result = await google.pageSpeed(channel.handle, "mobile");
+        const day = new Date().toISOString().slice(0, 10);
+        await db.insert(seoSnapshots).values({ socialAccountId: channel.id, kind: "pagespeed", periodStart: day, periodEnd: day, rows: [result] });
+        await saveDaily(channel.id, [
+          ...(result.performance != null ? [{ day, metric: "pagespeed_performance", value: result.performance }] : []),
+          ...(result.seo != null ? [{ day, metric: "pagespeed_seo", value: result.seo }] : []),
+        ]);
+      } catch (e) {
+        pageSpeedError = e;
+      }
+      await siteHealth.runAndStoreSiteHealth(channel);
+      // L'errore del PageSpeed resta visibile sul canale, ma solo dopo aver salvato la salute del sito
+      if (pageSpeedError) throw pageSpeedError;
     } else {
       if (!channel.connectionId) throw new ApiError("Canale non collegato a un account", 400);
       const [conn] = await db.select().from(connections).where(eq(connections.id, channel.connectionId));
