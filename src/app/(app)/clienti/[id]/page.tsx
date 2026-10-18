@@ -1,3 +1,5 @@
+import { FEATURES, isOn } from "@/lib/features";
+import { clientFeatures, globalFeatures } from "@/lib/features-data";
 import { and, asc, desc, eq, gte, inArray, notInArray, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
@@ -58,17 +60,30 @@ export default async function ClientOverviewPage({ params }: { params: Promise<{
     : [];
 
   const social = channels.filter((c) => c.platform !== "website");
-  const steps = [
+  // Funzioni per cliente: quelle spente in generale non si possono riaccendere qui
+  const [globalFlags, clientFlags] = await Promise.all([globalFeatures(), clientFeatures(clientId)]);
+  const features = FEATURES.filter((f) => f.perClient).map((f) => ({
+    key: f.key,
+    label: f.label,
+    description: f.description,
+    on: clientFlags[f.key] !== false,
+    locked: globalFlags[f.key] === false,
+    lockedReason: "Spenta per tutti in Impostazioni → Funzioni",
+  }));
+  const allSteps = [
     { key: "checkup", label: "Fai il check-up iniziale", done: lastCheckup?.aiState === "pronto" || !!lastCheckup?.deliveredAt, href: `/clienti/${clientId}/checkup` },
     { key: "canali", label: "Collega i social del cliente", done: conns.some((c) => c.status === "attivo"), href: `/clienti/${clientId}/canali` },
     { key: "piano", label: "Prepara il piano editoriale", done: plans.length > 0, href: `/clienti/${clientId}/piano` },
     { key: "kpi", label: "Fissa i KPI da misurare", done: kpis.length > 0, href: `/clienti/${clientId}/kpi` },
   ];
+  // Il check-up spento non è un passo da fare
+  const steps = allSteps.filter((st) => st.key !== "checkup" || isOn("checkup", globalFlags, clientFlags));
 
   return (
     <OverviewView
       clientId={clientId}
       options={options}
+      features={features}
       readOnly={!canWrite(me.role)}
       steps={steps}
       upcoming={upcoming.map((i) => ({

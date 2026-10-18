@@ -20,6 +20,8 @@ import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 
 import { ClientOptions } from './client-options';
+import { FeatureSwitches } from '../../feature-switches';
+import { saveClientFeatures } from '../../client-settings-actions';
 
 // ----------------------------------------------------------------------
 // Panoramica del cliente: i numeri del mese, le prossime uscite e il prossimo passo da fare.
@@ -30,7 +32,7 @@ const KPI_COLOR = { bene: 'success', male: 'warning', troppo_male: 'error', in_a
 const PLATFORM_ICON = { instagram: 'socials:instagram', facebook: 'socials:facebook', tiktok: 'socials:tiktok', linkedin: 'socials:linkedin', youtube: 'socials:youtube' };
 const CHECKUP_STATE = { pronto: 'Pronto', domande: 'Aspetta le tue risposte', errore: 'Fermato da un errore', interrotto: 'Fermato', ricognizione: 'In lavorazione', ricerca: 'In lavorazione', scrittura: 'In lavorazione', da_avviare: 'Da avviare' };
 
-export function OverviewView({ clientId, options, readOnly, steps, upcoming, counters, kpis, channels, checkup, plan }) {
+export function OverviewView({ clientId, options, features, readOnly, steps, upcoming, counters, kpis, channels, checkup, plan }) {
   const base = `/clienti/${clientId}`;
   const todo = steps.filter((s) => !s.done);
   const planTotal = plan ? Object.values(plan.counts).reduce((a, b) => a + b, 0) : 0;
@@ -186,6 +188,15 @@ export function OverviewView({ clientId, options, readOnly, steps, upcoming, cou
             </Card>
 
             <ClientOptions clientId={clientId} options={options} readOnly={readOnly} />
+
+            <FeatureSwitches
+              id="funzioni"
+              title="Funzioni per questo cliente"
+              subheader="Spegni le sezioni che con questo cliente non usi: spariscono dalle sue schede."
+              features={features}
+              readOnly={readOnly}
+              onSave={(values) => saveClientFeatures(clientId, values)}
+            />
           </Stack>
         </Grid>
       </Grid>

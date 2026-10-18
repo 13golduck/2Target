@@ -25,7 +25,8 @@ import { MethodCard } from './method-card';
 import { AiLimitsCard } from './ai-limits-card';
 import { SystemCard } from './system-card';
 import { IntegrationsCard } from './integrations-card';
-import { saveMail, testMail, lockSettings } from './actions';
+import { FeatureSwitches } from '../feature-switches';
+import { saveMail, testMail, saveFeatures, lockSettings } from './actions';
 
 // ----------------------------------------------------------------------
 
@@ -66,7 +67,7 @@ const HELP = {
   smtp: <>Server, porta, utente e password li trovi nelle istruzioni del tuo provider di posta (porta 587 con STARTTLS oppure 465 con TLS).</>,
 };
 
-export function SettingsView({ mail, lastTest, limits, fx, method, planMethod, firstAccess, integrations, system }) {
+export function SettingsView({ mail, lastTest, limits, fx, method, planMethod, firstAccess, integrations, system, features }) {
   const [preset, setPreset] = useState(mail.preset ?? (mail.provider === 'smtp' ? 'smtp' : 'microsoft'));
   const [host, setHost] = useState(mail.host);
   const [port, setPort] = useState(mail.port);
@@ -122,6 +123,18 @@ export function SettingsView({ mail, lastTest, limits, fx, method, planMethod, f
       {system && (
         <Box sx={{ mb: 3 }}>
           <SystemCard checks={system.checks} backups={system.backups} backupDir={system.backupDir} />
+        </Box>
+      )}
+
+      {features && (
+        <Box sx={{ mb: 3 }}>
+          <FeatureSwitches
+            id="funzioni"
+            title="Funzioni"
+            subheader="Spegni quello che non usi: sparisce dai menu di tutti. Si può riaccendere quando serve, senza perdere dati."
+            features={features}
+            onSave={saveFeatures}
+          />
         </Box>
       )}
 

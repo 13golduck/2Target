@@ -7,6 +7,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { clients, editorialItems, users } from "@/db/schema";
 import { approvalLink } from "@/lib/approval";
+import { cleanFlags, FEATURES } from "@/lib/features";
 import { audit } from "@/lib/audit";
 import { requireClientAccess, requireWriter } from "@/lib/auth";
 import { itemIssues } from "@/lib/editorial-plan";
@@ -110,5 +111,18 @@ export async function saveBrandTerms(clientId: number, terms: string) {
   await db.update(clients).set({ brandTerms: clean || null }).where(eq(clients.id, clientId));
   await audit({ userId: me.id, category: "canali", action: "seo.brand", description: clean ? `Parole del brand per la SEO: ${clean}` : "Tolte le parole del brand aggiunte a mano", clientId });
   revalidatePath(`/clienti/${clientId}/seo`);
+  return { ok: true };
+}
+
+/** Funzioni spente per questo cliente: si salvano solo gli spegnimenti (accese = come l'impostazione generale). */
+export async function saveClientFeatures(clientId: number, values: unknown) {
+  const me = await requireWriter();
+  await requireClientAccess(clientId);
+  const flags = cleanFlags(values);
+  const off = Object.fromEntries(FEATURES.filter((f) => f.perClient && flags[f.key] === false).map((f) => [f.key, false]));
+  await db.update(clients).set({ features: off }).where(eq(clients.id, clientId));
+  const names = FEATURES.filter((f) => f.key in off).map((f) => f.label);
+  await audit({ userId: me.id, category: "clienti", action: "funzioni.cliente", description: names.length ? `Funzioni spente per il cliente: ${names.join(", ")}` : "Tutte le funzioni accese per il cliente", clientId });
+  revalidatePath("/", "layout");
   return { ok: true };
 }

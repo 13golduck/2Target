@@ -238,3 +238,20 @@ export async function runBackupNow() {
   revalidatePath("/impostazioni");
   return r.ok ? { ok: true, bytes: r.bytes } : { error: `Backup non riuscito: ${r.error}` };
 }
+
+/** Funzioni accese e spente per tutti (le voci spente spariscono dai menu). */
+export async function saveFeatures(values: unknown) {
+  const me = await requireUser();
+  if (!isAdminRole(me.role)) return { error: "Solo un amministratore può cambiare le funzioni" };
+  if (!(await settingsUnlocked(me.id))) return LOCKED;
+  const { cleanFlags, FEATURES } = await import("@/lib/features");
+  const { saveGlobalFeatures } = await import("@/lib/features-data");
+  const flags = cleanFlags(values);
+  // Si salvano solo gli spegnimenti: una funzione nuova nasce accesa
+  const off = Object.fromEntries(FEATURES.filter((f) => flags[f.key] === false).map((f) => [f.key, false]));
+  await saveGlobalFeatures(off, me.id);
+  const names = FEATURES.filter((f) => f.key in off).map((f) => f.label);
+  await audit({ userId: me.id, category: "impostazioni", action: "funzioni.generali", description: names.length ? `Funzioni spente per tutti: ${names.join(", ")}` : "Tutte le funzioni accese" });
+  revalidatePath("/", "layout");
+  return { ok: true };
+}

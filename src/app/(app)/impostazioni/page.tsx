@@ -10,6 +10,8 @@ import { appUrl } from "@/lib/integrations/config";
 import { SETTINGS_TTL_MIN, settingsUnlocked } from "@/lib/settings-access";
 import { backupDir, listBackups } from "@/lib/system/backup";
 import { currentHealth } from "@/lib/system/watchdog";
+import { FEATURES } from "@/lib/features";
+import { globalFeatures } from "@/lib/features-data";
 import { SettingsGate } from "./settings-gate";
 import { SettingsView } from "./settings-view";
 
@@ -32,6 +34,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
     currentHealth(),
     listBackups(),
   ]);
+  const features = await globalFeatures();
   return (
     <SettingsView
       mail={mail}
@@ -42,6 +45,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       planMethod={{ version: plan.version, text: plan.text, at: plan.at, isDefault: plan.isDefault }}
       firstAccess={primo === "1"}
       integrations={{ status: integrations, appUrl: appUrl() }}
+      features={FEATURES.map((f) => ({ key: f.key, label: f.label, description: f.description, on: features[f.key] !== false }))}
       system={{ checks, backups: backups.map((b) => ({ ...b, at: b.at.toISOString() })), backupDir: backupDir() }}
     />
   );
