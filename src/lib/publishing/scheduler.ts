@@ -9,6 +9,7 @@ import { errorDetail, logError } from "@/lib/error-log";
 import { mediaPath, publicMediaUrl } from "@/lib/media";
 import * as linkedin from "@/lib/integrations/linkedin";
 import { checkPublishable, findRecentTwin, isDryRun, isUncertain, publish } from "./meta-publish";
+import { notifyPendingOutcomes } from "./notify";
 import { connectionsOf, publishToken, routeOf } from "./targets";
 import { creatorInfo, startTikTok, tiktokResult, tiktokStatus } from "./tiktok-publish";
 import { checkTikTokOptions, tiktokKind } from "./tiktok-rules";
@@ -55,6 +56,8 @@ export async function runDuePublications() {
       .limit(10);
     let done = 0;
     for (const { id } of due) if (await processPublication(id)) done++;
+    // Esiti da comunicare (email di errore al consulente, avviso di uscita al cliente): una volta per esito
+    await notifyPendingOutcomes().catch((e) => console.error("[pubblicazioni] avvisi:", e));
     return { skipped: false, done };
   } finally {
     g.__publishRunning = false;
