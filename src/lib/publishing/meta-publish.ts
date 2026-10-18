@@ -3,6 +3,7 @@ import "server-only";
 import { appUrl, META } from "@/lib/integrations/config";
 import { integrationKey } from "@/lib/integrations/keys";
 import { getJson, qs } from "@/lib/integrations/http";
+import type { PublishExtras } from "@/db/schema";
 import { mediaProblem, type RuleMedia } from "./media-rules";
 import { checkTikTokMedia } from "./tiktok-rules";
 
@@ -24,8 +25,11 @@ export type PublishInput = {
   media: PublishMedia[];
   /** Chiamata durante le attese (elaborazione video): segnala che l'invio è ancora vivo. */
   heartbeat?: () => Promise<void>;
+  /** Primo commento, coautori e sede (vedi ./extras). */
+  extras?: PublishExtras | null;
 };
-export type PublishResult = { externalId: string; permalink: string | null };
+/** warning: il post è uscito, ma un passaggio facoltativo (primo commento, sede) non è riuscito. */
+export type PublishResult = { externalId: string; permalink: string | null; warning?: string };
 
 type Host = "facebook" | "instagram";
 const graph = (host: Host, p: string) => `https://graph.${host}.com/${META.version}/${p}`;
@@ -127,29 +131,65 @@ async function igContainer(ig: string, token: string, m: PublishMedia, extra: Re
   return id;
 }
 
-async function publishInstagram({ accountId: ig, token, format, caption, media, heartbeat, host = "facebook" }: PublishInput): Promise<PublishResult> {
+/**
+ * Sede da taggare: la Pagina Facebook collegata, se ha un indirizzo (Instagram accetta come luogo l'id di una
+ * Pagina con posizione). Solo con l'accesso tramite Pagina: con il login Instagram diretto non c'è una Pagina.
+ */
+async function pageLocationId(token: string, host: Host) {
+  if (host !== "facebook") return null;
+  const me = await get<{ id: string; location?: { street?: string; city?: string } }>("me", { fields: "id,location", access_token: token }).catch(() => null);
+  return me?.location && (me.location.street || me.location.city) ? me.id : null;
+}
+
+/** Primo commento sul post appena uscito. Non lancia: se non riesce, il post resta pubblicato. */
+async function postFirstComment(postId: string, message: string, token: string, host: Host = "facebook") {
+  try {
+    await api(host).post(`${postId}/comments`, { message, access_token: token });
+    return null;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return /permission|#10|#200|manage_comments|pages_manage_engagement/i.test(msg)
+      ? "primo commento non pubblicato: manca il permesso di Meta per i commenti (da approvare con l'App Review)"
+      : `primo commento non pubblicato: ${msg}`;
+  }
+}
+
+async function publishInstagram({ accountId: ig, token, format, caption, media, heartbeat, host = "facebook", extras }: PublishInput): Promise<PublishResult> {
   const { post, get } = api(host);
+  const warnings: string[] = [];
+  // Coautori e sede valgono per post, reel e caroselli (non per le storie): vanno sul contenitore principale
+  const tagged: Record<string, string> = {};
+  if (format !== "storia" && extras?.collaborators?.length) tagged.collaborators = JSON.stringify(extras.collaborators);
+  if (format !== "storia" && extras?.tagLocation) {
+    const location = await pageLocationId(token, host);
+    if (location) tagged.location_id = location;
+    else warnings.push("sede non taggata: la Pagina Facebook collegata non ha un indirizzo");
+  }
   let creationId: string;
   if (format === "carosello") {
     const children: string[] = [];
     for (const m of media) children.push(await igContainer(ig, token, m, { is_carousel_item: "true", ...(m.kind === "video" && { media_type: "VIDEO" }) }, heartbeat, host));
-    const { id } = await post<{ id: string }>(`${ig}/media`, { media_type: "CAROUSEL", children: children.join(","), caption, access_token: token });
+    const { id } = await post<{ id: string }>(`${ig}/media`, { media_type: "CAROUSEL", children: children.join(","), caption, ...tagged, access_token: token });
     await waitContainer(id, token, heartbeat, host);
     creationId = id;
   } else if (format === "storia") {
     creationId = await igContainer(ig, token, media[0], { media_type: "STORIES" }, heartbeat, host);
   } else {
     // Post con foto, oppure video (su Instagram i video nel feed sono reel)
-    creationId = await igContainer(ig, token, media[0], { caption, ...(media[0].kind === "video" && { media_type: "REELS" }) }, heartbeat, host);
+    creationId = await igContainer(ig, token, media[0], { caption, ...tagged, ...(media[0].kind === "video" && { media_type: "REELS" }) }, heartbeat, host);
   }
   const { id } = await post<{ id: string }>(`${ig}/media_publish`, { creation_id: creationId, access_token: token });
   const info = await get<{ permalink?: string }>(id, { fields: "permalink", access_token: token }).catch(() => ({}) as { permalink?: string });
-  return { externalId: id, permalink: info.permalink ?? null };
+  if (extras?.firstComment && format !== "storia") {
+    const w = await postFirstComment(id, extras.firstComment, token, host);
+    if (w) warnings.push(w);
+  }
+  return { externalId: id, permalink: info.permalink ?? null, ...(warnings.length && { warning: warnings.join("; ") }) };
 }
 
 // ── Facebook ──────────────────────────────────────────────────────────
 
-async function publishFacebook({ accountId: page, token, caption, media }: PublishInput): Promise<PublishResult> {
+async function publishFacebook({ accountId: page, token, caption, media, extras }: PublishInput): Promise<PublishResult> {
   let postId: string;
   const video = media.find((m) => m.kind === "video");
   if (video) {
@@ -169,7 +209,8 @@ async function publishFacebook({ accountId: page, token, caption, media }: Publi
     postId = (await post<{ id: string }>(`${page}/feed`, { message: caption, access_token: token })).id;
   }
   const info = await get<{ permalink_url?: string }>(postId, { fields: "permalink_url", access_token: token }).catch(() => ({}) as { permalink_url?: string });
-  return { externalId: postId, permalink: info.permalink_url ?? null };
+  const warning = extras?.firstComment ? await postFirstComment(postId, extras.firstComment, token) : null;
+  return { externalId: postId, permalink: info.permalink_url ?? null, ...(warning && { warning }) };
 }
 
 // ── Controllo anti-doppione ───────────────────────────────────────────

@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { editorialItems, mediaAssets, publications, socialAccounts, users } from "@/db/schema";
 import { canPublishWith } from "@/lib/roles";
 import { audit } from "@/lib/audit";
+import { extrasFor, extrasProblem } from "./extras";
 import { checkPublishable } from "./meta-publish";
 
 type Item = typeof editorialItems.$inferSelect;
@@ -25,7 +26,7 @@ export async function snapshotOf(item: Item) {
  */
 export async function syncPendingPublications(itemId: number, userId: number) {
   const pending = await db
-    .select({ id: publications.id, scheduledAt: publications.scheduledAt, mediaIds: publications.mediaIds, caption: publications.caption, format: publications.format, platform: socialAccounts.platform, handle: socialAccounts.handle })
+    .select({ id: publications.id, scheduledAt: publications.scheduledAt, mediaIds: publications.mediaIds, caption: publications.caption, format: publications.format, extras: publications.extras, platform: socialAccounts.platform, handle: socialAccounts.handle })
     .from(publications)
     .innerJoin(socialAccounts, eq(socialAccounts.id, publications.socialAccountId))
     .where(and(eq(publications.itemId, itemId), eq(publications.status, "programmata")));
@@ -42,7 +43,10 @@ export async function syncPendingPublications(itemId: number, userId: number) {
   const editorCanPublish = !!editor && canPublishWith(editor.role, editor.canPublish);
   const blocked: string[] = [];
   for (const p of pending) {
-    const contentChanged = p.caption !== snap.caption || p.format !== snap.format || p.mediaIds.join(",") !== snap.media.map((m) => m.id).join(",");
+    // Primo commento, coautori e sede seguono la scheda come il testo (e contano come modifica del contenuto)
+    const extras = extrasFor(p.platform, snap.format, item);
+    const contentChanged =
+      p.caption !== snap.caption || p.format !== snap.format || p.mediaIds.join(",") !== snap.media.map((m) => m.id).join(",") || JSON.stringify(p.extras ?? null) !== JSON.stringify(extras);
     const movedToPast = item.scheduledAt.getTime() !== p.scheduledAt.getTime() && item.scheduledAt.getTime() < Date.now() - 60_000;
     const emptied = p.mediaIds.length > 0 && snap.media.length === 0;
     // Il contenuto di un post programmato lo cambia solo chi può pubblicare: altrimenti serve una riconferma
@@ -55,7 +59,8 @@ export async function syncPendingPublications(itemId: number, userId: number) {
         ? "Sono stati tolti tutti i file: non pubblicata per non far uscire un post diverso. Ricarica i file o annullala."
         : // Un video appena caricato è «in lavorazione» per qualche minuto: non è un motivo per bloccare,
           // all'ora di uscita lo scheduler aspetta che sia pronto
-          checkPublishable(p.platform, snap.format, snap.media.map((m) => (m.processState === "in_lavorazione" ? { ...m, processState: "pronto" } : m)), snap.caption);
+          (checkPublishable(p.platform, snap.format, snap.media.map((m) => (m.processState === "in_lavorazione" ? { ...m, processState: "pronto" } : m)), snap.caption) ??
+            extrasProblem(p.platform, extras));
     if (problem) {
       await db.update(publications).set({ status: "errore", error: `Bloccata dopo una modifica della scheda: ${problem}` }).where(eq(publications.id, p.id));
       blocked.push(`@${p.handle}: ${problem}`);
@@ -63,7 +68,7 @@ export async function syncPendingPublications(itemId: number, userId: number) {
     }
     await db
       .update(publications)
-      .set({ scheduledAt: item.scheduledAt, format: snap.format, caption: snap.caption, mediaIds: snap.media.map((m) => m.id) })
+      .set({ scheduledAt: item.scheduledAt, format: snap.format, caption: snap.caption, mediaIds: snap.media.map((m) => m.id), extras })
       .where(eq(publications.id, p.id));
   }
   if (blocked.length) {

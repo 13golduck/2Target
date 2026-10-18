@@ -8,6 +8,7 @@ import { editorialItems, editorialPlans, mediaAssets, publications, socialAccoun
 import { requireClientAccess, requireWriter } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { removeMediaFile } from "@/lib/media";
+import { extrasFor, extrasProblem } from "@/lib/publishing/extras";
 import { publishWarnings } from "@/lib/publishing/media-rules";
 import { checkPublishable, isDryRun } from "@/lib/publishing/meta-publish";
 import { processPublication } from "@/lib/publishing/scheduler";
@@ -101,7 +102,7 @@ async function scheduleItem(me: { id: number }, itemId: number, channelIds: numb
   const media = await db.select().from(mediaAssets).where(eq(mediaAssets.itemId, itemId)).orderBy(mediaAssets.position);
   const caption = [item.caption?.trim(), item.hashtags?.trim()].filter(Boolean).join("\n\n");
   for (const c of channels) {
-    const problem = checkPublishable(c.platform, item.format, media, caption);
+    const problem = checkPublishable(c.platform, item.format, media, caption) ?? extrasProblem(c.platform, extrasFor(c.platform, item.format, item));
     if (problem) return { error: `${channelLabel(c)}: ${problem}` };
   }
   // TikTok: impostazioni scelte nella scheda, verificate sull'account com'è adesso
@@ -135,6 +136,8 @@ async function scheduleItem(me: { id: number }, itemId: number, channelIds: numb
           caption,
           mediaIds: media.map((m) => m.id),
           options: c.platform === "tiktok" ? options : null,
+          // Primo commento, coautori e sede (Instagram/Facebook), copiati dalla scheda come il testo
+          extras: extrasFor(c.platform, item.format, item),
           createdBy: me.id,
         });
         out.push(r.insertId);
@@ -233,7 +236,7 @@ async function planOverview(planId: number): Promise<{ clientId: number; rows: P
         row.done.push(channelLabel(ch));
         continue;
       }
-      const problem = checkPublishable(platform, item.format, itemMedia, caption);
+      const problem = checkPublishable(platform, item.format, itemMedia, caption) ?? extrasProblem(platform, extrasFor(platform, item.format, item));
       if (problem) row.problems.push(`${label}: ${problem}`);
       else {
         row.ready.push({ channelId: ch.id, label: channelLabel(ch) });

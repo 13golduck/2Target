@@ -40,6 +40,9 @@ export const META = {
     "ads_read",
     "pages_manage_ads",
     "leads_retrieval",
+    // Primo commento dopo la pubblicazione
+    "instagram_manage_comments",
+    "pages_manage_engagement",
   ],
 };
 

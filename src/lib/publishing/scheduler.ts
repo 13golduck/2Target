@@ -170,6 +170,7 @@ export async function processPublication(id: number) {
             caption: pub.caption ?? "",
             media: ordered.map((f, i) => ({ kind: f.kind, mime: f.mime, url: urls[i] })),
             heartbeat,
+            extras: pub.extras,
           });
     }
   } catch (e) {
@@ -202,7 +203,7 @@ type Pub = typeof publications.$inferSelect;
 type Item = typeof editorialItems.$inferSelect;
 
 /** Il post è USCITO: lo si registra subito, e niente di ciò che segue può riportarlo a "errore". */
-async function markPublished(id: number, pub: Pub, item: Item, label: string, result: { externalId: string; permalink: string | null; found?: boolean }) {
+async function markPublished(id: number, pub: Pub, item: Item, label: string, result: { externalId: string; permalink: string | null; found?: boolean; warning?: string }) {
   await db
     .update(publications)
     .set({ status: "pubblicata", externalId: result.externalId, permalink: result.permalink, publishedAt: new Date(), error: null })
@@ -222,8 +223,12 @@ async function markPublished(id: number, pub: Pub, item: Item, label: string, re
       description: `${isDryRun() ? "SIMULAZIONE: " : ""}${result.found ? "ritrovata sul profilo (già uscita, non ripubblicata)" : "pubblicata"} «${item.title}» su ${label}`,
       clientId: pub.clientId,
       target: `pubblicazione:${item.id}`,
-      meta: { profilo: label, idEsterno: result.externalId, link: result.permalink, programmataDa: pub.createdBy },
+      meta: { profilo: label, idEsterno: result.externalId, link: result.permalink, programmataDa: pub.createdBy, ...(result.warning && { avviso: result.warning }) },
     });
+    // Uscito, ma un passaggio facoltativo non è riuscito (primo commento, sede): resta traccia negli errori
+    if (result.warning) {
+      await logError({ userId: pub.createdBy, area: "Pubblicazione", message: `Uscito su ${label}, ma ${result.warning}`, path: `/pubblicazioni/${item.id}`, clientId: pub.clientId });
+    }
   } catch (e) {
     console.error("[pubblicazioni] registrazione dopo l'uscita non riuscita:", e);
   }
