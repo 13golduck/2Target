@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "@/db";
@@ -9,17 +9,40 @@ import { audit } from "@/lib/audit";
 //   POST /api/lead/<chiave del cliente>
 // Campi: name, email, phone, company, message, source, utm_source, utm_medium, utm_campaign, page
 // Campo trappola anti-spam: "website" deve restare vuoto.
+//
+// Limiti anti-spam a due livelli:
+// - per IP, in memoria: primo sbarramento leggero. L'IP arriva da x-forwarded-for, che un client può
+//   falsificare, quindi è best-effort (non è la garanzia).
+// - per cliente, su database: contando i lead già salvati in una finestra. È durevole (regge ai riavvii)
+//   e NON aggirabile falsificando l'IP, perché conta per leadToken del cliente, non per IP.
+
+const PER_IP_WINDOW_MS = 10 * 60_000;
+const PER_IP_MAX = 20;
+const PER_CLIENT_WINDOW_MS = 15 * 60_000;
+const PER_CLIENT_MAX = 60;
 
 const hits = new Map<string, { n: number; t: number }>();
 function limited(ip: string) {
   const now = Date.now();
+  // Pulizia opportunistica: evita che la mappa cresca all'infinito tra i riavvii
+  if (hits.size > 5000) for (const [k, v] of hits) if (now - v.t > PER_IP_WINDOW_MS) hits.delete(k);
   const h = hits.get(ip);
-  if (!h || now - h.t > 10 * 60_000) {
+  if (!h || now - h.t > PER_IP_WINDOW_MS) {
     hits.set(ip, { n: 1, t: now });
     return false;
   }
   h.n += 1;
-  return h.n > 20;
+  return h.n > PER_IP_MAX;
+}
+
+/** Tetto durevole per cliente: quanti lead sono già arrivati nella finestra, contati sul database. */
+async function clientFlooded(clientId: number) {
+  const since = new Date(Date.now() - PER_CLIENT_WINDOW_MS);
+  const [{ n }] = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(leads)
+    .where(and(eq(leads.clientId, clientId), gte(leads.receivedAt, since)));
+  return Number(n) >= PER_CLIENT_MAX;
 }
 
 const cors = {
@@ -68,6 +91,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   // Trappola per i bot: campo nascosto compilato → si risponde ok senza salvare
   if (get("website")) return NextResponse.json({ ok: true }, { headers: cors });
   if (!get("email") && !get("phone")) return NextResponse.json({ ok: false, message: "Serve almeno email o telefono" }, { status: 422, headers: cors });
+
+  // Tetto durevole per cliente: regge ai riavvii e non si aggira falsificando l'IP
+  if (await clientFlooded(client.id)) return NextResponse.json({ ok: false, message: "Troppe richieste" }, { status: 429, headers: cors });
 
   const now = new Date();
   const [r] = await db.insert(leads).values({
