@@ -45,9 +45,17 @@ export type IntegrationKeys = {
   msClientSecret: string;
   /** Dominio su cui la pubblicazione reale è attiva (vuoto = simulazione). Si imposta con l'interruttore in Impostazioni. */
   publishLiveHost: string;
+  /** Threads: ID e chiave dell'app Threads (caso d'uso «Accedi all'API Threads» dell'app Meta: valori propri). */
+  threadsAppId: string;
+  threadsAppSecret: string;
+  /** Pinterest: app su developers.pinterest.com (scrittura dei pin dopo l'approvazione «Standard access»). */
+  pinterestAppId: string;
+  pinterestAppSecret: string;
+  /** «true» = chiede a Google anche il caricamento su YouTube (Shorts): da attivare dopo la verifica Google. */
+  googleYoutubeUpload: string;
 };
 
-export const SECRET_FIELDS = ["metaAppSecret", "metaSystemUserToken", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret", "instagramAppSecret", "googleAdsDeveloperToken", "linkedinClientSecret"] as const;
+export const SECRET_FIELDS = ["metaAppSecret", "metaSystemUserToken", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret", "instagramAppSecret", "googleAdsDeveloperToken", "linkedinClientSecret", "threadsAppSecret", "pinterestAppSecret"] as const;
 const ENV: Record<keyof IntegrationKeys, string> = {
   metaAppId: "META_APP_ID",
   metaAppSecret: "META_APP_SECRET",
@@ -71,6 +79,11 @@ const ENV: Record<keyof IntegrationKeys, string> = {
   msClientId: "MS_CLIENT_ID",
   msClientSecret: "MS_CLIENT_SECRET",
   publishLiveHost: "PUBLISH_LIVE_HOST",
+  threadsAppId: "THREADS_APP_ID",
+  threadsAppSecret: "THREADS_APP_SECRET",
+  pinterestAppId: "PINTEREST_APP_ID",
+  pinterestAppSecret: "PINTEREST_APP_SECRET",
+  googleYoutubeUpload: "GOOGLE_YOUTUBE_UPLOAD",
 };
 export const FIELDS = Object.keys(ENV) as (keyof IntegrationKeys)[];
 

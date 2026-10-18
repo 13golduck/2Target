@@ -84,7 +84,12 @@ export const GOOGLE = {
       "https://www.googleapis.com/auth/business.manage",
       ...(this.adsEnabled ? ["https://www.googleapis.com/auth/adwords"] : []),
       ...(this.youtubeEnabled ? ["https://www.googleapis.com/auth/youtube.readonly", "https://www.googleapis.com/auth/yt-analytics.readonly"] : []),
+      // Caricamento dei video (Shorts): richiede la verifica Google dell'app, quindi si accende a parte
+      ...(this.youtubeUpload ? ["https://www.googleapis.com/auth/youtube.upload"] : []),
     ];
+  },
+  get youtubeUpload() {
+    return this.youtubeEnabled && integrationKey("googleYoutubeUpload") === "true";
   },
 };
 
@@ -130,7 +135,29 @@ export const LINKEDIN = {
   version: process.env.LINKEDIN_API_VERSION ?? "202608",
 };
 
-export type Provider = "meta" | "google" | "tiktok" | "linkedin" | "instagram";
+/** Threads (Meta): login Threads del cliente, lettura e pubblicazione su graph.threads.net. */
+export const THREADS = {
+  get appId() {
+    return integrationKey("threadsAppId");
+  },
+  get appSecret() {
+    return integrationKey("threadsAppSecret");
+  },
+  scopes: ["threads_basic", "threads_content_publish", "threads_manage_insights"],
+};
+
+/** Pinterest: account e bacheche del cliente, pin con foto e link. */
+export const PINTEREST = {
+  get appId() {
+    return integrationKey("pinterestAppId");
+  },
+  get appSecret() {
+    return integrationKey("pinterestAppSecret");
+  },
+  scopes: ["user_accounts:read", "boards:read", "pins:read", "pins:write"],
+};
+
+export type Provider = "meta" | "google" | "tiktok" | "linkedin" | "instagram" | "threads" | "pinterest";
 
 export function isConfigured(provider: Provider) {
   if (provider === "meta") return !!(META.appId && META.appSecret);
@@ -138,6 +165,8 @@ export function isConfigured(provider: Provider) {
   if (provider === "tiktok") return !!(TIKTOK.clientKey && TIKTOK.clientSecret);
   if (provider === "instagram") return !!(INSTAGRAM.appId && INSTAGRAM.appSecret);
   if (provider === "linkedin") return !!(LINKEDIN.clientId && LINKEDIN.clientSecret);
+  if (provider === "threads") return !!(THREADS.appId && THREADS.appSecret);
+  if (provider === "pinterest") return !!(PINTEREST.appId && PINTEREST.appSecret);
   return false;
 }
 
