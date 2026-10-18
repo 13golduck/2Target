@@ -293,6 +293,11 @@ function StartWizard({ aiConfigured, client, previous }) {
               </Grid>
             </Grid>
 
+            {/* Scelte tecniche: già impostate bene, chiuse per non confondere chi non le conosce */}
+            <Box component="details" sx={{ mt: 3, '& > summary': { cursor: 'pointer', typography: 'subtitle2' } }}>
+              <Box component="summary">
+                Opzioni avanzate (facoltative) · {MODES.find((m) => m.key === mode)?.title}, {MODES.find((m) => m.key === mode)?.cost}
+              </Box>
             <OptionGroup
               title="Modello per questo check-up"
               value={mode}
@@ -302,6 +307,7 @@ function StartWizard({ aiConfigured, client, previous }) {
             />
             <OptionGroup title="Livello di ragionamento dell’AI" value={reasoning} onChange={setReasoning} columns={2} options={REASONING_OPTIONS} />
             <OptionGroup title="Registro del report" value={register} onChange={setRegister} columns={3} options={REGISTER_OPTIONS} />
+            </Box>
 
             {!aiConfigured && (
               <Alert severity="warning" sx={{ mt: 3 }}>
