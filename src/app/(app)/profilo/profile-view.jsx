@@ -23,6 +23,8 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 import { confirmTotp, disableTotp, startTotpSetup, setWeeklyDigest, regenerateRecovery, sendWeeklyDigestPreview } from './actions';
 import { askConfirm } from 'src/components/custom-dialog';
 
+import { PushCard } from './push-card';
+
 // ----------------------------------------------------------------------
 
 export function ProfileView({ user }) {
@@ -51,6 +53,9 @@ export function ProfileView({ user }) {
           {user.lastLoginAt && <Label variant="outlined">Ultimo accesso {fmtDateTime(new Date(user.lastLoginAt))}</Label>}
         </Stack>
       </Card>
+
+      {/* Le notifiche riguardano il lavoro del team: non ai clienti (Viewer) */}
+      {user.weeklyDigest != null && <PushCard />}
 
       {user.weeklyDigest != null && (
         <Card sx={{ mb: 3 }}>
