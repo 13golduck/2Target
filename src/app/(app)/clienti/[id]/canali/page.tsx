@@ -117,7 +117,7 @@ export default async function ChannelsPage({ params, searchParams }: { params: P
       canConnect={canConnect}
       error={sp.errore ?? null}
       metaSystem={!!META.systemUserToken}
-      configured={{ meta: isConfigured("meta"), google: isConfigured("google"), tiktok: isConfigured("tiktok"), instagram: isConfigured("instagram"), linkedin: isConfigured("linkedin") }}
+      configured={{ meta: isConfigured("meta"), google: isConfigured("google"), tiktok: isConfigured("tiktok"), instagram: isConfigured("instagram"), linkedin: isConfigured("linkedin"), threads: isConfigured("threads"), pinterest: isConfigured("pinterest") }}
       connections={conns.map((c) => ({ id: c.id, provider: c.provider, accountName: c.accountName, status: c.status, lastError: c.lastError, expiresAt: c.expiresAt?.toISOString() ?? null, canPublish: c.provider === "tiktok" ? canPublishWithScopes(c.scopes) : c.provider === "linkedin" ? linkedinCanPublish(c.scopes) : true, permanent: c.externalUserId.startsWith("system:") }))}
       channels={channels.map((c) => ({
         id: c.id,

@@ -197,6 +197,9 @@ export async function saveIntegrations(f: FormData) {
   const clear = FIELDS.filter((field) => field !== "publishLiveHost" && f.get(`clear:${field}`) === "1");
   if (input.metaAppId && !/^\d{6,25}$/.test(input.metaAppId.trim())) return { error: "L'ID app di Meta è fatto solo di cifre" };
   if (input.metaConfigId && !/^\d{6,25}$/.test(input.metaConfigId.trim())) return { error: "L'ID configurazione di Meta è fatto solo di cifre" };
+  if (input.threadsAppId && !/^\d{6,25}$/.test(input.threadsAppId.trim())) return { error: "L'ID app di Threads è fatto solo di cifre" };
+  if (input.pinterestAppId && !/^\d{4,25}$/.test(input.pinterestAppId.trim())) return { error: "L'App ID di Pinterest è fatto solo di cifre" };
+  if (input.googleYoutubeUpload && !["true", "false"].includes(input.googleYoutubeUpload.trim())) return { error: "Per YouTube Shorts scrivi «true» (attivo) oppure lascia vuoto" };
   if (input.googleClientId && !/\.apps\.googleusercontent\.com$/.test(input.googleClientId.trim())) return { error: "L'ID client di Google finisce con .apps.googleusercontent.com" };
   const guid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (input.msTenantId && !guid.test(input.msTenantId.trim())) return { error: "L'ID directory (tenant) di Microsoft ha la forma xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" };

@@ -28,18 +28,15 @@ import { askConfirm } from 'src/components/custom-dialog';
 
 import { cancelPublication, deleteMedia, reorderMedia, retryPublication, schedulePublication } from '../../publish-actions';
 
+import { PLATFORM_INFO } from 'src/lib/platforms';
+
 import { EMPTY_TIKTOK, TikTokSettings } from './tiktok-settings';
 
 // ----------------------------------------------------------------------
-// Pubblicazione della scheda sui profili del cliente (Facebook, Instagram e TikTok).
+// Pubblicazione della scheda sui profili del cliente (Facebook, Instagram, TikTok, LinkedIn, Threads, Pinterest, YouTube, scheda Google).
 // Si vedono e si scelgono SOLO i profili collegati a questo cliente, con foto e nome: niente profili sbagliati.
 
-const PLATFORM = {
-  instagram: { label: 'Instagram', icon: 'socials:instagram', color: '#E1306C' },
-  facebook: { label: 'Facebook', icon: 'socials:facebook', color: '#1877F2' },
-  tiktok: { label: 'TikTok', icon: 'socials:tiktok', color: '#000000' },
-  linkedin: { label: 'LinkedIn', icon: 'socials:linkedin', color: '#0A66C2' },
-};
+const PLATFORM = PLATFORM_INFO;
 
 const PUB_STATUS = {
   programmata: { label: 'Programmata', color: 'info' },

@@ -39,6 +39,7 @@ import { SponsorPanel } from './sponsor-panel';
 import { PostPreview } from './post-preview';
 import { DesignReviewPanel } from '../../design-review-panel';
 import { saveItem, deleteItem } from '../../actions';
+import { PLATFORM_INFO } from 'src/lib/platforms';
 
 // ----------------------------------------------------------------------
 // Editor della pubblicazione: a sinistra il contenuto diviso in schede, a destra l'anteprima dal vivo,
@@ -52,6 +53,8 @@ const L = {
   source: { cliente: 'Gira il cliente', golduck: 'Giriamo noi', ai: 'Immagine AI', stock: 'Stock' },
 };
 const FLOW = ['bozza', 'da_approvare', 'approvato', 'pubblicato'];
+/** Piattaforme su cui la scheda può uscire anche, oltre al social principale. */
+const CROSS_POST_PLATFORMS = ['instagram', 'facebook', 'tiktok', 'linkedin', 'threads', 'pinterest', 'youtube', 'business_profile'];
 
 // In quale scheda sta il campo citato da un controllo (per portarci con un clic)
 const ISSUE_TAB = [
@@ -395,13 +398,13 @@ export function ItemView({ saved, client, item, issues, series, personas, option
                       {options.formats.map((f) => <MenuItem key={f} value={f}>{f}</MenuItem>)}
                     </TextField>
                     <TextField select name="platform" label="Social principale" value={platform} onChange={(e) => setPlatform(e.target.value)} fullWidth>
-                      {options.platforms.map((p) => <MenuItem key={p} value={p}>{p}</MenuItem>)}
+                      {options.platforms.map((p) => <MenuItem key={p} value={p}>{PLATFORM_INFO[p]?.label ?? p}</MenuItem>)}
                     </TextField>
                   </Stack>
                   <Box>
                     <Typography variant="caption" sx={{ color: 'text.secondary' }}>Pubblica anche su</Typography>
                     <ToggleButtonGroup size="small" sx={{ display: 'flex', flexWrap: 'wrap', mt: 0.5 }}>
-                      {['instagram', 'facebook', 'tiktok', 'linkedin'].map((p) => (
+                      {CROSS_POST_PLATFORMS.map((p) => (
                         <CrossPost key={p} platform={p} defaultChecked={item.crossPost.includes(p)} disabled={p === platform} />
                       ))}
                     </ToggleButtonGroup>
@@ -500,11 +503,11 @@ export function ItemView({ saved, client, item, issues, series, personas, option
 // Interruttore «pubblica anche su»: invia crossPost=<social> solo se attivo (come la vecchia casella)
 function CrossPost({ platform, defaultChecked, disabled }) {
   const [on, setOn] = useState(defaultChecked);
-  const icon = { instagram: 'socials:instagram', facebook: 'socials:facebook', tiktok: 'socials:tiktok', linkedin: 'socials:linkedin' }[platform];
+  const info = PLATFORM_INFO[platform];
   return (
     <ToggleButton value={platform} selected={on && !disabled} disabled={disabled} onChange={() => setOn(!on)} sx={{ gap: 0.75, textTransform: 'none', flex: 1 }}>
-      <Iconify icon={icon} width={18} />
-      {platform}
+      <Iconify icon={info?.icon} width={18} />
+      {info?.label ?? platform}
       {on && !disabled && <input type="hidden" name="crossPost" value={platform} />}
     </ToggleButton>
   );

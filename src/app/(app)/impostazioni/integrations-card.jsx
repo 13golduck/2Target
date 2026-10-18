@@ -94,6 +94,30 @@ const GROUPS = [
     ],
   },
   {
+    key: 'threads',
+    title: 'Threads (profilo, statistiche e pubblicazione)',
+    icon: 'socials:threads',
+    where:
+      'Meta for Developers → app 2Target → caso d’uso «Accedi all’API Threads» → Impostazioni: ID app di Threads e chiave segreta di Threads (diversi da quelli di Meta qui sopra). Aggiungi l’indirizzo di reindirizzamento qui sotto negli URL di callback.',
+    callback: '/api/connect/threads/callback',
+    fields: [
+      { name: 'threadsAppId', label: 'ID app di Threads' },
+      { name: 'threadsAppSecret', label: 'Chiave segreta di Threads', secret: true },
+    ],
+  },
+  {
+    key: 'pinterest',
+    title: 'Pinterest (bacheche, statistiche e pin)',
+    icon: 'socials:pinterest',
+    where:
+      'developers.pinterest.com → My apps → app 2Target: App ID e App secret key. Aggiungi l’indirizzo di reindirizzamento qui sotto in «Redirect URIs». Per pubblicare serve l’accesso «Standard» (va richiesto a Pinterest).',
+    callback: '/api/connect/pinterest/callback',
+    fields: [
+      { name: 'pinterestAppId', label: 'App ID' },
+      { name: 'pinterestAppSecret', label: 'App secret key', secret: true },
+    ],
+  },
+  {
     key: 'microsoft',
     title: 'Microsoft 365 (accesso con l’account Golduck)',
     icon: 'socials:microsoft',
@@ -116,7 +140,7 @@ const GROUPS = [
   },
   {
     key: 'google',
-    title: 'Google (Search Console, Analytics, scheda Google, Google Ads, PageSpeed)',
+    title: 'Google (Search Console, Analytics, scheda Google, Google Ads, YouTube, PageSpeed)',
     icon: 'socials:google',
     where:
       'Google Cloud → progetto 2Target → API e servizi → Credenziali. Google Ads: centro clienti (MCC) di Golduck → Amministrazione → Centro API → developer token; l’ID del centro clienti serve se gli account dei clienti sono collegati all’MCC. Dopo aver aggiunto il developer token ricollega gli account Google dei clienti.',
@@ -135,6 +159,7 @@ const GROUPS = [
       },
       { name: 'googleAdsDeveloperToken', label: 'Google Ads: developer token (facoltativo, ritirato da Google il 9/9/2026)', secret: true },
       { name: 'googleAdsLoginCustomerId', label: 'Google Ads: ID del centro clienti (MCC)' },
+      { name: 'googleYoutubeUpload', label: 'YouTube Shorts: scrivi «true» per pubblicare video (solo dopo la verifica Google dell’app)' },
     ],
   },
 ];

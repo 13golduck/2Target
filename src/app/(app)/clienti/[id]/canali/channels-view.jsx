@@ -55,6 +55,8 @@ export const CHANNEL = {
   tiktok: { label: 'TikTok', icon: 'socials:tiktok' },
   linkedin: { label: 'LinkedIn', icon: 'socials:linkedin' },
   youtube: { label: 'YouTube', icon: 'socials:youtube' },
+  threads: { label: 'Threads', icon: 'socials:threads' },
+  pinterest: { label: 'Pinterest', icon: 'socials:pinterest' },
   search_console: { label: 'Search Console', icon: 'socials:google' },
   ga4: { label: 'Analytics 4', icon: 'solar:chart-square-outline' },
   business_profile: { label: 'Scheda Google', icon: 'custom:location-fill' },
@@ -68,6 +70,8 @@ const PROVIDERS = [
   { key: 'instagram', name: 'Instagram senza Facebook', what: 'Per i profili professionali senza Pagina Facebook: accesso con Instagram, statistiche e pubblicazione', icons: ['socials:instagram'] },
   { key: 'tiktok', name: 'TikTok', what: 'Profilo, video e statistiche · pubblicazione di video e foto', icons: ['socials:tiktok'] },
   { key: 'linkedin', name: 'LinkedIn', what: 'Pagina aziendale: follower, statistiche, post e pubblicazione (accede chi amministra la pagina)', icons: ['socials:linkedin'] },
+  { key: 'threads', name: 'Threads', what: 'Profilo Threads: follower, visualizzazioni, post e pubblicazione di testi, foto e video', icons: ['socials:threads'] },
+  { key: 'pinterest', name: 'Pinterest', what: 'Bacheche: follower, statistiche dei pin e pubblicazione di pin con foto e link al sito', icons: ['socials:pinterest'] },
 ];
 
 export function ChannelsView({ clientId, error, configured, connections, channels, picker, canConnect, ads, todo, metaSystem }) {
@@ -140,7 +144,7 @@ export function ChannelsView({ clientId, error, configured, connections, channel
                                 ? 'collegato senza permesso di pubblicare: ricollegalo'
                                 : p.key === 'linkedin' && c.expiresAt
                                   ? `collegato · accesso fino al ${fmtDate(new Date(c.expiresAt))}`
-                                : p.key === 'tiktok' || p.key === 'instagram'
+                                : ['tiktok', 'instagram', 'threads', 'pinterest'].includes(p.key)
                                   ? 'collegato · accesso rinnovato in automatico'
                                   : 'collegato'}
                         </Typography>
@@ -452,7 +456,7 @@ function PickerDialog({ picker, onClose }) {
           <DialogTitle>Quali canali sono di questo cliente?</DialogTitle>
           <DialogContent>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-              Account {{ meta: 'Meta', tiktok: 'TikTok', instagram: 'Instagram', linkedin: 'LinkedIn' }[picker.provider] ?? 'Google'}: <b>{picker.accountName}</b>. Seleziona solo pagine, profili e
+              Account {{ meta: 'Meta', tiktok: 'TikTok', instagram: 'Instagram', linkedin: 'LinkedIn', threads: 'Threads', pinterest: 'Pinterest' }[picker.provider] ?? 'Google'}: <b>{picker.accountName}</b>. Seleziona solo pagine, profili e
               proprietà di questo cliente: lo stesso account può gestirne anche altri.
             </Typography>
             {picker.assets.length === 0 ? (
@@ -523,7 +527,7 @@ function ManualDialog({ clientId, open, onClose }) {
           <Stack spacing={2} sx={{ pt: 1 }}>
             <input type="hidden" name="clientId" value={clientId} />
             <TextField select name="platform" label="Tipo" value={platform} onChange={(e) => setPlatform(e.target.value)} fullWidth>
-              {['website', 'instagram', 'facebook', 'tiktok', 'linkedin', 'youtube'].map((k) => (
+              {['website', 'instagram', 'facebook', 'tiktok', 'linkedin', 'youtube', 'threads', 'pinterest'].map((k) => (
                 <MenuItem key={k} value={k}>{CHANNEL[k].label}</MenuItem>
               ))}
             </TextField>

@@ -13,6 +13,7 @@ import { publishWarnings } from "@/lib/publishing/media-rules";
 import { checkPublishable, isDryRun } from "@/lib/publishing/meta-publish";
 import { processPublication } from "@/lib/publishing/scheduler";
 import { connectionsOf, PUBLISHABLE, publishToken, routeOf } from "@/lib/publishing/targets";
+import { platformName } from "@/lib/platforms";
 import { creatorInfo } from "@/lib/publishing/tiktok-publish";
 import { checkTikTokOptions, parseTikTokOptions, tiktokKind } from "@/lib/publishing/tiktok-rules";
 import { snapshotOf, syncPendingPublications } from "@/lib/publishing/sync";
@@ -35,8 +36,7 @@ async function itemOf(id: number) {
   return item ?? null;
 }
 
-const PLATFORM_LABEL: Record<string, string> = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", linkedin: "LinkedIn" };
-const channelLabel = (c: { platform: string; handle: string }) => `${PLATFORM_LABEL[c.platform] ?? c.platform} @${c.handle}`;
+const channelLabel = (c: { platform: string; handle: string }) => `${platformName(c.platform)} @${c.handle}`;
 
 /**
  * Informazioni aggiornate sull'account TikTok per la scheda di invio (nome, visibilità consentite, interazioni,
@@ -213,7 +213,7 @@ async function planOverview(planId: number): Promise<{ clientId: number; rows: P
     const itemMedia = media.filter((m) => m.itemId === item.id);
     const caption = [item.caption?.trim(), item.hashtags?.trim()].filter(Boolean).join("\n\n");
     for (const platform of targets) {
-      const label = PLATFORM_LABEL[platform] ?? platform;
+      const label = platformName(platform);
       if (!(PUBLISHABLE as readonly string[]).includes(platform)) {
         row.problems.push(`${label}: non si pubblica da 2Target`);
         continue;
