@@ -66,11 +66,24 @@ function shortAgent(ua) {
   return `${browser} su ${os}${/Mobile/.test(ua) ? ' (smartphone)' : ''}`;
 }
 
+// Nomi dei campi come li vede l'utente (le chiavi interne restano solo nel dettaglio tecnico)
+const FIELD = {
+  title: 'Titolo', caption: 'Testo del post', hashtags: 'Hashtag', scheduledAt: 'Data e ora', status: 'Stato', format: 'Formato',
+  platform: 'Social principale', crossPost: 'Pubblica anche su', ctaUrl: 'Link', cta: 'Invito all’azione', ctaDestination: 'Dove porta',
+  role: 'Ruolo', active: 'Attivo', name: 'Nome', email: 'Email', target: 'Obiettivo', baseline: 'Punto di partenza', stage: 'Obiettivo del contenuto',
+  prima: 'Prima', dopo: 'Dopo', profilo: 'Profilo', link: 'Link', idEsterno: 'Codice sul social', avviso: 'Avviso', campi: 'Campi', originale: 'Originale',
+};
+const fieldLabel = (k) =>
+  k
+    .split(' · ')
+    .map((part) => FIELD[part] ?? (part.charAt(0).toUpperCase() + part.slice(1).replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').toLowerCase()))
+    .join(' · ');
+
 const show = (v) => (v == null || v === '' ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v));
 const isChange = (v) => v && typeof v === 'object' && !Array.isArray(v) && 'prima' in v && 'dopo' in v;
 
 /** Dettagli: le modifiche «prima → dopo» in tabella, il resto come elenco. */
-function MetaDetails({ meta }) {
+function MetaDetails({ meta, admin }) {
   const { dettaglio, ...rest } = meta ?? {};
   const entries = Object.entries(rest);
   const technical = typeof dettaglio === 'string' && dettaglio ? (
@@ -101,7 +114,7 @@ function MetaDetails({ meta }) {
             <tbody>
               {changes.map(([k, v]) => (
                 <tr key={k}>
-                  <td style={{ whiteSpace: 'nowrap' }}>{k}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{fieldLabel(k)}</td>
                   <td><Box component="span" sx={{ color: 'error.dark', textDecoration: 'line-through', textDecorationColor: 'rgba(0,0,0,0.25)' }}>{show(v.prima)}</Box></td>
                   <td><Box component="span" sx={{ color: 'success.dark' }}>{show(v.dopo)}</Box></td>
                 </tr>
@@ -111,7 +124,17 @@ function MetaDetails({ meta }) {
         </Box>
       )}
       {technical}
+      {/* Altri dati: elenco leggibile per tutti, il JSON completo solo per gli amministratori */}
       {other.length > 0 && (
+        <Box component="ul" sx={{ m: 0, mt: 1.5, pl: 2.5, typography: 'caption', listStyleType: 'disc', '& li': { display: 'list-item' } }}>
+          {other.map(([k, v]) => (
+            <li key={k}>
+              <b>{fieldLabel(k)}</b>: {show(v)}
+            </li>
+          ))}
+        </Box>
+      )}
+      {admin && other.length > 0 && (
         <Box component="pre" sx={{ m: 0, mt: 1.5, p: 1.5, borderRadius: 1, bgcolor: 'background.neutral', fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-all', maxHeight: 280, overflow: 'auto' }}>
           {JSON.stringify(Object.fromEntries(other), null, 2)}
         </Box>
@@ -303,7 +326,7 @@ export function AuditView({ admin, filters, people, clients, rows }) {
                       <dt>Voce</dt>
                       <dd>#{r.id}</dd>
                     </Box>
-                    <MetaDetails meta={r.meta} />
+                    <MetaDetails meta={r.meta} admin={admin} />
                   </Box>
                 </Collapse>
               </Box>
