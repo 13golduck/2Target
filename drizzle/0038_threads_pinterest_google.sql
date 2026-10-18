@@ -1,0 +1,3 @@
+ALTER TABLE `connections` MODIFY COLUMN `provider` enum('meta','google','tiktok','linkedin','instagram','threads','pinterest') NOT NULL;--> statement-breakpoint
+ALTER TABLE `editorial_items` MODIFY COLUMN `platform` enum('instagram','facebook','tiktok','linkedin','youtube','threads','pinterest','business_profile','newsletter') NOT NULL DEFAULT 'instagram';--> statement-breakpoint
+ALTER TABLE `social_accounts` MODIFY COLUMN `platform` enum('instagram','facebook','tiktok','linkedin','youtube','threads','pinterest','search_console','ga4','business_profile','website','google_ads') NOT NULL;

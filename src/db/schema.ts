@@ -32,7 +32,7 @@ const money = (name: string) => decimal(name, { precision: 12, scale: 2, mode: "
 const num = (name: string) => decimal(name, { precision: 14, scale: 6, mode: "number" });
 
 export const FUNNEL = ["awareness", "consideration", "conversion", "retention"] as const;
-export const PLATFORMS = ["instagram", "facebook", "tiktok", "linkedin", "youtube", "newsletter"] as const;
+export const PLATFORMS = ["instagram", "facebook", "tiktok", "linkedin", "youtube", "threads", "pinterest", "business_profile", "newsletter"] as const;
 export const FORMATS = ["reel", "post", "carosello", "storia", "video", "articolo", "email"] as const;
 export const CTA_DESTINATIONS = ["sito", "telefono", "whatsapp", "direct", "modulo", "nessuna"] as const;
 export const AD_OBJECTIVES = ["notorieta", "traffico", "interazione", "contatti", "messaggi", "chiamate", "vendite"] as const;
@@ -131,9 +131,9 @@ export const userClients = mysqlTable(
 );
 
 // ── Collegamenti alle piattaforme e canali ────────────────────────────
-export const PROVIDERS = ["meta", "google", "tiktok", "linkedin", "instagram"] as const;
+export const PROVIDERS = ["meta", "google", "tiktok", "linkedin", "instagram", "threads", "pinterest"] as const;
 export const CHANNEL_KINDS = [
-  "instagram", "facebook", "tiktok", "linkedin", "youtube",
+  "instagram", "facebook", "tiktok", "linkedin", "youtube", "threads", "pinterest",
   "search_console", "ga4", "business_profile", "website", "google_ads",
 ] as const;
 
