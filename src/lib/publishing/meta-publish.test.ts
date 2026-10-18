@@ -52,6 +52,6 @@ describe("checkPublishable", () => {
     expect(checkPublishable("linkedin", "post", [jpg, mp4], "")).toMatch(/un solo video/);
     expect(checkPublishable("linkedin", "storia", [jpg], "")).toMatch(/non ha le storie/);
     expect(checkPublishable("linkedin", "post", [], "x".repeat(3001))).toMatch(/3\.000/);
-    expect(checkPublishable("youtube", "post", [jpg], "")).toMatch(/TikTok e LinkedIn/);
+    expect(checkPublishable("newsletter", "post", [jpg], "")).toMatch(/non pubblica/);
   });
 });

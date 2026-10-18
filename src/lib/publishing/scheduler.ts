@@ -7,7 +7,11 @@ import { editorialItems, mediaAssets, publications, socialAccounts } from "@/db/
 import { audit } from "@/lib/audit";
 import { errorDetail, logError } from "@/lib/error-log";
 import { mediaPath, publicMediaUrl } from "@/lib/media";
+import * as google from "@/lib/integrations/google";
 import * as linkedin from "@/lib/integrations/linkedin";
+import * as pinterest from "@/lib/integrations/pinterest";
+import * as threads from "@/lib/integrations/threads";
+import * as youtube from "@/lib/integrations/youtube";
 import { checkPublishable, findRecentTwin, isDryRun, isUncertain, publish } from "./meta-publish";
 import { notifyPendingOutcomes } from "./notify";
 import { connectionsOf, publishToken, routeOf } from "./targets";
@@ -155,6 +159,8 @@ export async function processPublication(id: number) {
             media: ordered.map((f) => ({ kind: f.kind, mime: f.mime, path: mediaPath(f.storageKey) })),
             heartbeat,
           });
+    } else if (route.route === "threads" || route.route === "pinterest" || route.route === "youtube" || route.route === "business_profile") {
+      result = isDryRun() ? { externalId: `simulazione-${Date.now()}`, permalink: null } : await publishOther(route.route, { channel, item, pub, token, ordered, urls, heartbeat });
     } else {
       const host = route.route === "instagram" ? ("instagram" as const) : ("facebook" as const);
       const platform = channel.platform as "facebook" | "instagram";
@@ -182,7 +188,9 @@ export async function processPublication(id: number) {
         ? `ESITO INCERTO: la connessione con TikTok si è interrotta mentre si avviava l'invio (${message}). Prima di riprovare controlla sul profilo TikTok (anche tra i post privati) che il post non sia uscito.`
         : channel?.platform === "linkedin"
           ? `ESITO INCERTO: la connessione con LinkedIn si è interrotta (${message}). Prima di riprovare controlla sulla pagina LinkedIn che il post non sia uscito.`
-          : `ESITO INCERTO: la connessione con Meta si è interrotta (${message}). Il post potrebbe essere uscito: con «Riprova» 2Target controlla prima il profilo e non lo ripubblica se lo trova.`;
+          : channel && OTHER_LABEL[channel.platform]
+            ? `ESITO INCERTO: la connessione con ${OTHER_LABEL[channel.platform]} si è interrotta (${message}). Prima di riprovare controlla sul profilo che il post non sia uscito.`
+            : `ESITO INCERTO: la connessione con Meta si è interrotta (${message}). Il post potrebbe essere uscito: con «Riprova» 2Target controlla prima il profilo e non lo ripubblica se lo trova.`;
     await db.update(publications).set({ status: "errore", error: text.slice(0, 2000) }).where(eq(publications.id, id));
     await logError({
       userId: pub.createdBy,
@@ -201,6 +209,32 @@ export async function processPublication(id: number) {
 
 type Pub = typeof publications.$inferSelect;
 type Item = typeof editorialItems.$inferSelect;
+type Media = typeof mediaAssets.$inferSelect;
+
+const OTHER_LABEL: Record<string, string> = { threads: "Threads", pinterest: "Pinterest", youtube: "YouTube", business_profile: "Google" };
+
+/** Link del pulsante o del pin: solo un indirizzo web vero (non telefono, WhatsApp o direct). */
+const webLink = (item: Item) => (item.ctaUrl && /^https?:\/\//i.test(item.ctaUrl) ? item.ctaUrl : null);
+
+/** Threads, Pinterest, YouTube Shorts e scheda Google: un invio diretto, senza elaborazione in sottofondo da seguire. */
+async function publishOther(
+  route: "threads" | "pinterest" | "youtube" | "business_profile",
+  o: { channel: typeof socialAccounts.$inferSelect; item: Item; pub: Pub; token: string; ordered: Media[]; urls: string[]; heartbeat: () => Promise<void> },
+) {
+  const caption = o.pub.caption ?? "";
+  const externalId = o.channel.externalId!;
+  if (route === "threads") {
+    return threads.publishThreads({ userId: externalId, token: o.token, caption, media: o.ordered.map((f, i) => ({ kind: f.kind === "video" ? "video" : "image", url: o.urls[i] })), heartbeat: o.heartbeat });
+  }
+  if (route === "pinterest") {
+    return pinterest.publishPin({ token: o.token, boardId: externalId, caption, link: webLink(o.item), imageUrls: o.urls });
+  }
+  if (route === "youtube") {
+    const video = o.ordered[0];
+    return youtube.uploadShort({ token: o.token, path: mediaPath(video.storageKey), mime: video.mime, caption, heartbeat: o.heartbeat });
+  }
+  return google.publishBusinessPost({ token: o.token, externalId, caption, imageUrl: o.urls[0] ?? null, link: webLink(o.item) });
+}
 
 /** Il post è USCITO: lo si registra subito, e niente di ciò che segue può riportarlo a "errore". */
 async function markPublished(id: number, pub: Pub, item: Item, label: string, result: { externalId: string; permalink: string | null; found?: boolean; warning?: string }) {

@@ -3,6 +3,7 @@ import "server-only";
 import { appUrl, META } from "@/lib/integrations/config";
 import { integrationKey } from "@/lib/integrations/keys";
 import { getJson, qs } from "@/lib/integrations/http";
+import { GBP_SUMMARY_MAX, PIN_MAX_IMAGES, SHORTS_MAX_SECONDS, THREADS_MAX_CAROUSEL, THREADS_MAX_CHARS } from "@/lib/integrations/limits";
 import type { PublishExtras } from "@/db/schema";
 import { mediaProblem, type RuleMedia } from "./media-rules";
 import { checkTikTokMedia } from "./tiktok-rules";
@@ -94,7 +95,33 @@ export function checkPublishable(platform: string, format: string, media: RuleMe
     if (caption.length > 3000) return "Il testo per LinkedIn supera i 3.000 caratteri";
     return null;
   }
-  return "Per ora 2Target pubblica su Facebook, Instagram, TikTok e LinkedIn";
+  if (platform === "threads") {
+    if (format === "storia") return "Threads non ha le storie";
+    if (!media.length && !caption.trim()) return "Scrivi un testo o carica una foto";
+    if (caption.length > THREADS_MAX_CHARS) return `Il testo per Threads supera i ${THREADS_MAX_CHARS} caratteri (sono ${caption.length})`;
+    if (media.length > THREADS_MAX_CAROUSEL) return `Su Threads al massimo ${THREADS_MAX_CAROUSEL} file per post`;
+    return null;
+  }
+  if (platform === "pinterest") {
+    if (videos.length) return "Su Pinterest 2Target pubblica solo pin con foto: togli il video o escludi Pinterest";
+    if (!images.length) return "Un pin richiede almeno una foto";
+    if (images.length > PIN_MAX_IMAGES) return `Su Pinterest al massimo ${PIN_MAX_IMAGES} foto per pin`;
+    return null;
+  }
+  if (platform === "youtube") {
+    if (videos.length !== 1 || images.length) return "Su YouTube si pubblica un solo video (Shorts): carica un video nella scheda";
+    const d = videos[0].durationSec;
+    if (d != null && d > SHORTS_MAX_SECONDS) return `Uno Short dura al massimo 3 minuti (il video ne dura ${Math.round(d)} s)`;
+    return null;
+  }
+  if (platform === "business_profile") {
+    if (videos.length) return "Sulla scheda Google 2Target pubblica testo e una foto: togli il video o escludi la scheda";
+    if (images.length > 1) return "Sulla scheda Google si pubblica al massimo una foto per post";
+    if (!caption.trim()) return "Il post sulla scheda Google richiede un testo";
+    if (caption.length > GBP_SUMMARY_MAX) return `Il testo per la scheda Google supera i ${GBP_SUMMARY_MAX} caratteri`;
+    return null;
+  }
+  return "2Target non pubblica su questa piattaforma";
 }
 
 export async function publish(input: PublishInput): Promise<PublishResult> {

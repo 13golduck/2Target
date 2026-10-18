@@ -13,13 +13,17 @@ import { canPublishWithScopes as linkedinCanPublish } from "@/lib/integrations/l
 // - Instagram con login Instagram (senza Pagina): token dell'utente Instagram, su graph.instagram.com
 // - TikTok: token dell'utente TikTok, con il permesso video.publish
 // - LinkedIn: token di chi amministra la pagina aziendale, con il permesso w_organization_social
+// - Threads e Pinterest: token dell'utente collegato (una bacheca Pinterest = un canale)
+// - YouTube (Shorts) e scheda Google: token Google, con youtube.upload / business.manage concessi al collegamento
 
 type Channel = typeof socialAccounts.$inferSelect;
 type Connection = typeof connections.$inferSelect;
 
-export const PUBLISHABLE = ["facebook", "instagram", "tiktok", "linkedin"] as const;
+export const PUBLISHABLE = ["facebook", "instagram", "tiktok", "linkedin", "threads", "pinterest", "youtube", "business_profile"] as const;
 
-export type Route = "meta" | "instagram" | "tiktok" | "linkedin";
+export type Route = "meta" | "instagram" | "tiktok" | "linkedin" | "threads" | "pinterest" | "youtube" | "business_profile";
+
+const hasScope = (scopes: string | null | undefined, wanted: string) => (scopes ?? "").split(/[,\s]+/).some((s) => s === wanted || s.endsWith(`/${wanted}`));
 
 /** Il profilo è pronto per pubblicare? Restituisce la strada, oppure il motivo per cui non lo è. */
 export function routeOf(ch: Channel, conn: Connection | null | undefined): { route: Route } | { problem: string } {
@@ -33,6 +37,26 @@ export function routeOf(ch: Channel, conn: Connection | null | undefined): { rou
     if (conn?.provider !== "linkedin") return { problem: "non è collegata a LinkedIn: collegala da Canali" };
     if (!linkedinCanPublish(conn.scopes)) return { problem: "è collegata senza il permesso di pubblicare: ricollega LinkedIn da Canali" };
     return { route: "linkedin" };
+  }
+  if (ch.platform === "threads") {
+    if (conn?.provider !== "threads") return { problem: "non è collegato a Threads: collegalo da Canali" };
+    if (!hasScope(conn.scopes, "threads_content_publish")) return { problem: "è collegato senza il permesso di pubblicare: ricollega Threads da Canali" };
+    return { route: "threads" };
+  }
+  if (ch.platform === "pinterest") {
+    if (conn?.provider !== "pinterest") return { problem: "non è collegata a Pinterest: collegala da Canali" };
+    if (!hasScope(conn.scopes, "pins:write")) return { problem: "è collegata senza il permesso di pubblicare: ricollega Pinterest da Canali" };
+    return { route: "pinterest" };
+  }
+  if (ch.platform === "youtube") {
+    if (conn?.provider !== "google") return { problem: "non è collegato a Google: collegalo da Canali" };
+    if (!hasScope(conn.scopes, "youtube.upload")) return { problem: "è collegato senza il permesso di caricare video (attivo dopo la verifica Google): ricollega Google da Canali" };
+    return { route: "youtube" };
+  }
+  if (ch.platform === "business_profile") {
+    if (conn?.provider !== "google") return { problem: "non è collegata a Google: collegala da Canali" };
+    if (!hasScope(conn.scopes, "business.manage")) return { problem: "è collegata senza il permesso di gestire la scheda: ricollega Google da Canali" };
+    return { route: "business_profile" };
   }
   if (ch.platform === "instagram" && conn?.provider === "instagram") return { route: "instagram" };
   if ((ch.platform === "facebook" || ch.platform === "instagram") && ch.assetTokenEnc) return { route: "meta" };
