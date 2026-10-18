@@ -1,7 +1,8 @@
+import { Suspense } from "react";
 import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 
 import { db } from "@/db";
-import { brandKits, clients } from "@/db/schema";
+import { brandKits, clients, users } from "@/db/schema";
 import { requireUser, visibleClientIds } from "@/lib/auth";
 import { isAdminRole, isViewer, ROLE_LABELS } from "@/lib/roles";
 import { cleanFlags, isOn } from "@/lib/features";
@@ -11,6 +12,7 @@ import { DashboardLayout } from "src/layouts/dashboard";
 import { logout } from "../login/actions";
 import { ErrorReporter } from "./error-reporter";
 import { ConfirmHost } from "src/components/custom-dialog";
+import { WelcomeTour } from "./welcome-tour";
 
 /** Logo del cliente al posto dell'icona grigia nel menu. */
 function ClientLogo({ id, version, name }) {
@@ -60,6 +62,8 @@ export default async function AppLayout({ children }) {
           : []),
         // Registro unico: azioni, errori e messaggi di sistema (gli amministratori vedono tutto, gli altri le proprie voci)
         { title: "Audit trail", path: "/audit", icon: <NavIcon name="ic-file" /> },
+        // Guida di tutte le funzioni, per tutti
+        { title: "Guida", path: "/guida", icon: <NavIcon name="ic-tour" /> },
       ],
     },
     {
@@ -92,10 +96,16 @@ export default async function AppLayout({ children }) {
     },
   ];
 
+  // Tour di benvenuto alla prima entrata
+  const [me] = await db.select({ tourDoneAt: users.tourDoneAt }).from(users).where(eq(users.id, user.id));
+
   return (
     <DashboardLayout navData={navData} user={{ name: user.name, role: ROLE_LABELS[user.role] ?? user.role }} logoutAction={logout}>
       <ErrorReporter />
       <ConfirmHost />
+      <Suspense fallback={null}>
+        <WelcomeTour firstTime={!me?.tourDoneAt} viewer={viewer} />
+      </Suspense>
       {children}
     </DashboardLayout>
   );

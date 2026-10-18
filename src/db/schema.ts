@@ -59,6 +59,8 @@ export const users = mysqlTable("users", {
   canPublish: boolean("can_publish").notNull().default(false),
   /** Riepilogo settimanale via email (uscite, contenuti non usciti, prossima settimana). Non per i Viewer. */
   weeklyDigest: boolean("weekly_digest").notNull().default(true),
+  /** Tour di benvenuto visto (o saltato): non si ripropone. Si rivede dalla Guida. */
+  tourDoneAt: datetime("tour_done_at"),
   lastLoginAt: datetime("last_login_at"),
   /** Ultima email di invito inviata (null = mai invitato). */
   invitedAt: datetime("invited_at"),
