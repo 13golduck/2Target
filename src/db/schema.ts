@@ -845,16 +845,46 @@ export const publications = mysqlTable(
 
 // ── Sponsorizzate (Meta Marketing API) ───────────────────────────────
 export const AD_CAMPAIGN_STATUSES = ["in_avvio", "attiva", "in_pausa", "terminata", "errore"] as const;
+/**
+ * boost: promozione di un post già pubblicato; campagna: inserzione nuova creata dalla scheda del piano
+ * (anche mai pubblicata sul profilo); contatti: campagna con modulo contatti di Meta (lead ads).
+ */
+export const AD_CAMPAIGN_KINDS = ["boost", "campagna", "contatti"] as const;
+export const AD_PLACEMENTS = ["facebook", "instagram", "entrambi"] as const;
 
-/** Una sponsorizzazione = un post già pubblicato messo in promozione su un account pubblicitario. */
+/** Testi e media di un'inserzione nuova (campagna o contatti). */
+export type AdCreative = {
+  format: "immagine" | "carosello" | "video";
+  /** media_assets della scheda, nell'ordine del carosello. */
+  mediaIds: number[];
+  message: string;
+  headline?: string;
+  description?: string;
+  link?: string;
+  /** Tipo di pulsante Meta (LEARN_MORE, CONTACT_US, BOOK_TRAVEL…). */
+  button: string;
+};
+
+export type AdTargeting = {
+  city?: { key: string; name: string; radiusKm: number };
+  ageMin: number;
+  ageMax: number;
+  gender?: "tutti" | "uomini" | "donne";
+};
+
+/** Una sponsorizzazione: post pubblicato messo in promozione, oppure inserzione nuova (anche con modulo contatti). */
 export const adCampaigns = mysqlTable(
   "ad_campaigns",
   {
     id: int("id").autoincrement().primaryKey(),
     clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+    kind: mysqlEnum("kind", AD_CAMPAIGN_KINDS).notNull().default("boost"),
+    name: varchar("name", { length: 200 }),
     itemId: int("item_id").references(() => editorialItems.id, { onDelete: "set null" }),
     publicationId: int("publication_id").references(() => publications.id, { onDelete: "set null" }),
-    platform: mysqlEnum("platform", ["facebook", "instagram"]).notNull(),
+    platform: mysqlEnum("platform", AD_PLACEMENTS).notNull(),
+    creative: json("creative").$type<AdCreative>(),
+    leadFormId: int("lead_form_id").references(() => adLeadForms.id, { onDelete: "set null" }),
     /** Chi paga, fissato al lancio (non cambia se poi cambia l'impostazione del cliente). */
     payer: mysqlEnum("payer", ["cliente", "golduck"]).notNull(),
     adAccountId: varchar("ad_account_id", { length: 40 }).notNull(),
@@ -864,12 +894,13 @@ export const adCampaigns = mysqlTable(
     budget: money("budget").notNull(),
     startAt: datetime("start_at").notNull(),
     endAt: datetime("end_at").notNull(),
-    targeting: json("targeting").$type<{ city?: { key: string; name: string; radiusKm: number }; ageMin: number; ageMax: number }>().notNull(),
+    targeting: json("targeting").$type<AdTargeting>().notNull(),
     status: mysqlEnum("status", AD_CAMPAIGN_STATUSES).notNull().default("in_avvio"),
     simulated: boolean("simulated").notNull().default(false),
     metaCampaignId: varchar("meta_campaign_id", { length: 40 }),
     metaAdSetId: varchar("meta_adset_id", { length: 40 }),
     metaAdId: varchar("meta_ad_id", { length: 40 }),
+    metaCreativeId: varchar("meta_creative_id", { length: 40 }),
     /** Ultimi totali letti da Meta. */
     spend: money("spend").notNull().default(0),
     results: json("results").$type<Record<string, number>>(),
@@ -880,6 +911,37 @@ export const adCampaigns = mysqlTable(
     updatedAt: updated(),
   },
   (t) => [index("ad_campaigns_client").on(t.clientId, t.status)],
+);
+
+/**
+ * Modulo contatti di Meta (lead ads) creato sulla Pagina Facebook del cliente. I contatti raccolti
+ * vengono letti dalla sincronizzazione e finiscono nei Lead del cliente (fonte Meta Ads).
+ */
+export const LEAD_FORM_FIELDS = ["FULL_NAME", "EMAIL", "PHONE", "CITY"] as const;
+
+export const adLeadForms = mysqlTable(
+  "ad_lead_forms",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+    pageId: varchar("page_id", { length: 40 }).notNull(),
+    metaFormId: varchar("meta_form_id", { length: 40 }),
+    name: varchar("name", { length: 200 }).notNull(),
+    /** Domande standard precompilate da Meta (nome, email, telefono, città). */
+    fields: json("fields").$type<(typeof LEAD_FORM_FIELDS)[number][]>().notNull(),
+    /** Domanda libera facoltativa (es. «Che servizio ti interessa?»). */
+    customQuestion: varchar("custom_question", { length: 300 }),
+    intro: varchar("intro", { length: 500 }),
+    privacyUrl: varchar("privacy_url", { length: 500 }).notNull(),
+    thankYou: varchar("thank_you", { length: 300 }),
+    simulated: boolean("simulated").notNull().default(false),
+    leadsCount: int("leads_count").notNull().default(0),
+    lastLeadsSyncAt: datetime("last_leads_sync_at"),
+    error: text("error"),
+    createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: created(),
+  },
+  (t) => [index("ad_lead_forms_client").on(t.clientId)],
 );
 
 /** Spesa giornaliera per sponsorizzazione (in euro): serve a tetti mensili e rifatturazione. */

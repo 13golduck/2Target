@@ -225,6 +225,13 @@
       "when": 1792326353420,
       "tag": "0031_salute_sito",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "5",
+      "when": 1792348018956,
+      "tag": "0032_sponsorizzate_complete",
+      "breakpoints": true
     }
   ]
 }
