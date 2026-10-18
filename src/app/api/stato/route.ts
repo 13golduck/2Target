@@ -31,6 +31,17 @@ export async function GET() {
   // FFmpeg per controllare e convertire i video (arriva con il pacchetto di produzione)
   const { ffmpegVersion } = await import("@/lib/media-video");
   const ffmpeg = (await ffmpegVersion()) ?? "non disponibile: i video si pubblicano senza controllo";
+  // Pubblicazioni programmate: il controllo ogni minuto è vivo? (un monitor esterno avvisa se risponde 503)
+  let scheduler = "ok";
+  if (database === "ok") {
+    try {
+      const { currentHealth } = await import("@/lib/system/watchdog");
+      const check = (await currentHealth()).find((c) => c.key === "scheduler");
+      if (check && check.level !== "ok") scheduler = check.detail;
+    } catch (e) {
+      scheduler = `non verificabile (${errorCode(e)})`;
+    }
+  }
   const startup = getStartupError();
   const set = (k: string) => Boolean(process.env[k]?.trim());
   const body = {
@@ -38,6 +49,7 @@ export async function GET() {
     migrazioni: startup ? explainDbError(startup) : "ok",
     media,
     ffmpeg,
+    scheduler,
     databaseUrl: database === "ok" ? undefined : describeDatabaseUrl(),
     variabili: {
       DATABASE_URL: set("DATABASE_URL"),
@@ -50,6 +62,6 @@ export async function GET() {
       META_CONFIG_ID: set("META_CONFIG_ID"),
     },
   };
-  const ok = database === "ok" && !startup && body.variabili.AUTH_SECRET;
+  const ok = database === "ok" && !startup && body.variabili.AUTH_SECRET && scheduler === "ok";
   return NextResponse.json(body, { status: ok ? 200 : 503, headers: { "cache-control": "no-store" } });
 }

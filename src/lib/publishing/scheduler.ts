@@ -62,6 +62,15 @@ export async function runDuePublications() {
     for (const { id } of due) if (await processPublication(id)) done++;
     // Esiti da comunicare (email di errore al consulente, avviso di uscita al cliente): una volta per esito
     await notifyPendingOutcomes().catch((e) => console.error("[pubblicazioni] avvisi:", e));
+    // Sorveglianza: battito (per /api/stato), controlli con avviso agli amministratori, backup notturno.
+    // Import dinamico e in sottofondo: un problema qui non deve mai fermare le pubblicazioni
+    void import("@/lib/system/watchdog")
+      .then(async (w) => {
+        await w.heartbeat();
+        await w.maybeWatch();
+      })
+      .catch((e) => console.error("[sorveglianza]", e));
+    void import("@/lib/system/backup").then((b) => b.maybeRunNightlyBackup()).catch((e) => console.error("[backup]", e));
     // Contatti dai moduli di Meta: lettura ogni 15 minuti (import dinamico: il modulo inserzioni usa questo file)
     void import("@/lib/ads/campaigns").then((m) => m.maybeSyncAllLeadForms()).catch((e) => console.error("[lead] moduli Meta:", e));
     return { skipped: false, done };
