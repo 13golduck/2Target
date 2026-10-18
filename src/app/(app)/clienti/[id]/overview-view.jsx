@@ -188,6 +188,10 @@ export function OverviewView({ clientId, options, features, readOnly, steps, upc
               </Stack>
             </Card>
 
+            {/* Da qui in giù non sono dati ma impostazioni: un titolo le separa, per non toccarle per sbaglio */}
+            <Typography variant="overline" sx={{ color: 'text.secondary', pt: 2 }}>
+              Impostazioni del cliente
+            </Typography>
             <ClientOptions clientId={clientId} options={options} readOnly={readOnly} />
 
             <FeatureSwitches

@@ -83,12 +83,14 @@ export default async function AppLayout({ children }) {
               { title: "Panoramica", path: `/clienti/${c.id}` },
               { title: "Check-up", path: `/clienti/${c.id}/checkup`, feature: "checkup" },
               { title: "Brand", path: `/clienti/${c.id}/brand`, feature: "brand" },
+              { title: "Concorrenti", path: `/clienti/${c.id}/concorrenti`, feature: "concorrenti" },
               { title: "Idee", path: `/clienti/${c.id}/idee`, feature: "idee" },
               { title: "Piano editoriale", path: `/clienti/${c.id}/piano` },
               { title: "KPI", path: `/clienti/${c.id}/kpi` },
               { title: "Lead", path: `/clienti/${c.id}/lead`, feature: "lead" },
               { title: "SEO", path: `/clienti/${c.id}/seo`, feature: "seo" },
               { title: "Canali", path: `/clienti/${c.id}/canali` },
+              { title: "Profili", path: `/clienti/${c.id}/profili`, feature: "profili" },
             ]
         )
           .filter((x) => !x.feature || on(x.feature, c))
