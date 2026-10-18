@@ -242,3 +242,25 @@ export async function resumeVideoPreparation() {
   const stuck = await db.select({ id: mediaAssets.id }).from(mediaAssets).where(eq(mediaAssets.processState, "in_lavorazione"));
   for (const v of stuck) await prepareVideoAsset(v.id);
 }
+
+/**
+ * Argomenti di FFmpeg per un video da immagini fisse (slide) con dissolvenze: ogni slide dura `seconds`,
+ * la dissolvenza `fade` secondi. Uscita MP4 H.264 verticale, adatta a storie e reel. Funzione pura.
+ */
+export function slideshowArgs(images: string[], output: string, seconds = 2.6, fade = 0.5) {
+  if (!images.length) throw new Error("Nessuna slide");
+  const inputs = images.flatMap((f) => ["-loop", "1", "-t", String(seconds), "-i", f]);
+  const filters: string[] = images.map((_, i) => `[${i}:v]scale=1080:1920,setsar=1,format=yuv420p,fps=30[v${i}]`);
+  let last = "v0";
+  for (let i = 1; i < images.length; i++) {
+    const out = i === images.length - 1 ? "vout" : `x${i}`;
+    // Ogni dissolvenza parte quando finisce la slide precedente, meno la durata della dissolvenza (cumulata)
+    filters.push(`[${last}][v${i}]xfade=transition=fade:duration=${fade}:offset=${(i * (seconds - fade)).toFixed(2)}[${out}]`);
+    last = out;
+  }
+  if (images.length === 1) filters.push("[v0]null[vout]");
+  return ["-hide_banner", "-y", ...inputs, "-filter_complex", filters.join(";"), "-map", "[vout]", "-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p", "-threads", "2", "-movflags", "+faststart", output];
+}
+
+/** Esegue FFmpeg con gli argomenti dati (per i video generati da 2Target, es. il riepilogo del mese). */
+export const renderWithFfmpeg = (args: string[], timeoutMs = 3 * 60_000) => runFfmpeg(args, timeoutMs);

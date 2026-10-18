@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { conversionArgs, conversionReasons, parseProbe } from "../media-video";
+import { conversionArgs, conversionReasons, parseProbe, slideshowArgs } from "../media-video";
 
 // Uscite reali di `ffmpeg -i` (FFmpeg 6) su video di prova
 const VERTICAL_OK = `Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'a.mp4':
@@ -57,5 +57,21 @@ describe("argomenti di conversione", () => {
     expect(a[a.indexOf("-vf") + 1]).toContain("min(1080,iw)");
     expect(a[a.indexOf("-vf") + 1]).toContain("trunc(iw/2)*2");
     expect(a.at(-1)).toBe("out.mp4");
+  });
+});
+
+describe("video da slide", () => {
+  it("tre slide: ingressi, due dissolvenze con offset cumulati, uscita verticale H.264", () => {
+    const a = slideshowArgs(["a.png", "b.png", "c.png"], "out.mp4", 3, 0.5);
+    expect(a.filter((x) => x === "-i")).toHaveLength(3);
+    const fc = a[a.indexOf("-filter_complex") + 1];
+    expect(fc).toContain("[v0][v1]xfade=transition=fade:duration=0.5:offset=2.50[x1]");
+    expect(fc).toContain("[x1][v2]xfade=transition=fade:duration=0.5:offset=5.00[vout]");
+    expect(fc).toContain("scale=1080:1920");
+    expect(a.at(-1)).toBe("out.mp4");
+  });
+  it("una sola slide e nessuna slide", () => {
+    expect(slideshowArgs(["a.png"], "o.mp4")[slideshowArgs(["a.png"], "o.mp4").indexOf("-filter_complex") + 1]).toContain("[v0]null[vout]");
+    expect(() => slideshowArgs([], "o.mp4")).toThrow();
   });
 });
