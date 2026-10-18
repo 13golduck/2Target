@@ -35,6 +35,11 @@ export const META = {
     "instagram_basic",
     "instagram_manage_insights",
     "instagram_content_publish",
+    // Sponsorizzate: account pubblicitari, inserzioni, moduli contatti sulla Pagina e lettura dei contatti
+    "ads_management",
+    "ads_read",
+    "pages_manage_ads",
+    "leads_retrieval",
   ],
 };
 
