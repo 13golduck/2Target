@@ -239,6 +239,13 @@
       "when": 1792357458367,
       "tag": "0033_video_per_i_social",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "5",
+      "when": 1792357852446,
+      "tag": "0034_avvisi_pubblicazione",
+      "breakpoints": true
     }
   ]
 }

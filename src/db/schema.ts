@@ -110,6 +110,8 @@ export const clients = mysqlTable("clients", {
   approvalEnabled: boolean("approval_enabled").notNull().default(false),
   /** Report mensile automatico: a chi mandarlo e ultimo mese inviato (AAAA-MM), per non mandarlo due volte. */
   reportEmail: varchar("report_email", { length: 255 }),
+  /** Email al cliente (reportEmail) quando un suo post esce, con il link. */
+  notifyPublished: boolean("notify_published").notNull().default(false),
   reportMonthly: boolean("report_monthly").notNull().default(false),
   reportLastMonth: varchar("report_last_month", { length: 7 }),
   /** Parole del brand per separare le ricerche con il nome del cliente (oltre a nome e dominio), separate da virgola. */
@@ -840,6 +842,8 @@ export const publications = mysqlTable(
     externalId: varchar("external_id", { length: 120 }),
     permalink: varchar("permalink", { length: 500 }),
     error: text("error"),
+    /** Ultimo esito già comunicato (email di errore al consulente, avviso di uscita al cliente): niente doppioni. */
+    notifiedStatus: varchar("notified_status", { length: 20 }),
     publishedAt: datetime("published_at"),
     createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: created(),
