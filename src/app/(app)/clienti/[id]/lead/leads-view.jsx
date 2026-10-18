@@ -78,8 +78,8 @@ export function LeadsView({ clientId, period, periods, stats, bySource, byCampai
   const [costOpen, setCostOpen] = useState(false);
 
   const cards = [
-    { label: 'Lead', value: num(stats.leads), sub: `${pct(stats.qualifiedRate)} qualificati`, icon: 'solar:users-group-rounded-bold' },
-    { label: 'Costo per lead', value: eur(stats.cpl, 2), sub: `costi ${eur(stats.cost)}`, icon: 'solar:wad-of-money-bold' },
+    { label: 'Contatti', value: num(stats.leads), sub: `${pct(stats.qualifiedRate)} qualificati`, icon: 'solar:users-group-rounded-bold' },
+    { label: 'Costo per contatto', value: eur(stats.cpl, 2), sub: `costi ${eur(stats.cost)}`, icon: 'solar:wad-of-money-bold' },
     { label: 'Nuovi clienti', value: num(stats.customers), sub: `conversione ${pct(stats.leadToCustomer)} dei lead del periodo`, icon: 'solar:cup-star-bold' },
     { label: 'Costo acquisizione cliente', value: eur(stats.cac), sub: stats.avgDaysToClose != null ? `${num(stats.avgDaysToClose)} giorni per chiudere` : ' ', icon: 'solar:user-plus-bold' },
     { label: 'Ricavi', value: eur(stats.revenue), sub: `valore medio ${eur(stats.avgDeal)}`, icon: 'eva:trending-up-fill' },
@@ -99,7 +99,7 @@ export function LeadsView({ clientId, period, periods, stats, bySource, byCampai
               Aggiungi costo
             </Button>
             <Button variant="contained" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setEditing({})}>
-              Nuovo lead
+              Nuovo contatto
             </Button>
           </>
         )}
@@ -206,16 +206,16 @@ function TrendCard({ trend }) {
       <Chart
         type="line"
         series={[
-          { name: 'Lead', type: 'column', data: trend.map((t) => t.leads) },
+          { name: 'Contatti', type: 'column', data: trend.map((t) => t.leads) },
           { name: 'Clienti', type: 'column', data: trend.map((t) => t.customers) },
-          { name: 'Costo per lead €', type: 'line', data: trend.map((t) => (t.cpl == null ? null : Math.round(t.cpl))) },
+          { name: 'Costo per contatto €', type: 'line', data: trend.map((t) => (t.cpl == null ? null : Math.round(t.cpl))) },
         ]}
         options={{
           ...options,
           yaxis: [
-            { seriesName: 'Lead', title: { text: 'Lead e clienti' } },
-            { seriesName: 'Lead', show: false },
-            { seriesName: 'Costo per lead €', opposite: true, title: { text: '€ per lead' } },
+            { seriesName: 'Contatti', title: { text: 'Contatti e clienti' } },
+            { seriesName: 'Contatti', show: false },
+            { seriesName: 'Costo per contatto €', opposite: true, title: { text: '€ per contatto' } },
           ],
         }}
         sx={{ height: 300, px: 1, pb: 1 }}
@@ -289,7 +289,7 @@ function SourceTable({ rows }) {
                 <TableCell>Fonte</TableCell>
                 <TableCell align="right">Costi</TableCell>
                 <TableCell align="right">Lead</TableCell>
-                <TableCell align="right">Costo per lead</TableCell>
+                <TableCell align="right">Costo per contatto</TableCell>
                 <TableCell align="right">Qualificati</TableCell>
                 <TableCell align="right">Clienti</TableCell>
                 <TableCell align="right">Conversione</TableCell>
@@ -467,7 +467,7 @@ function IntakeCard({ clientId, intake, lostReasons }) {
   return (
     <Stack spacing={3}>
       <Card>
-        <CardHeader title="Raccolta automatica" subheader="I moduli del sito del cliente inviano i lead direttamente qui" />
+        <CardHeader title="Raccolta automatica" subheader="I moduli del sito del cliente inviano i contatti direttamente qui" />
         <Stack spacing={2} sx={{ p: 3, pt: 1 }}>
           {intake ? (
             <>
@@ -547,7 +547,7 @@ function LeadForm({ clientId, lead, onClose }) {
         })
       }
     >
-      <DialogTitle>{isNew ? 'Nuovo lead' : lead.name || lead.email || 'Lead'}</DialogTitle>
+      <DialogTitle>{isNew ? 'Nuovo contatto' : lead.name || lead.email || 'Contatto'}</DialogTitle>
       <DialogContent>
         <input type="hidden" name="id" value={lead.id ?? ''} />
         <input type="hidden" name="clientId" value={clientId} />
@@ -598,7 +598,7 @@ function LeadForm({ clientId, lead, onClose }) {
           </Button>
         )}
         <Button onClick={onClose}>Annulla</Button>
-        <Tooltip title={stage === 'vinto' ? 'Il lead conta come cliente acquisito oggi' : ''}>
+        <Tooltip title={stage === 'vinto' ? 'Il contatto conta come cliente acquisito oggi' : ''}>
           <Button type="submit" variant="contained" loading={pending}>Salva</Button>
         </Tooltip>
       </DialogActions>

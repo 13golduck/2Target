@@ -424,7 +424,7 @@ function NewItemDialog({ planId, at, onClose, formats }) {
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Annulla</Button>
-          <Button type="submit" variant="contained">Crea e apri la scheda</Button>
+          <Button type="submit" variant="contained">Crea e apri la pubblicazione</Button>
         </DialogActions>
       </Box>
     </Dialog>

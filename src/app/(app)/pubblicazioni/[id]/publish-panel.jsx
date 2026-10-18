@@ -407,7 +407,7 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
                   </Typography>
                 )}
                 <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  Si pubblicano didascalia, hashtag e file della scheda. Se li modifichi prima dell&apos;uscita, la pubblicazione si aggiorna da sola.
+                  Si pubblicano testo del post, hashtag e file. Se li modifichi prima dell&apos;uscita, la pubblicazione si aggiorna da sola.
                 </Typography>
               </Stack>
             )}
