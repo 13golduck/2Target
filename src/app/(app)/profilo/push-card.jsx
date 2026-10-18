@@ -1,5 +1,6 @@
 'use client';
 
+import { errorMessage } from 'src/components/error-text';
 import { useState, useEffect, useTransition } from 'react';
 
 import Box from '@mui/material/Box';
@@ -76,7 +77,7 @@ export function PushCard() {
         setState('on');
         toast.success('Notifiche attivate su questo dispositivo');
       } catch (e) {
-        toast.error(`Attivazione non riuscita: ${e.message}`);
+        toast.error(`Attivazione non riuscita: ${errorMessage(e.message)}`);
       }
     });
 

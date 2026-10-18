@@ -1,5 +1,6 @@
 'use client';
 
+import { ErrorText } from 'src/components/error-text';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -434,7 +435,7 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
                           {p.status === 'pubblicata' ? `Uscita il ${fmtDateTime(new Date(p.publishedAt))}` : `Prevista il ${fmtDateTime(new Date(p.scheduledAt))}`} · {p.files} file
                         </Typography>
                         {p.error && (
-                          <Typography variant="caption" sx={{ display: 'block', color: 'error.main', wordBreak: 'break-word' }}>{p.error}</Typography>
+                          <Typography variant="caption" sx={{ display: 'block', color: 'error.main', wordBreak: 'break-word' }}><ErrorText error={p.error} /></Typography>
                         )}
                       </Box>
                     </Stack>

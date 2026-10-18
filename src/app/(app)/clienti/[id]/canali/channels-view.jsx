@@ -1,5 +1,6 @@
 'use client';
 
+import { ErrorText } from 'src/components/error-text';
 import { useState, useTransition } from 'react';
 
 import Box from '@mui/material/Box';
@@ -304,7 +305,7 @@ function ChannelCard({ channel: c, canPublish }) {
           c.pending ? (
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>Analisi PageSpeed in corso: la pagina si aggiorna da sola…</Typography>
           ) : c.lastSyncError ? (
-            <Typography variant="caption" sx={{ color: 'error.main' }}>{c.lastSyncError}</Typography>
+            <Typography variant="caption" sx={{ color: 'error.main' }}><ErrorText error={c.lastSyncError} /></Typography>
           ) : c.lastSyncAt ? (
             `Aggiornato ${fmtDateTime(new Date(c.lastSyncAt))}`
           ) : syncable ? (
@@ -432,7 +433,7 @@ function PickerDialog({ picker, onClose }) {
       {'error' in picker ? (
         <>
           <DialogTitle>Impossibile leggere gli account</DialogTitle>
-          <DialogContent><Alert severity="error">{picker.error}</Alert></DialogContent>
+          <DialogContent><Alert severity="error"><ErrorText error={picker.error} /></Alert></DialogContent>
           <DialogActions><Button onClick={onClose}>Chiudi</Button></DialogActions>
         </>
       ) : (

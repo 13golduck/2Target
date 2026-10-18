@@ -1,5 +1,6 @@
 'use client';
 
+import { ErrorText } from 'src/components/error-text';
 import { useState, useEffect, useTransition } from 'react';
 
 import Box from '@mui/material/Box';
@@ -486,7 +487,7 @@ function ArchiveButton({ checkupId, archived }) {
 function ErrorPanel({ checkup }) {
   return (
     <Alert severity="error" sx={{ '& .MuiAlert-message': { width: 1 } }}>
-      <b>L&apos;AI si è fermata.</b> <Box component="span" sx={{ wordBreak: 'break-word' }}>{checkup.aiError}</Box>
+      <b>L&apos;AI si è fermata.</b> <Box component="span" sx={{ wordBreak: 'break-word' }}><ErrorText error={checkup.aiError} /></Box>
       <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
         <ResumeButton checkupId={checkup.id} />
         <ArchiveButton checkupId={checkup.id} archived={checkup.archived} />

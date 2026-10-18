@@ -1,5 +1,6 @@
 'use client';
 
+import { errorMessage } from 'src/components/error-text';
 import { useState, useEffect } from 'react';
 
 import Box from '@mui/material/Box';
@@ -229,7 +230,7 @@ export function LogoEditor({ file, onClose, onConfirm }) {
         setState({ canvas, box, full: { x: 0, y: 0, w: canvas.width, h: canvas.height, bg: box.bg }, original: { w: img.naturalWidth, h: img.naturalHeight, size: file.size } });
         setFrame(wholeFrame(box));
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => setError(errorMessage(e.message)));
     return () => {
       alive = false;
       if (url) URL.revokeObjectURL(url);

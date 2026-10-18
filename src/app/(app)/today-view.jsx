@@ -1,5 +1,6 @@
 'use client';
 
+import { ErrorText } from 'src/components/error-text';
 import { GettingStartedCard } from './getting-started-card';
 import { platformName } from 'src/lib/platforms';
 import Box from '@mui/material/Box';
@@ -21,6 +22,7 @@ import { Iconify } from 'src/components/iconify';
 // ----------------------------------------------------------------------
 // «Oggi»: le cose da fare su tutti i clienti. Ogni riga porta dritta dove si risolve.
 
+const STATUS_LABEL = { bozza: 'Bozza', da_approvare: 'Da approvare', approvato: 'Approvato', pubblicato: 'Pubblicato', annullato: 'Annullato' };
 const FORMAT_COLOR = { reel: '#B8860B', post: '#2E7D32', carosello: '#0288D1', storia: '#7B1FA2', video: '#C62828' };
 
 const dayLabel = (iso) => {
@@ -91,7 +93,7 @@ export function TodayView({ board, userName, start }) {
               <ItemRow
                 key={i.id}
                 item={i}
-                right={i.note === 'pronta' ? <Label color="success">Pronta</Label> : i.note ? <Label color="error">{i.note}</Label> : <Label color="default">{i.status.replace('_', ' ')}</Label>}
+                right={i.note === 'pronta' ? <Label color="success">Pronta</Label> : i.note ? <Label color="error">{i.note}</Label> : <Label color="default">{STATUS_LABEL[i.status] ?? i.status}</Label>}
               />
             ))}
           </Panel>
@@ -102,14 +104,14 @@ export function TodayView({ board, userName, start }) {
             {problems > 0 && (
               <Panel title="Da sistemare" icon="solar:danger-triangle-bold" color="error.main">
                 {board.fallite.map((i) => (
-                  <ItemRow key={`f${i.id}`} item={i} secondary={`Pubblicazione non riuscita · ${i.note}`} right={<Label color="error">Errore</Label>} />
+                  <ItemRow key={`f${i.id}`} item={i} secondary={<>Pubblicazione non riuscita · <ErrorText error={i.note} /></>} right={<Label color="error">Errore</Label>} />
                 ))}
                 {board.collegamenti.map((c) => (
                   <LinkRow
                     key={`c${c.id}`}
                     href={`/clienti/${c.clientId}/canali`}
                     primary={`${c.clientName} · ${c.provider === 'meta' ? 'Meta' : c.provider === 'google' ? 'Google' : 'TikTok'} da ricollegare`}
-                    secondary={c.lastError ?? c.accountName}
+                    secondary={c.lastError ? <ErrorText error={c.lastError} /> : c.accountName}
                     right={<Label color="error">Collegamento</Label>}
                   />
                 ))}
@@ -118,7 +120,7 @@ export function TodayView({ board, userName, start }) {
                     key={`k${c.id}`}
                     href={`/clienti/${c.clientId}/checkup?id=${c.id}`}
                     primary={`${c.clientName} · check-up`}
-                    secondary={c.aiState === 'domande' ? 'Aspetta le tue risposte per proseguire' : c.aiState === 'errore' ? (c.aiError ?? 'Fermato da un errore') : 'Fermato: premi Riprendi'}
+                    secondary={c.aiState === 'domande' ? 'Aspetta le tue risposte per proseguire' : c.aiState === 'errore' ? (c.aiError ? <ErrorText error={c.aiError} /> : 'Fermato da un errore') : 'Fermato: premi Riprendi'}
                     right={<Label color={c.aiState === 'domande' ? 'info' : 'warning'}>{c.aiState === 'domande' ? 'Domande' : 'Fermo'}</Label>}
                   />
                 ))}

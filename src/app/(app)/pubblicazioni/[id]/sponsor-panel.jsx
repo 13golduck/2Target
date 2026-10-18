@@ -1,5 +1,6 @@
 'use client';
 
+import { ErrorText } from 'src/components/error-text';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -219,7 +220,7 @@ export function CampaignRow({ c, canPublish, busy, onAction, showClient }) {
         {c.lastSyncAt && ` · aggiornato ${fmtDateTime(c.lastSyncAt)}`}
       </Typography>
       {c.roi && (c.roi.leads > 0 || c.roi.customers > 0) && <RoiLine roi={c.roi} currency="EUR" />}
-      {c.error && <Alert severity="error" sx={{ mt: 1 }}>{c.error}</Alert>}
+      {c.error && <Alert severity="error" sx={{ mt: 1 }}><ErrorText error={c.error} /></Alert>}
     </Box>
   );
 }

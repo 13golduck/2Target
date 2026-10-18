@@ -1,5 +1,6 @@
 'use client';
 
+import { ErrorText } from 'src/components/error-text';
 import { useState, useEffect } from 'react';
 
 import Box from '@mui/material/Box';
@@ -83,7 +84,7 @@ export function TikTokSettings({ channel, format, media, caption, value, onChang
       </Box>
     );
   }
-  if (info.error) return <Alert severity="error">{info.error}</Alert>;
+  if (info.error) return <Alert severity="error"><ErrorText error={info.error} /></Alert>;
   if (!kind) return <Alert severity="warning">Per TikTok carica un solo video, oppure solo foto (JPEG o WebP).</Alert>;
 
   return (
