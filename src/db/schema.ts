@@ -213,6 +213,26 @@ export const socialPosts = mysqlTable(
   (t) => [uniqueIndex("social_posts_unique").on(t.socialAccountId, t.externalId), index("social_posts_date").on(t.socialAccountId, t.publishedAt)],
 );
 
+/**
+ * Controllo salute del sito (certificato SSL, scadenza dominio, DNS, reindirizzamenti, segnali di compromissione).
+ * Una riga per ogni controllo eseguito; l'ultima riga del canale dà lo stato attuale e l'impronta da confrontare.
+ */
+export const siteHealthChecks = mysqlTable(
+  "site_health_checks",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
+    socialAccountId: int("social_account_id").references(() => socialAccounts.id, { onDelete: "cascade" }),
+    url: varchar("url", { length: 255 }).notNull(),
+    score: smallint("score").notNull(),
+    severity: mysqlEnum("severity", ["ok", "attenzione", "grave"]).notNull(),
+    checks: json("checks").$type<import("../lib/integrations/site-health").HealthCheck[]>(),
+    fingerprint: json("fingerprint").$type<import("../lib/integrations/site-health").SiteFingerprint>(),
+    checkedAt: created(),
+  },
+  (t) => [index("site_health_client").on(t.clientId), index("site_health_channel_date").on(t.socialAccountId, t.checkedAt)],
+);
+
 /** Classifiche SEO del periodo (query e pagine da Search Console, punteggi PageSpeed). */
 /**
  * Fotografie dei dati Google per periodo. Search Console: ricerche e pagine (periodo e periodo precedente),
