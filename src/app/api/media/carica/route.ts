@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { editorialItems, mediaAssets } from "@/db/schema";
 import { requireWriter } from "@/lib/auth";
 import { audit } from "@/lib/audit";
+import { prepareVideoAsset } from "@/lib/media-video";
 import { syncPendingPublications } from "@/lib/publishing/sync";
 import { ensureMediaDir, IMAGE_TYPES, MEDIA_LIMITS, mediaPath, newStorageKey, removeMediaFile, VIDEO_TYPES } from "@/lib/media";
 
@@ -70,9 +71,13 @@ export async function POST(request: Request) {
     width: dim("w"),
     height: dim("h"),
     position: (last ?? -1) + 1,
+    // I video restano «in lavorazione» finché FFmpeg non li ha controllati (e convertiti se serve)
+    processState: kind === "video" ? "in_lavorazione" : "pronto",
     createdBy: me.id,
   });
   await audit({ userId: me.id, category: "contenuti", action: "media.caricato", description: `Caricato ${kind === "image" ? "l'immagine" : "il video"} «${fileName}» (${(size / 1024 / 1024).toFixed(1)} MB)`, clientId: item.clientId, target: `pubblicazione:${itemId}` });
   await syncPendingPublications(itemId, me.id);
-  return Response.json({ ok: true, id: r.insertId });
+  // Controllo e conversione del video in sottofondo: la risposta al browser non aspetta FFmpeg
+  if (kind === "video") void prepareVideoAsset(r.insertId);
+  return Response.json({ ok: true, id: r.insertId, processing: kind === "video" });
 }

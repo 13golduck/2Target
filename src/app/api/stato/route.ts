@@ -28,12 +28,16 @@ export async function GET() {
   } catch (e) {
     media = `cartella dei file non scrivibile (${errorCode(e)})`;
   }
+  // FFmpeg per controllare e convertire i video (arriva con il pacchetto di produzione)
+  const { ffmpegVersion } = await import("@/lib/media-video");
+  const ffmpeg = (await ffmpegVersion()) ?? "non disponibile: i video si pubblicano senza controllo";
   const startup = getStartupError();
   const set = (k: string) => Boolean(process.env[k]?.trim());
   const body = {
     database,
     migrazioni: startup ? explainDbError(startup) : "ok",
     media,
+    ffmpeg,
     databaseUrl: database === "ok" ? undefined : describeDatabaseUrl(),
     variabili: {
       DATABASE_URL: set("DATABASE_URL"),

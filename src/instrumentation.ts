@@ -28,6 +28,9 @@ export async function register() {
   // Check-up AI fermati dal riavvio: ripartono da soli (se recenti e nei limiti di spesa)
   const { resumeStaleCheckups } = await import("./lib/ai/resume");
   await resumeStaleCheckups().catch((e) => console.error("[ai] ripresa automatica non riuscita:", e));
+  // Video rimasti «in lavorazione» per un riavvio: si riprende la conversione, uno alla volta, senza bloccare l'avvio
+  const { resumeVideoPreparation } = await import("./lib/media-video");
+  void resumeVideoPreparation().catch((e) => console.error("[video] ripresa non riuscita:", e));
   // Base di lavoro dal check-up rimasta a metà: si segna da rifare (la riavvia il consulente)
   const { markStaleFoundations } = await import("./lib/ai/foundation-agent");
   await markStaleFoundations().catch((e) => console.error("[ai] base dal check-up:", e));
