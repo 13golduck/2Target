@@ -1,4 +1,5 @@
 import "server-only";
+import { PLATFORM_INFO } from "@/lib/platforms";
 import { and, asc, eq, gte, inArray, isNotNull, lt, sql } from "drizzle-orm";
 
 import { db } from "@/db";
@@ -21,7 +22,8 @@ const eur = (v: number) => v.toLocaleString("it-IT", { style: "currency", curren
 export const KPI_COLOR = { bene: "#22A06B", male: "#E8A317", troppo_male: "#D9363E", in_attesa: "#919EAB" } as const;
 // Al cliente va lo stato, non il commento interno del consulente
 export const KPI_WORD = { bene: "In linea", male: "Da migliorare", troppo_male: "Sotto obiettivo", in_attesa: "In attesa di dati" } as const;
-export const PLATFORM_NAME: Record<string, string> = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok", linkedin: "LinkedIn", youtube: "YouTube" };
+/** Nomi delle piattaforme (da @/lib/platforms, riesportati per la pagina del report). */
+export const PLATFORM_NAME: Record<string, string> = Object.fromEntries(Object.entries(PLATFORM_INFO).map(([k, v]) => [k, v.label]));
 
 /** Mese precedente a `now` in formato AAAA-MM. */
 export const previousMonth = (now = new Date()) => {
