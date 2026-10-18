@@ -302,7 +302,8 @@ export async function saveItem(f: FormData) {
   const values = {
     title: str(f, "title") ?? "Senza titolo",
     platform: oneOf(s.PLATFORMS, str(f, "platform")) ?? "instagram",
-    crossPost: f.getAll("crossPost").map(String),
+    // Solo piattaforme conosciute: il modulo arriva dal browser
+    crossPost: [...new Set(f.getAll("crossPost").map(String))].filter((p): p is (typeof s.PLATFORMS)[number] => (s.PLATFORMS as readonly string[]).includes(p)),
     format: oneOf(s.FORMATS, str(f, "format")) ?? "post",
     stage: oneOf(s.FUNNEL, str(f, "stage")),
     seriesId: int(f, "seriesId"),
