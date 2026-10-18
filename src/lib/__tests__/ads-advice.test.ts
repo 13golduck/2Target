@@ -69,6 +69,16 @@ describe("consigli sulle sponsorizzate", () => {
     expect(levels).toEqual(["attenzione", "opportunita"]);
   });
 
+  it("ritorno: campagna attiva molto redditizia e campagna chiusa che non si è ripagata", () => {
+    const top = camp({ id: 5, roi: { spend: 100, leads: 4, customers: 2, revenue: 900, open: 1, roas: 9 } });
+    expect(keys([top])).toContain("rende-5");
+    const lost = camp({ id: 6, status: "terminata", startAt: day(-60), endAt: day(-40), roi: { spend: 200, leads: 5, customers: 1, revenue: 120, open: 0, roas: 0.6 } });
+    expect(keys([lost])).toContain("perdita-6");
+    // Finita da poco, o con lead ancora aperti: troppo presto per giudicare
+    expect(keys([{ ...lost, endAt: day(-10) }])).not.toContain("perdita-6");
+    expect(keys([{ ...lost, roi: { ...lost.roi!, open: 2 } }])).not.toContain("perdita-6");
+  });
+
   it("risultato principale per obiettivo", () => {
     expect(mainResult("traffico", { clic_link: 7 }).value).toBe(7);
     expect(mainResult("notorieta", { copertura: 900 }).value).toBe(900);

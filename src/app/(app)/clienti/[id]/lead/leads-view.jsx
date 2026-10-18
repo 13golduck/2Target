@@ -72,7 +72,7 @@ const eur = (v, d = 0) => (v == null ? '—' : v.toLocaleString('it-IT', { style
 const pct = (v) => (v == null ? '—' : `${(v * 100).toLocaleString('it-IT', { maximumFractionDigits: 1 })}%`);
 const num = (v, d = 0) => (v == null ? '—' : v.toLocaleString('it-IT', { maximumFractionDigits: d }));
 
-export function LeadsView({ clientId, period, periods, stats, bySource, trend, leads, costs, intake, readOnly = false }) {
+export function LeadsView({ clientId, period, periods, stats, bySource, byCampaign, trend, leads, costs, intake, readOnly = false }) {
   const router = useRouter();
   const [editing, setEditing] = useState(null); // null | {} (nuovo) | lead
   const [costOpen, setCostOpen] = useState(false);
@@ -130,6 +130,7 @@ export function LeadsView({ clientId, period, periods, stats, bySource, trend, l
       </Grid>
 
       <SourceTable rows={bySource} />
+      {byCampaign?.length > 0 && <CampaignTable rows={byCampaign} />}
 
       <Pipeline leads={leads} onOpen={setEditing} readOnly={readOnly} />
 
@@ -219,6 +220,59 @@ function TrendCard({ trend }) {
         }}
         sx={{ height: 300, px: 1, pb: 1 }}
       />
+    </Card>
+  );
+}
+
+// Ritorno delle sponsorizzate: lead attribuiti (moduli Meta o link con utm_campaign=2t-<id>) fino ai clienti acquisiti
+function CampaignTable({ rows }) {
+  return (
+    <Card>
+      <CardHeader title="Per campagna" subheader="Quanto ha reso ogni sponsorizzata, dai contatti ai clienti acquisiti (tutta la durata)" />
+      <Scrollbar>
+        <TableContainer sx={{ minWidth: 900 }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Campagna</TableCell>
+                <TableCell align="right">Spesa</TableCell>
+                <TableCell align="right">Contatti</TableCell>
+                <TableCell align="right">Costo per contatto</TableCell>
+                <TableCell align="right">Clienti</TableCell>
+                <TableCell align="right">Costo acquisizione</TableCell>
+                <TableCell align="right">Ricavi</TableCell>
+                <TableCell align="right">Aperti</TableCell>
+                <TableCell align="right">ROAS</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={r.id} hover>
+                  <TableCell>
+                    <Typography variant="subtitle2">{r.name}</Typography>
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      {fmtDate(r.startAt, { day: 'numeric', month: 'short' })} → {fmtDate(r.endAt, { day: 'numeric', month: 'short' })}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">{eur(r.spend)}</TableCell>
+                  <TableCell align="right">{r.leads}</TableCell>
+                  <TableCell align="right">{eur(r.cpl, 2)}</TableCell>
+                  <TableCell align="right">{r.customers}</TableCell>
+                  <TableCell align="right">{eur(r.cac)}</TableCell>
+                  <TableCell align="right">{eur(r.revenue)}</TableCell>
+                  <TableCell align="right">{r.open ? `${r.open}${r.pipeline ? ` · ${eur(r.pipeline)}` : ''}` : '—'}</TableCell>
+                  <TableCell align="right" sx={{ color: r.roas == null ? 'text.secondary' : r.roas >= 1 ? 'success.main' : 'error.main', fontWeight: 600 }}>
+                    {r.roas == null ? '—' : `×${r.roas.toLocaleString('it-IT')}`}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Scrollbar>
+      <Typography variant="caption" component="p" sx={{ color: 'text.secondary', p: 2 }}>
+        ROAS = ricavi dei clienti acquisiti / spesa della campagna: sopra ×1 la campagna si è ripagata. Inserisci il valore quando segni un lead come «vinto».
+      </Typography>
     </Card>
   );
 }

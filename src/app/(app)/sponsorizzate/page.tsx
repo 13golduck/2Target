@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/db";
 import { adCampaigns, adSpendDaily, clients, leads } from "@/db/schema";
-import { clientAdsExposure } from "@/lib/ads/ads";
+import { clientAdsExposure, toEur } from "@/lib/ads/ads";
+import { campaignRoi } from "@/lib/ads/roi";
 import { buildAdvice } from "@/lib/ads/advice";
 import { requireUser, userCanPublish } from "@/lib/auth";
 import { isDryRun } from "@/lib/publishing/meta-publish";
@@ -53,6 +54,18 @@ export default async function AdsPage({ searchParams }: { searchParams: Promise<
 
   const monthEur = (id: number) => Number(spend.find((s) => s.campaignId === id)?.eur ?? 0);
 
+  // ROI: lead attribuiti a ogni campagna (moduli Meta e utm_campaign=2t-<id> dal sito), spesa totale in euro
+  const active = await db.select().from(adCampaigns).where(eq(adCampaigns.status, "attiva"));
+  const roiIds = [...new Set([...list.map(({ c }) => c.id), ...active.map((c) => c.id)])];
+  const campaignLeads = roiIds.length
+    ? await db
+        .select({ adCampaignId: leads.adCampaignId, stage: leads.stage, wonValue: leads.wonValue, estimatedValue: leads.estimatedValue })
+        .from(leads)
+        .where(inArray(leads.adCampaignId, roiIds))
+    : [];
+  const roiOf = async (c: typeof adCampaigns.$inferSelect) =>
+    campaignRoi(await toEur(c.spend, c.currency), campaignLeads.filter((l) => l.adCampaignId === c.id));
+
   // Rifatturazione: solo le campagne pagate da Golduck, per cliente, con il ricarico del cliente
   const rebill = new Map<number, { clientId: number; clientName: string; markup: number; spend: number; campaigns: number }>();
   for (const { c, clientName, markup } of list) {
@@ -78,7 +91,12 @@ export default async function AdsPage({ searchParams }: { searchParams: Promise<
     .where(and(eq(leads.source, "meta_ads"), gte(leads.receivedAt, new Date(`${from}T00:00:00Z`)), lt(leads.receivedAt, new Date(`${to}T00:00:00Z`))));
   const leadSpend = real.filter((c) => c.kind === "contatti").reduce((t, c) => t + monthEur(c.id), 0);
   const monthSpend = spend.reduce((t, s) => t + Number(s.eur), 0);
+  const rois = await Promise.all(real.map((c) => roiOf(c)));
+  const roiSpend = rois.reduce((t, r) => t + r.spend, 0);
+  const roiRevenue = rois.reduce((t, r) => t + r.revenue, 0);
   const kpi = {
+    revenue: Math.round(roiRevenue * 100) / 100,
+    roas: roiSpend > 0 && roiRevenue > 0 ? Math.round((roiRevenue / roiSpend) * 100) / 100 : null,
     spend: Math.round(monthSpend * 100) / 100,
     active: list.filter(({ c }) => c.status === "attiva").length,
     leads: Number(metaLeads),
@@ -88,7 +106,14 @@ export default async function AdsPage({ searchParams }: { searchParams: Promise<
   };
 
   // Consigli: sulle campagne attive (di qualsiasi mese) e sui clienti che fanno sponsorizzate
-  const active = await db.select().from(adCampaigns).where(eq(adCampaigns.status, "attiva"));
+  // Consigli anche sulle campagne finite da almeno 30 giorni (il tempo di chiudere le vendite): si sono ripagate?
+  const ended = await db
+    .select()
+    .from(adCampaigns)
+    .where(and(eq(adCampaigns.status, "terminata"), eq(adCampaigns.simulated, false), gte(adCampaigns.endAt, new Date(now.getTime() - 90 * DAY)), lt(adCampaigns.endAt, new Date(now.getTime() - 30 * DAY))));
+  const endedLeads = ended.length
+    ? await db.select({ adCampaignId: leads.adCampaignId, stage: leads.stage, wonValue: leads.wonValue, estimatedValue: leads.estimatedValue }).from(leads).where(inArray(leads.adCampaignId, ended.map((c) => c.id)))
+    : [];
   const adClients = await db
     .select({ id: clients.id, name: clients.name, monthlyCap: clients.adsMonthlyCap })
     .from(clients)
@@ -108,9 +133,20 @@ export default async function AdsPage({ searchParams }: { searchParams: Promise<
       leadsWaiting: Number(waiting.find((w) => w.clientId === c.id)?.n ?? 0),
     })),
   );
-  const names = new Map(adClients.map((c) => [c.id, c.name]));
+  const forAdvice = await Promise.all(
+    [...active, ...ended].map(async (c) => ({
+      ...c,
+      name: c.name ?? `Sponsorizzata ${c.id}`,
+      roi: campaignRoi(await toEur(c.spend, c.currency), [...campaignLeads, ...endedLeads].filter((l) => l.adCampaignId === c.id)),
+    })),
+  );
+  // Nomi di tutti i clienti citati nei consigli (anche chi oggi non ha più l'account pubblicitario impostato)
+  const adviceClientIds = [...new Set([...adClients.map((c) => c.id), ...forAdvice.map((c) => c.clientId)])];
+  const names = new Map(
+    adviceClientIds.length ? (await db.select({ id: clients.id, name: clients.name }).from(clients).where(inArray(clients.id, adviceClientIds))).map((c) => [c.id, c.name]) : [],
+  );
   const advice = buildAdvice(
-    active.map((c) => ({ ...c, name: c.name ?? `Sponsorizzata ${c.id}` })),
+    forAdvice,
     adviceClients,
     now,
   ).map((a) => ({ ...a, clientName: names.get(a.clientId) ?? "" }));
@@ -125,8 +161,9 @@ export default async function AdsPage({ searchParams }: { searchParams: Promise<
       daily={daily.map((d) => ({ day: d.day, eur: Math.round(Number(d.eur) * 100) / 100 }))}
       adClients={adClients.map((c) => ({ id: c.id, name: c.name }))}
       rebill={[...rebill.values()].map((r) => ({ ...r, spend: Math.round(r.spend * 100) / 100, invoice: Math.round(r.spend * r.markup * 100) / 100 })).sort((a, b) => a.clientName.localeCompare(b.clientName))}
-      campaigns={list.map(({ c, clientName }) => ({
+      campaigns={await Promise.all(list.map(async ({ c, clientName }) => ({
         ...c,
+        roi: c.simulated ? null : await roiOf(c),
         clientName,
         monthSpend: monthEur(c.id),
         startAt: c.startAt.toISOString(),
@@ -134,7 +171,7 @@ export default async function AdsPage({ searchParams }: { searchParams: Promise<
         lastSyncAt: c.lastSyncAt?.toISOString() ?? null,
         createdAt: undefined,
         updatedAt: undefined,
-      }))}
+      })))}
     />
   );
 }

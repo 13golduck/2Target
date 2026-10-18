@@ -1,9 +1,11 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { requireClientAccess } from "@/lib/auth";
 import { canWrite } from "@/lib/roles";
-import { clients, leadEvents, leads, marketingCosts } from "@/db/schema";
+import { adCampaigns, clients, leadEvents, leads, marketingCosts } from "@/db/schema";
+import { toEur } from "@/lib/ads/ads";
+import { campaignRoi } from "@/lib/ads/roi";
 import { funnelBySource, funnelStats } from "@/lib/leads";
 import { appUrl } from "@/lib/integrations/config";
 import { nowDate } from "@/lib/format";
@@ -56,6 +58,22 @@ export default async function LeadsPage({ params, searchParams }: { params: Prom
     return { month: f.toISOString().slice(0, 7), leads: s.leads, customers: s.customers, cost: s.cost, cpl: s.cpl, cac: s.cac, revenue: s.revenue };
   });
 
+  // Per campagna: le sponsorizzate del cliente con i lead attribuiti (tutta la durata, non solo il periodo)
+  const ads = await db.select().from(adCampaigns).where(and(eq(adCampaigns.clientId, clientId), eq(adCampaigns.simulated, false))).orderBy(desc(adCampaigns.startAt));
+  const byCampaign = (
+    await Promise.all(
+      ads.map(async (c) => ({
+        id: c.id,
+        name: c.name ?? `Sponsorizzata ${c.id}`,
+        objective: c.objective,
+        status: c.status,
+        startAt: c.startAt.toISOString(),
+        endAt: c.endAt.toISOString(),
+        ...campaignRoi(await toEur(c.spend, c.currency), rows.filter((l) => l.adCampaignId === c.id)),
+      })),
+    )
+  ).filter((c) => c.spend > 0 || c.leads > 0);
+
   // In pipeline: tutti i lead aperti + quelli chiusi nel periodo
   const inPeriod = (d: Date | null) => !!d && d >= from && d <= to;
   const pipeline = rows.filter((l) => !["vinto", "perso"].includes(l.stage) || inPeriod(l.receivedAt) || inPeriod(l.wonAt) || inPeriod(l.stageChangedAt));
@@ -68,6 +86,7 @@ export default async function LeadsPage({ params, searchParams }: { params: Prom
       periods={PERIODS}
       stats={funnelStats(L, events, C, from, to)}
       bySource={funnelBySource(L, events, C, from, to)}
+      byCampaign={byCampaign}
       trend={trend}
       leads={pipeline.map((l) => ({
         id: l.id,

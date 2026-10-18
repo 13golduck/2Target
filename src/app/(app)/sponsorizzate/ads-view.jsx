@@ -310,11 +310,13 @@ function Kpis({ kpi }) {
     { label: "Costo per contatto", value: kpi.costPerLead == null ? "—" : eur(kpi.costPerLead), icon: "solar:tag-price-bold", color: "secondary" },
     { label: "CTR medio", value: kpi.ctr == null ? "—" : `${kpi.ctr.toLocaleString("it-IT")}%`, icon: "solar:cursor-bold", color: "primary" },
     { label: "Costo per clic", value: kpi.cpc == null ? "—" : eur(kpi.cpc), icon: "solar:hand-money-bold", color: "error" },
+    { label: "Ricavi dalle campagne", value: eur(kpi.revenue), icon: "solar:graph-up-bold", color: "success" },
+    { label: "ROAS (ricavi / spesa)", value: kpi.roas == null ? "—" : `×${kpi.roas.toLocaleString("it-IT")}`, icon: "solar:chart-2-bold", color: "warning" },
   ];
   return (
     <Grid container spacing={2}>
       {items.map((k) => (
-        <Grid key={k.label} size={{ xs: 6, md: 4, lg: 2 }}>
+        <Grid key={k.label} size={{ xs: 6, md: 3 }}>
           <Card sx={{ p: 2, display: "flex", alignItems: "center", gap: 1.5 }}>
             <Box sx={{ width: 40, height: 40, borderRadius: 1.5, display: "grid", placeItems: "center", bgcolor: `${k.color}.lighter`, color: `${k.color}.dark`, flexShrink: 0 }}>
               <Iconify icon={k.icon} />

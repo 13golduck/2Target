@@ -218,8 +218,29 @@ export function CampaignRow({ c, canPublish, busy, onAction, showClient }) {
         {c.results?.frequenza > 0 && ` · frequenza ${c.results.frequenza.toLocaleString('it-IT')}`}
         {c.lastSyncAt && ` · aggiornato ${fmtDateTime(c.lastSyncAt)}`}
       </Typography>
+      {c.roi && (c.roi.leads > 0 || c.roi.customers > 0) && <RoiLine roi={c.roi} currency="EUR" />}
       {c.error && <Alert severity="error" sx={{ mt: 1 }}>{c.error}</Alert>}
     </Box>
+  );
+}
+
+// Ritorno della campagna dai lead attribuiti: contatti, clienti, ricavi e ROAS
+function RoiLine({ roi, currency }) {
+  const color = roi.roas == null ? 'text.secondary' : roi.roas >= 1 ? 'success.main' : 'warning.main';
+  const parts = [
+    `${roi.leads} ${roi.leads === 1 ? 'contatto' : 'contatti'}${roi.cpl != null ? ` (${money(roi.cpl, currency)} l'uno)` : ''}`,
+    `${roi.customers} ${roi.customers === 1 ? 'cliente' : 'clienti'}`,
+    roi.revenue > 0 && `ricavi ${money(roi.revenue, currency)}`,
+    roi.open > 0 && `${roi.open} ancora aperti${roi.pipeline > 0 ? ` (${money(roi.pipeline, currency)} stimati)` : ''}`,
+  ].filter(Boolean);
+  return (
+    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mt: 0.5, flexWrap: 'wrap' }}>
+      <Iconify icon="solar:graph-up-bold" width={16} sx={{ color }} />
+      <Typography variant="caption" sx={{ color: 'text.secondary' }}>{parts.join(' · ')}</Typography>
+      {roi.roas != null && roi.revenue > 0 && (
+        <Label variant="soft" color={roi.roas >= 1 ? 'success' : 'warning'}>ROAS ×{roi.roas.toLocaleString('it-IT')}</Label>
+      )}
+    </Stack>
   );
 }
 

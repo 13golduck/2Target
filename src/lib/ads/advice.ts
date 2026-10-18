@@ -16,6 +16,8 @@ export type AdviceCampaign = {
   endAt: Date;
   simulated: boolean;
   results: Record<string, number> | null;
+  /** ROI dai lead attribuiti (facoltativo: senza, le regole sul ritorno non si applicano). */
+  roi?: { spend: number; leads: number; customers: number; revenue: number; open: number; roas: number | null };
 };
 
 export type AdviceClient = { id: number; name: string; monthlyCap: number | null; spentMonth: number; committed: number; leadsWaiting: number };
@@ -37,6 +39,11 @@ export const CAP_WARNING_SHARE = 0.8;
 export const COST_GAP = 2;
 /** In scadenza entro 2 giorni. */
 export const ENDING_DAYS = 2;
+/** Ricavi almeno 3 volte la spesa: conviene spingere di più. */
+export const HIGH_ROAS = 3;
+/** Le vendite si giudicano 30 giorni dopo la fine, con almeno 30 € spesi e nessun lead ancora aperto. */
+export const ROI_SETTLE_DAYS = 30;
+export const ROI_MIN_SPEND = 30;
 
 const DAY = 86_400_000;
 const eur = (n: number) => n.toLocaleString("it-IT", { style: "currency", currency: "EUR" });
@@ -162,6 +169,34 @@ export function buildAdvice(campaigns: AdviceCampaign[], clients: AdviceClient[]
         campaignId: best.id,
         title: `Sposta budget su «${best.name}»`,
         detail: `«${best.name}» costa ${eur(costPerResult(best)!)} per ${m.label}, «${worst.name}» ${eur(costPerResult(worst)!)}. Metti in pausa la seconda o riduci il suo budget.`,
+      });
+    }
+  }
+
+  // Ritorno economico dai lead vinti
+  for (const c of real) {
+    const roi = c.roi;
+    if (!roi || roi.roas == null) continue;
+    const m = (v: number) => v.toLocaleString("it-IT", { maximumFractionDigits: 1 });
+    if (c.status === "attiva" && roi.customers >= 1 && roi.roas >= HIGH_ROAS) {
+      out.push({
+        key: `rende-${c.id}`,
+        level: "opportunita",
+        clientId: c.clientId,
+        campaignId: c.id,
+        title: `«${c.name}» rende ${m(roi.roas)} volte la spesa`,
+        detail: `${roi.customers} ${roi.customers === 1 ? "cliente acquisito" : "clienti acquisiti"} per ${eur(roi.revenue)} di ricavi contro ${eur(roi.spend)} spesi. Valuta di aumentare il budget o di prolungarla.`,
+      });
+    }
+    const settled = c.status === "terminata" && now.getTime() - c.endAt.getTime() >= ROI_SETTLE_DAYS * DAY;
+    if (settled && roi.spend >= ROI_MIN_SPEND && roi.leads >= 1 && roi.open === 0 && roi.roas < 1) {
+      out.push({
+        key: `perdita-${c.id}`,
+        level: "attenzione",
+        clientId: c.clientId,
+        campaignId: c.id,
+        title: `«${c.name}» non si è ripagata`,
+        detail: `Spesi ${eur(roi.spend)}, ricavi ${eur(roi.revenue)} dai ${roi.leads} contatti (tutti chiusi). Prima di rilanciarla cambia pubblico, offerta o modulo.`,
       });
     }
   }
