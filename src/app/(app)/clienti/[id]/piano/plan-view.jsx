@@ -49,6 +49,7 @@ import { createItem, createPlan, rescheduleItem } from '../../../actions';
 
 import { PlanAiDialog } from './plan-ai-dialog';
 import { ApprovalButton } from './approval-dialog';
+import { SchedulePlanButton } from './schedule-plan-dialog';
 import { PlanImportDialog } from './plan-import-dialog';
 
 // ----------------------------------------------------------------------
@@ -102,6 +103,7 @@ export function PlanView({ clientId, plans, plan, items, issues, formats, platfo
           platforms={platforms}
         />
         {plan && approval && <ApprovalButton clientId={clientId} planId={plan.id} {...approval} />}
+        {plan && <SchedulePlanButton planId={plan.id} />}
         {plan && (
           <Button
             component="a"

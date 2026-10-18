@@ -1,16 +1,16 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, notInArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
-import { editorialItems, mediaAssets, publications, socialAccounts, users } from "@/db/schema";
-import { requireWriter } from "@/lib/auth";
+import { editorialItems, editorialPlans, mediaAssets, publications, socialAccounts, users } from "@/db/schema";
+import { requireClientAccess, requireWriter } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { removeMediaFile } from "@/lib/media";
 import { checkPublishable, isDryRun } from "@/lib/publishing/meta-publish";
 import { processPublication } from "@/lib/publishing/scheduler";
-import { connectionsOf, publishToken, routeOf } from "@/lib/publishing/targets";
+import { connectionsOf, PUBLISHABLE, publishToken, routeOf } from "@/lib/publishing/targets";
 import { creatorInfo } from "@/lib/publishing/tiktok-publish";
 import { checkTikTokOptions, parseTikTokOptions, tiktokKind } from "@/lib/publishing/tiktok-rules";
 import { snapshotOf, syncPendingPublications } from "@/lib/publishing/sync";
@@ -70,6 +70,14 @@ export async function tiktokCreator(channelId: number) {
 export async function schedulePublication(itemId: number, channelIds: number[], when: "ora" | "programmata", tiktokOptions?: unknown) {
   const { me, error } = await publisher();
   if (error) return { error };
+  return scheduleItem(me, itemId, channelIds, when, tiktokOptions);
+}
+
+/**
+ * Cuore della programmazione, condiviso dalla scheda singola e dalla programmazione del piano intero:
+ * stessi controlli (scheda approvata, profili del cliente e collegati, media adatti, niente doppioni).
+ */
+async function scheduleItem(me: { id: number }, itemId: number, channelIds: number[], when: "ora" | "programmata", tiktokOptions?: unknown): Promise<{ ok: true; dryRun: boolean } | { error: string }> {
   const item = await itemOf(itemId);
   if (!item) return { error: "Scheda non trovata" };
   if (item.status !== "approvato" && item.status !== "pubblicato") return { error: "Si programma solo una scheda «Approvata»: cambia lo stato e salva la scheda." };
@@ -99,7 +107,7 @@ export async function schedulePublication(itemId: number, channelIds: number[], 
   const options = parseTikTokOptions(tiktokOptions);
   for (const c of channels.filter((x) => x.platform === "tiktok")) {
     const info = await tiktokCreator(c.id);
-    if ("error" in info) return { error: info.error };
+    if ("error" in info) return { error: info.error ?? "TikTok: account non leggibile" };
     const bad = checkTikTokOptions(options, info.creator, tiktokKind(item.format, media)!);
     if (bad) return { error: `${channelLabel(c)}: ${bad}` };
   }
@@ -148,6 +156,121 @@ export async function schedulePublication(itemId: number, channelIds: number[], 
   revalidatePath(path(itemId));
   revalidatePath(`/clienti/${item.clientId}/piano`);
   return { ok: true, dryRun: isDryRun() };
+}
+
+// ── Programmazione del piano intero ───────────────────────────────────
+
+export type PlanScheduleRow = {
+  itemId: number;
+  title: string;
+  scheduledAt: string | null;
+  /** Profili su cui la scheda si può programmare adesso. */
+  ready: { channelId: number; label: string }[];
+  /** Già programmata o pubblicata su questi profili. */
+  done: string[];
+  /** Cosa impedisce la programmazione (scheda o singolo profilo). */
+  problems: string[];
+};
+
+/**
+ * Per ogni scheda del piano: dove si può programmare subito, dove è già programmata e cosa manca.
+ * TikTok resta fuori: le sue regole chiedono di confermare le impostazioni post per post, dalla scheda.
+ */
+async function planOverview(planId: number): Promise<{ clientId: number; rows: PlanScheduleRow[] } | { error: string }> {
+  const [plan] = await db.select({ clientId: editorialPlans.clientId }).from(editorialPlans).where(eq(editorialPlans.id, planId));
+  if (!plan) return { error: "Piano non trovato" };
+  await requireClientAccess(plan.clientId);
+  const items = await db
+    .select()
+    .from(editorialItems)
+    .where(and(eq(editorialItems.planId, planId), notInArray(editorialItems.status, ["annullato", "pubblicato"])))
+    .orderBy(asc(editorialItems.scheduledAt));
+  const channels = await db.select().from(socialAccounts).where(eq(socialAccounts.clientId, plan.clientId));
+  const conns = await connectionsOf(channels);
+  const active = items.length
+    ? await db
+        .select({ itemId: publications.itemId, socialAccountId: publications.socialAccountId })
+        .from(publications)
+        .where(and(inArray(publications.itemId, items.map((i) => i.id)), inArray(publications.status, ["programmata", "in_corso", "pubblicata"])))
+    : [];
+  const media = items.length ? await db.select().from(mediaAssets).where(inArray(mediaAssets.itemId, items.map((i) => i.id))).orderBy(mediaAssets.position) : [];
+  const soon = Date.now() + 60_000;
+
+  const rows: PlanScheduleRow[] = items.map((item) => {
+    const row: PlanScheduleRow = { itemId: item.id, title: item.title, scheduledAt: item.scheduledAt?.toISOString() ?? null, ready: [], done: [], problems: [] };
+    if (item.status !== "approvato") row.problems.push(item.status === "da_approvare" ? "aspetta l'approvazione del cliente" : "è ancora in bozza");
+    if (!item.scheduledAt) row.problems.push("non ha data e ora");
+    else if (item.scheduledAt.getTime() < soon) row.problems.push("la data è già passata");
+    if (row.problems.length) return row;
+
+    const targets = [...new Set([item.platform, ...(item.crossPost ?? [])])];
+    const itemMedia = media.filter((m) => m.itemId === item.id);
+    const caption = [item.caption?.trim(), item.hashtags?.trim()].filter(Boolean).join("\n\n");
+    for (const platform of targets) {
+      const label = PLATFORM_LABEL[platform] ?? platform;
+      if (!(PUBLISHABLE as readonly string[]).includes(platform)) {
+        row.problems.push(`${label}: non si pubblica da 2Target`);
+        continue;
+      }
+      if (platform === "tiktok") {
+        row.problems.push("TikTok: si programma dalla scheda (TikTok chiede di confermare le impostazioni di ogni video)");
+        continue;
+      }
+      const usable = channels.filter((c) => c.platform === platform && "route" in routeOf(c, conns.find((x) => x.id === c.connectionId)));
+      if (!usable.length) {
+        row.problems.push(`${label}: nessun profilo collegato per pubblicare`);
+        continue;
+      }
+      if (usable.length > 1) {
+        row.problems.push(`${label}: più profili collegati, scegli quale dalla scheda`);
+        continue;
+      }
+      const ch = usable[0];
+      if (active.some((a) => a.itemId === item.id && a.socialAccountId === ch.id)) {
+        row.done.push(channelLabel(ch));
+        continue;
+      }
+      const problem = checkPublishable(platform, item.format, itemMedia, caption);
+      if (problem) row.problems.push(`${label}: ${problem}`);
+      else row.ready.push({ channelId: ch.id, label: channelLabel(ch) });
+    }
+    return row;
+  });
+  return { clientId: plan.clientId, rows };
+}
+
+export async function planScheduleOverview(planId: number) {
+  const { error } = await publisher();
+  if (error) return { error };
+  return planOverview(planId);
+}
+
+/**
+ * Programma in un colpo le schede scelte del piano, sui profili pronti calcolati qui (non dal browser).
+ * Ogni scheda passa dagli stessi controlli della programmazione singola; un errore non ferma le altre.
+ */
+export async function schedulePlan(planId: number, itemIds: number[]) {
+  const { me, error } = await publisher();
+  if (error) return { error };
+  const overview = await planOverview(planId);
+  if ("error" in overview) return { error: overview.error };
+  const wanted = new Set(itemIds);
+  const results: { itemId: number; title: string; ok: boolean; message: string }[] = [];
+  for (const row of overview.rows.filter((r) => wanted.has(r.itemId) && r.ready.length)) {
+    const r = await scheduleItem(me, row.itemId, row.ready.map((x) => x.channelId), "programmata");
+    results.push({ itemId: row.itemId, title: row.title, ok: "ok" in r, message: "error" in r ? r.error : row.ready.map((x) => x.label).join(", ") });
+  }
+  const scheduled = results.filter((r) => r.ok).length;
+  await audit({
+    userId: me.id,
+    category: "contenuti",
+    action: "piano.programmato",
+    description: `Programmate ${scheduled} schede del piano in un colpo${results.length > scheduled ? ` (${results.length - scheduled} non riuscite)` : ""}${isDryRun() ? " (simulazione)" : ""}`,
+    clientId: overview.clientId,
+  });
+  revalidatePath(`/clienti/${overview.clientId}/piano`);
+  revalidatePath("/calendario");
+  return { ok: true, scheduled, results, dryRun: isDryRun() };
 }
 
 /** Annulla una pubblicazione non ancora uscita. */
