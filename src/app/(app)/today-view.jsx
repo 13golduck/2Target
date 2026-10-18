@@ -1,5 +1,6 @@
 'use client';
 
+import { platformName } from 'src/lib/platforms';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Grid from '@mui/material/Grid';
@@ -19,7 +20,6 @@ import { Iconify } from 'src/components/iconify';
 // ----------------------------------------------------------------------
 // «Oggi»: le cose da fare su tutti i clienti. Ogni riga porta dritta dove si risolve.
 
-const PLATFORM_NAME = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', linkedin: 'LinkedIn' };
 const FORMAT_COLOR = { reel: '#B8860B', post: '#2E7D32', carosello: '#0288D1', storia: '#7B1FA2', video: '#C62828' };
 
 const dayLabel = (iso) => {
@@ -83,7 +83,7 @@ export function TodayView({ board, userName }) {
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, lg: 7 }}>
-          <Panel title="In uscita nei prossimi 7 giorni" icon="solar:calendar-date-bold" empty="Niente in programma questa settimana." action={{ label: 'Calendario', href: '/calendario' }}>
+          <Panel title="In uscita nei prossimi 7 giorni" icon="solar:calendar-date-bold" empty="Niente in programma questa settimana." action={board.calendario === false ? undefined : { label: 'Calendario', href: '/calendario' }}>
             {board.inUscita.map((i) => (
               <ItemRow
                 key={i.id}
@@ -152,7 +152,7 @@ export function TodayView({ board, userName }) {
                     key={`u${u.id}`}
                     href={`/pubblicazioni/${u.itemId}`}
                     primary={u.title}
-                    secondary={`${u.clientName} · ${PLATFORM_NAME[u.platform] ?? u.platform} @${u.handle} · ${dayLabel(u.publishedAt)}`}
+                    secondary={`${u.clientName} · ${platformName(u.platform)} @${u.handle} · ${dayLabel(u.publishedAt)}`}
                     right={
                       u.permalink ? (
                         // Non un <a>: la riga è già un link alla scheda (link annidati non sono validi)

@@ -1,4 +1,6 @@
 import "server-only";
+import { cleanFlags, isOn, type FeatureKey } from "@/lib/features";
+import { globalFeatures } from "@/lib/features-data";
 import { and, asc, desc, eq, gte, inArray, isNull, lte, ne, notInArray } from "drizzle-orm";
 
 import { db } from "@/db";
@@ -134,5 +136,20 @@ export async function todayBoard(clientIds: number[] | null) {
       .limit(15)
   ).map((l) => ({ ...l, clientName: names.get(l.clientId) ?? "", receivedAt: l.receivedAt.toISOString() }));
 
-  return { inUscita, daApprovare, fallite, materiali, kpi, collegamenti, checkup, salute, usciti, leadNuovi };
+  // Funzioni spente (in generale o per il cliente): le loro righe non compaiono in «Oggi»
+  const [global, flags] = await Promise.all([globalFeatures(), db.select({ id: clients.id, features: clients.features }).from(clients).where(inArray(clients.id, visible))]);
+  const on = (key: FeatureKey, clientId: number) => isOn(key, global, cleanFlags(flags.find((f) => f.id === clientId)?.features));
+  return {
+    inUscita,
+    daApprovare,
+    fallite,
+    materiali,
+    kpi,
+    collegamenti,
+    checkup: checkup.filter((c) => on("checkup", c.clientId)),
+    salute,
+    usciti,
+    leadNuovi: leadNuovi.filter((l) => on("lead", l.clientId)),
+    calendario: isOn("calendario", global),
+  };
 }

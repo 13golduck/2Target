@@ -55,12 +55,13 @@ const GROUPS = [
 // Sezioni visibili al Viewer (cliente): grafici e risultati
 const VIEWER_TABS = ['/kpi', '/lead', '/seo'];
 
-export function ClientHeader({ client, clients, viewer = false, children }) {
+export function ClientHeader({ client, clients, viewer = false, hiddenTabs, children }) {
   const pathname = usePathname();
   const router = useRouter();
   const base = `/clienti/${client.id}`;
   const all = GROUPS.flatMap((g) => g.tabs);
-  const visible = viewer ? all.filter((t) => VIEWER_TABS.includes(t.href)) : all;
+  // Le funzioni spente non compaiono tra le schede
+  const visible = (viewer ? all.filter((t) => VIEWER_TABS.includes(t.href)) : all).filter((t) => !hiddenTabs?.includes(t.href));
   const current =
     visible
       .slice()
