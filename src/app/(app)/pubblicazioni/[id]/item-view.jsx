@@ -221,6 +221,12 @@ export function ItemView({ saved, client, item, issues, series, personas, option
                       helperText="Fino a 3 profili: il post compare anche sul loro profilo se accettano l'invito."
                     />
                     <FormControlLabel
+                      control={<Switch name="evergreen" defaultChecked={item.evergreen} />}
+                      label="Sempre valido"
+                      title="Dopo 3 mesi dall'uscita 2Target lo propone da riproporre nel piano"
+                      sx={{ flexShrink: 0 }}
+                    />
+                    <FormControlLabel
                       control={<Switch name="tagLocation" defaultChecked={item.tagLocation} />}
                       label="Tagga la sede"
                       title="Su Instagram il post riporta il luogo della Pagina Facebook collegata (serve un indirizzo sulla Pagina)"

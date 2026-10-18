@@ -5,6 +5,7 @@ import { checkups as checkupsTable, clients, editorialItems, editorialPlans, FOR
 import { planIssues } from "@/lib/editorial-plan";
 import { nowDate } from "@/lib/format";
 import { toPlan, toPlanItem } from "@/lib/plan-adapter";
+import { recycleSuggestions } from "@/lib/recycle-data";
 import { PlanView } from "./plan-view";
 
 export const metadata = { title: "Piano editoriale" };
@@ -24,7 +25,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   ).map((c) => ({ id: c.id, title: c.title, at: (c.completedAt ?? c.createdAt).toISOString() }));
 
   if (!plan || sp.nuovo) {
-    return <PlanView clientId={clientId} plans={plans.map(({ id, name }) => ({ id, name }))} plan={null} items={[]} issues={[]} formats={[...FORMATS]} platforms={[...PLATFORMS]} checkups={checkups} approval={null} />;
+    return <PlanView clientId={clientId} plans={plans.map(({ id, name }) => ({ id, name }))} plan={null} items={[]} issues={[]} formats={[...FORMATS]} platforms={[...PLATFORMS]} checkups={checkups} approval={null} recycle={[]} />;
   }
 
   const rows = await db.select().from(editorialItems).where(eq(editorialItems.planId, plan.id)).orderBy(asc(editorialItems.scheduledAt));
@@ -71,6 +72,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
       platforms={[...PLATFORMS]}
       checkups={checkups}
       approval={{ enabled: !!client?.approvalEnabled, readyCount, pendingCount: rows.filter((i) => i.status === "da_approvare").length }}
+      recycle={(await recycleSuggestions(clientId)).map((r) => ({ ...r, publishedAt: r.publishedAt.toISOString() }))}
     />
   );
 }

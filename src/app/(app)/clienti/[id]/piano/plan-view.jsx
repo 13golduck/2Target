@@ -49,6 +49,7 @@ import { createItem, createPlan, rescheduleItem } from '../../../actions';
 
 import { PlanAiDialog } from './plan-ai-dialog';
 import { ApprovalButton } from './approval-dialog';
+import { RecyclePanel } from './recycle-panel';
 import { SchedulePlanButton } from './schedule-plan-dialog';
 import { PlanImportDialog } from './plan-import-dialog';
 
@@ -64,7 +65,7 @@ const STATUS = {
   annullato: { label: 'Annullato', color: 'error' },
 };
 
-export function PlanView({ clientId, plans, plan, items, issues, formats, platforms, checkups, approval }) {
+export function PlanView({ clientId, plans, plan, items, issues, formats, platforms, checkups, approval, recycle }) {
   const [tab, setTab] = useState('calendario');
   const [newAt, setNewAt] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -124,6 +125,7 @@ export function PlanView({ clientId, plans, plan, items, issues, formats, platfo
       ) : (
         <>
           <Summary plan={plan} items={items} issues={issues} />
+          {recycle?.length > 0 && <RecyclePanel planId={plan.id} suggestions={recycle} />}
 
           <Card>
             <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ px: 2, alignItems: { sm: 'center' }, borderBottom: 1, borderColor: 'divider' }}>

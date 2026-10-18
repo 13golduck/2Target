@@ -322,6 +322,7 @@ export async function saveItem(f: FormData) {
     firstComment: str(f, "firstComment"),
     collaborators: parseCollaborators(str(f, "collaborators")).valid,
     tagLocation: f.get("tagLocation") === "on",
+    evergreen: f.get("evergreen") === "on",
     referencesUrls: str(f, "referencesUrls"),
     needsClientMaterial: f.get("needsClientMaterial") === "on",
     productionNotes: str(f, "productionNotes"),
