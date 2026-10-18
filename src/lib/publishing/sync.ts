@@ -53,7 +53,9 @@ export async function syncPendingPublications(itemId: number, userId: number) {
       ? "La data è stata spostata nel passato: non pubblicata. Imposta una nuova data o premi «Riprova» per pubblicarla adesso."
       : emptied
         ? "Sono stati tolti tutti i file: non pubblicata per non far uscire un post diverso. Ricarica i file o annullala."
-        : checkPublishable(p.platform, snap.format, snap.media, snap.caption);
+        : // Un video appena caricato è «in lavorazione» per qualche minuto: non è un motivo per bloccare,
+          // all'ora di uscita lo scheduler aspetta che sia pronto
+          checkPublishable(p.platform, snap.format, snap.media.map((m) => (m.processState === "in_lavorazione" ? { ...m, processState: "pronto" } : m)), snap.caption);
     if (problem) {
       await db.update(publications).set({ status: "errore", error: `Bloccata dopo una modifica della scheda: ${problem}` }).where(eq(publications.id, p.id));
       blocked.push(`@${p.handle}: ${problem}`);

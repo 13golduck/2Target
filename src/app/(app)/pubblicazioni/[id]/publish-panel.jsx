@@ -3,6 +3,8 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { AutoRefresh } from 'src/components/auto-refresh';
+
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Grid from '@mui/material/Grid';
@@ -211,6 +213,8 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
 
   return (
     <Card id="pubblica" sx={preselect ? { border: 2, borderColor: 'primary.main' } : undefined}>
+      {/* Video in conversione: la scheda si aggiorna da sola finché non è pronto (al massimo 15 minuti) */}
+      <AutoRefresh active={media.some((m) => m.processState === 'in_lavorazione')} everyMs={5000} maxMs={15 * 60_000} />
       <CardHeader
         avatar={<Iconify icon="custom:send-fill" width={24} sx={{ color: 'primary.main' }} />}
         title="Pubblica sui profili del cliente"
@@ -256,9 +260,25 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
                     </Box>
                     <Label sx={{ position: 'absolute', top: 6, left: 6 }}>{i + 1}</Label>
                     {m.kind === 'video' && <Iconify icon="solar:play-circle-bold" width={28} sx={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%,-50%)', color: 'common.white' }} />}
+                    {m.processState === 'in_lavorazione' && (
+                      <Tooltip title={m.processNote ?? 'Controllo del video in corso'}>
+                        <Label color="info" sx={{ position: 'absolute', top: 6, right: 6 }}>In preparazione</Label>
+                      </Tooltip>
+                    )}
+                    {m.processState === 'errore' && (
+                      <Tooltip title={m.processNote ?? ''}>
+                        <Label color="error" sx={{ position: 'absolute', top: 6, right: 6 }}>Da ricaricare</Label>
+                      </Tooltip>
+                    )}
+                    {m.processState === 'pronto' && m.processNote && (
+                      <Tooltip title={m.processNote}>
+                        <Label color="success" sx={{ position: 'absolute', top: 6, right: 6 }}>Convertito</Label>
+                      </Tooltip>
+                    )}
                     <Stack direction="row" sx={{ px: 0.5, py: 0.25, alignItems: 'center', bgcolor: 'background.paper' }}>
                       <Typography variant="caption" noWrap sx={{ flex: 1, minWidth: 0, color: 'text.secondary' }} title={m.fileName}>
                         {m.width && m.height ? `${m.width}×${m.height}` : m.fileName}
+                        {m.durationSec ? ` · ${Math.round(m.durationSec)} s` : ''}
                       </Typography>
                       {media.length > 1 && (
                         <>
@@ -328,6 +348,13 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
                             {c.problem.replace(/^(è|non)/, (m) => m[0].toUpperCase() + m.slice(1))}
                           </Typography>
                         )}
+                        {c.ready && c.contentProblem && (
+                          <Typography variant="caption" sx={{ display: 'block', color: 'error.main' }}>{c.contentProblem}</Typography>
+                        )}
+                        {c.ready &&
+                          (c.warnings ?? []).map((w) => (
+                            <Typography key={w} variant="caption" sx={{ display: 'block', color: 'warning.dark' }}>{w}</Typography>
+                          ))}
                       </Box>
                       {busy ? (
                         <Label color="info">Già in programma</Label>

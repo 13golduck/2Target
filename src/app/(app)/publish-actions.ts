@@ -8,6 +8,7 @@ import { editorialItems, editorialPlans, mediaAssets, publications, socialAccoun
 import { requireClientAccess, requireWriter } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { removeMediaFile } from "@/lib/media";
+import { publishWarnings } from "@/lib/publishing/media-rules";
 import { checkPublishable, isDryRun } from "@/lib/publishing/meta-publish";
 import { processPublication } from "@/lib/publishing/scheduler";
 import { connectionsOf, PUBLISHABLE, publishToken, routeOf } from "@/lib/publishing/targets";
@@ -170,6 +171,8 @@ export type PlanScheduleRow = {
   done: string[];
   /** Cosa impedisce la programmazione (scheda o singolo profilo). */
   problems: string[];
+  /** Avvisi non bloccanti (es. video non verticale per un reel). */
+  warnings: string[];
 };
 
 /**
@@ -197,7 +200,7 @@ async function planOverview(planId: number): Promise<{ clientId: number; rows: P
   const soon = Date.now() + 60_000;
 
   const rows: PlanScheduleRow[] = items.map((item) => {
-    const row: PlanScheduleRow = { itemId: item.id, title: item.title, scheduledAt: item.scheduledAt?.toISOString() ?? null, ready: [], done: [], problems: [] };
+    const row: PlanScheduleRow = { itemId: item.id, title: item.title, scheduledAt: item.scheduledAt?.toISOString() ?? null, ready: [], done: [], problems: [], warnings: [] };
     if (item.status !== "approvato") row.problems.push(item.status === "da_approvare" ? "aspetta l'approvazione del cliente" : "è ancora in bozza");
     if (!item.scheduledAt) row.problems.push("non ha data e ora");
     else if (item.scheduledAt.getTime() < soon) row.problems.push("la data è già passata");
@@ -232,7 +235,10 @@ async function planOverview(planId: number): Promise<{ clientId: number; rows: P
       }
       const problem = checkPublishable(platform, item.format, itemMedia, caption);
       if (problem) row.problems.push(`${label}: ${problem}`);
-      else row.ready.push({ channelId: ch.id, label: channelLabel(ch) });
+      else {
+        row.ready.push({ channelId: ch.id, label: channelLabel(ch) });
+        for (const w of publishWarnings(platform, item.format, itemMedia)) if (!row.warnings.includes(w)) row.warnings.push(w);
+      }
     }
     return row;
   });

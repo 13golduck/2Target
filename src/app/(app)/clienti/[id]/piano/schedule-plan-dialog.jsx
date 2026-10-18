@@ -122,7 +122,7 @@ function SchedulePlanDialog({ planId, onClose }) {
                           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                             {fmtDateTime(new Date(r.scheduledAt))} · {r.ready.map((x) => x.label).join(', ')}
                           </Typography>
-                          {r.problems.map((p) => (
+                          {[...r.problems, ...r.warnings].map((p) => (
                             <Typography key={p} variant="caption" component="p" sx={{ color: 'warning.dark' }}>{p}</Typography>
                           ))}
                         </Box>

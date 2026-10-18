@@ -66,8 +66,17 @@ export async function processPublication(id: number) {
   await ensureIntegrationKeys();
   // publish_id TikTok di un tentativo precedente: si toglie durante l'invio, così il controllo dello stato
   // nei giri dello scheduler non tocca questa pubblicazione finché non c'è il nuovo esito
-  const [before] = await db.select({ remoteId: publications.remoteId }).from(publications).where(eq(publications.id, id));
+  const [before] = await db.select({ remoteId: publications.remoteId, mediaIds: publications.mediaIds }).from(publications).where(eq(publications.id, id));
   const previousRemoteId = before?.remoteId ?? null;
+  // Video ancora in conversione (FFmpeg): si lascia «programmata» e la riprende il giro successivo (ogni minuto)
+  if (before?.mediaIds.length) {
+    const [busy] = await db
+      .select({ id: mediaAssets.id })
+      .from(mediaAssets)
+      .where(and(inArray(mediaAssets.id, before.mediaIds), eq(mediaAssets.processState, "in_lavorazione")))
+      .limit(1);
+    if (busy) return false;
+  }
   // Presa in carico atomica: anche con due giri contemporanei (timer, cron, più processi) esce una volta sola
   const [claim] = await db
     .update(publications)

@@ -3,6 +3,7 @@ import "server-only";
 import { appUrl, META } from "@/lib/integrations/config";
 import { integrationKey } from "@/lib/integrations/keys";
 import { getJson, qs } from "@/lib/integrations/http";
+import { mediaProblem, type RuleMedia } from "./media-rules";
 import { checkTikTokMedia } from "./tiktok-rules";
 
 // Pubblicazione via Graph API su Pagine Facebook e profili Instagram professionali.
@@ -54,9 +55,12 @@ export function isDryRun() {
 }
 
 /** Controlli prima della programmazione: cosa si può pubblicare dove. Restituisce un messaggio d'errore o null. */
-export function checkPublishable(platform: string, format: string, media: { kind: string; mime: string }[], caption: string) {
+export function checkPublishable(platform: string, format: string, media: RuleMedia[], caption: string) {
   const images = media.filter((m) => m.kind === "image");
   const videos = media.filter((m) => m.kind === "video");
+  // Durata, proporzioni, hashtag e stato della conversione dei video (regole comuni, vedi media-rules)
+  const mediaIssue = mediaProblem(platform, format, media, caption);
+  if (mediaIssue) return mediaIssue;
   // Il formato della scheda vale su tutti i profili: un reel senza video o un carosello senza foto non deve
   // uscire come post di solo testo (Facebook e LinkedIn lo accetterebbero)
   if ((format === "reel" || format === "video") && !videos.length) return `Il ${format} richiede un video: caricalo nella scheda`;

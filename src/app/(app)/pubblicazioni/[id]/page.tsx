@@ -1,7 +1,8 @@
 import { requireWriter } from "@/lib/auth";
 import { inArray } from "drizzle-orm";
 import { previewMediaUrl } from "@/lib/media";
-import { isDryRun } from "@/lib/publishing/meta-publish";
+import { checkPublishable, isDryRun } from "@/lib/publishing/meta-publish";
+import { publishWarnings } from "@/lib/publishing/media-rules";
 import { connectionsOf, PUBLISHABLE, routeOf } from "@/lib/publishing/targets";
 import { canPublishWith } from "@/lib/roles";
 import { notFound } from "next/navigation";
@@ -53,6 +54,7 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
   const exposure = anyPublished || campaigns.length ? await clientAdsExposure(item.clientId) : { spentMonth: 0, committed: 0 };
   const best = await bestTimes(item.clientId);
   const feedback = await db.select().from(s.itemFeedback).where(eq(s.itemFeedback.itemId, id)).orderBy(desc(s.itemFeedback.createdAt)).limit(20);
+  const caption = [item.caption?.trim(), item.hashtags?.trim()].filter(Boolean).join("\n\n");
   const issues = itemIssues(toPlanItem(item)).map((i) => ({ level: i.level, message: i.message.replace(`"${item.title}": `, "") }));
 
   return (
@@ -89,8 +91,23 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
             const r = routeFor(c);
             return "route" in r ? { ready: true, route: r.route, problem: null } : { ready: false, route: null, problem: r.problem };
           })(),
+          // Controlli sul contenuto per questo profilo (gli stessi della programmazione), più gli avvisi non bloccanti
+          contentProblem: checkPublishable(c.platform, item.format, media, caption),
+          warnings: publishWarnings(c.platform, item.format, media),
         })),
-        media: media.map((m) => ({ id: m.id, kind: m.kind, mime: m.mime, fileName: m.fileName, width: m.width, height: m.height, size: m.size, url: previewMediaUrl(m.id) })),
+        media: media.map((m) => ({
+          id: m.id,
+          kind: m.kind,
+          mime: m.mime,
+          fileName: m.fileName,
+          width: m.width,
+          height: m.height,
+          size: m.size,
+          durationSec: m.durationSec,
+          processState: m.processState,
+          processNote: m.processNote,
+          url: previewMediaUrl(m.id),
+        })),
         publications: pubs.map((p) => ({
           id: p.id,
           socialAccountId: p.socialAccountId,
