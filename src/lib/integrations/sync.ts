@@ -12,7 +12,9 @@ import * as google from "./google";
 import * as instagram from "./instagram";
 import * as linkedin from "./linkedin";
 import * as meta from "./meta";
+import * as pinterest from "./pinterest";
 import * as siteHealth from "./site-health";
+import * as threads from "./threads";
 import * as tiktok from "./tiktok";
 import type { DailyValue, PostData } from "./meta";
 import * as youtube from "./youtube";
@@ -20,7 +22,7 @@ import * as youtube from "./youtube";
 type Channel = typeof socialAccounts.$inferSelect;
 type Connection = typeof connections.$inferSelect;
 
-/** Token valido per la connessione (Google e TikTok si rinnovano con il refresh token, Instagram rinnova il suo). */
+/** Token valido per la connessione (Google, TikTok e Pinterest si rinnovano con il refresh token, Instagram e Threads rinnovano il loro). */
 export async function accessToken(conn: Connection) {
   const token = decryptSecret(conn.accessTokenEnc);
   if (!token) throw new ApiError("Token illeggibile: ricollega l'account", 401, true);
@@ -39,6 +41,32 @@ export async function accessToken(conn: Connection) {
       if (e instanceof ApiError && e.expired) throw e;
       return token;
     }
+  }
+  // Threads: come Instagram, token di 60 giorni rinnovato quando ne mancano meno di 10
+  if (conn.provider === "threads" && conn.expiresAt && conn.expiresAt.getTime() < Date.now() + 10 * 86_400_000) {
+    if (conn.expiresAt.getTime() < Date.now()) throw new ApiError("Accesso Threads scaduto: ricollega l'account", 401, true);
+    try {
+      const fresh = await threads.refreshAccessToken(token);
+      await db
+        .update(connections)
+        .set({ accessTokenEnc: encryptSecret(fresh.accessToken), expiresAt: fresh.expiresAt, status: "attivo", lastError: null })
+        .where(eq(connections.id, conn.id));
+      return fresh.accessToken;
+    } catch (e) {
+      if (e instanceof ApiError && e.expired) throw e;
+      return token;
+    }
+  }
+  // Pinterest: token di 30 giorni, rinnovato con il refresh token (valido un anno) poco prima della scadenza
+  if (conn.provider === "pinterest" && conn.expiresAt && conn.expiresAt.getTime() < Date.now() + 86_400_000) {
+    const refresh = decryptSecret(conn.refreshTokenEnc);
+    if (!refresh) throw new ApiError("Accesso Pinterest scaduto: ricollega l'account", 401, true);
+    const fresh = await pinterest.refreshAccessToken(refresh);
+    await db
+      .update(connections)
+      .set({ accessTokenEnc: encryptSecret(fresh.accessToken), ...(fresh.refreshToken && { refreshTokenEnc: encryptSecret(fresh.refreshToken) }), expiresAt: fresh.expiresAt, status: "attivo", lastError: null })
+      .where(eq(connections.id, conn.id));
+    return fresh.accessToken;
   }
   if (conn.provider === "tiktok" && conn.expiresAt && conn.expiresAt.getTime() < Date.now() + 5 * 60_000) {
     const refresh = decryptSecret(conn.refreshTokenEnc);
@@ -182,6 +210,14 @@ export async function syncChannel(channel: Channel) {
         await savePosts(channel.id, r.posts);
       } else if (channel.platform === "linkedin") {
         const r = await linkedin.syncOrganization(id, userToken);
+        await saveDaily(channel.id, r.daily);
+        await savePosts(channel.id, r.posts);
+      } else if (channel.platform === "threads") {
+        const r = await threads.syncThreads(userToken, id);
+        await saveDaily(channel.id, r.daily);
+        await savePosts(channel.id, r.posts);
+      } else if (channel.platform === "pinterest") {
+        const r = await pinterest.syncBoard(userToken, id);
         await saveDaily(channel.id, r.daily);
         await savePosts(channel.id, r.posts);
       } else if (channel.platform === "search_console") {
