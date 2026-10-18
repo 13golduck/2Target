@@ -33,6 +33,16 @@ const dayLabel = (iso) => {
   return `${d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Rome' })} ${time}`;
 };
 
+// Da quanto aspetta un lead: in ore (per il colore) e in parole (per l'etichetta)
+const waitingHours = (iso) => (Date.now() - new Date(iso).getTime()) / 3_600_000;
+const waitingLabel = (iso) => {
+  const h = waitingHours(iso);
+  if (h < 1) return 'da meno di un\u2019ora';
+  if (h < 24) return `da ${Math.floor(h)} ${Math.floor(h) === 1 ? 'ora' : 'ore'}`;
+  const d = Math.floor(h / 24);
+  return `da ${d} ${d === 1 ? 'giorno' : 'giorni'}`;
+};
+
 export function TodayView({ board, userName }) {
   const hour = new Date().getHours();
   const hello = hour < 13 ? 'Buongiorno' : hour < 18 ? 'Buon pomeriggio' : 'Buonasera';
@@ -116,6 +126,20 @@ export function TodayView({ board, userName }) {
                     primary={`${s.clientName} · sito`}
                     secondary={s.problems[0] ?? 'Controllo salute del sito'}
                     right={<Label color={s.severity === 'grave' ? 'error' : 'warning'}>{s.severity === 'grave' ? 'Sito' : 'Sito'}</Label>}
+                  />
+                ))}
+              </Panel>
+            )}
+
+            {(board.leadNuovi ?? []).length > 0 && (
+              <Panel title="Lead da contattare" icon="solar:user-plus-bold" color="warning.main">
+                {board.leadNuovi.map((l) => (
+                  <LinkRow
+                    key={`l${l.id}`}
+                    href={`/clienti/${l.clientId}/lead`}
+                    primary={`${l.clientName} · ${l.name ?? l.email ?? l.phone ?? 'Contatto senza nome'}`}
+                    secondary={[l.phone, l.email].filter(Boolean).join(' · ') || 'Nessun recapito'}
+                    right={<Label color={waitingHours(l.receivedAt) >= 24 ? 'error' : 'warning'}>{waitingLabel(l.receivedAt)}</Label>}
                   />
                 ))}
               </Panel>

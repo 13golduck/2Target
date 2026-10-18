@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, gte, inArray, isNull, lte, ne, notInArray } from "drizzle-orm";
 
 import { db } from "@/db";
-import { checkups, clients, connections, editorialItems, publications, socialAccounts } from "@/db/schema";
+import { checkups, clients, connections, editorialItems, leads, publications, socialAccounts } from "@/db/schema";
 import { itemIssues } from "@/lib/editorial-plan";
 import { siteHealthAlerts } from "@/lib/integrations/site-health";
 import { toPlanItem } from "@/lib/plan-adapter";
@@ -16,7 +16,7 @@ export type TodayItem = { id: number; clientId: number; clientName: string; titl
 
 export async function todayBoard(clientIds: number[] | null) {
   const visible = clientIds ?? (await db.select({ id: clients.id }).from(clients)).map((c) => c.id);
-  const empty = { inUscita: [], daApprovare: [], fallite: [], materiali: [], kpi: [], collegamenti: [], checkup: [], salute: [], usciti: [] };
+  const empty = { inUscita: [], daApprovare: [], fallite: [], materiali: [], kpi: [], collegamenti: [], checkup: [], salute: [], usciti: [], leadNuovi: [] };
   if (!visible.length) return empty;
   const names = new Map((await db.select({ id: clients.id, name: clients.name }).from(clients).where(inArray(clients.id, visible))).map((c) => [c.id, c.name]));
   const now = new Date();
@@ -124,5 +124,15 @@ export async function todayBoard(clientIds: number[] | null) {
       .limit(30)
   ).map((u) => ({ ...u, clientName: names.get(u.clientId) ?? "", publishedAt: u.publishedAt?.toISOString() ?? null }));
 
-  return { inUscita, daApprovare, fallite, materiali, kpi, collegamenti, checkup, salute, usciti };
+  // Lead ancora da contattare, dal più vecchio: chi aspetta da più tempo va richiamato per primo
+  const leadNuovi = (
+    await db
+      .select({ id: leads.id, clientId: leads.clientId, name: leads.name, email: leads.email, phone: leads.phone, source: leads.source, receivedAt: leads.receivedAt })
+      .from(leads)
+      .where(and(inArray(leads.clientId, visible), eq(leads.stage, "nuovo")))
+      .orderBy(asc(leads.receivedAt))
+      .limit(15)
+  ).map((l) => ({ ...l, clientName: names.get(l.clientId) ?? "", receivedAt: l.receivedAt.toISOString() }));
+
+  return { inUscita, daApprovare, fallite, materiali, kpi, collegamenti, checkup, salute, usciti, leadNuovi };
 }
