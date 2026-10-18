@@ -320,7 +320,7 @@ function ChannelCard({ channel: c, canPublish }) {
         action={
           <Stack direction="row" sx={{ alignItems: 'center' }}>
             {canPost && (
-              <Button size="small" variant="contained" startIcon={<Iconify icon="solar:pen-bold" />} onClick={() => setPosting(true)} sx={{ mr: 1 }}>
+              <Button size="small" variant="outlined" startIcon={<Iconify icon="solar:pen-bold" />} onClick={() => setPosting(true)} sx={{ mr: 1 }}>
                 Nuovo post
               </Button>
             )}

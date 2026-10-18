@@ -146,7 +146,7 @@ export function SponsorPanel({ clientId, itemId, hasMedia, canPublish, dryRun, a
               </Typography>
             </Box>
             {canPublish && (
-              <Button variant="contained" size="small" startIcon={<Iconify icon="carbon:rocket" />} disabled={!ads.adAccountId} onClick={() => setOpen(p)}>
+              <Button variant="outlined" size="small" startIcon={<Iconify icon="carbon:rocket" />} disabled={!ads.adAccountId} onClick={() => setOpen(p)}>
                 Sponsorizza
               </Button>
             )}

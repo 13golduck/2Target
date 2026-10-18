@@ -184,7 +184,7 @@ export function BriefPanel({ itemId, brief: initial, aiConfigured, hasBrandKit, 
             placeholder={brief ? 'Cosa cambiare? Es. più minimal, foto al posto dell’illustrazione…' : 'Indicazioni facoltative per il designer'}
             fullWidth
           />
-          <Button variant="contained" onClick={generate} loading={pending} disabled={!aiConfigured} startIcon={<Iconify icon="solar:atom-bold-duotone" />} sx={{ flexShrink: 0 }}>
+          <Button variant="outlined" onClick={generate} loading={pending} disabled={!aiConfigured} startIcon={<Iconify icon="solar:atom-bold-duotone" />} sx={{ flexShrink: 0 }}>
             {brief ? 'Rigenera' : 'Crea il brief'}
           </Button>
         </Stack>
