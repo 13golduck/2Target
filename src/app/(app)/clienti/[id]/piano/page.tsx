@@ -25,7 +25,7 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
   ).map((c) => ({ id: c.id, title: c.title, at: (c.completedAt ?? c.createdAt).toISOString() }));
 
   if (!plan || sp.nuovo) {
-    return <PlanView clientId={clientId} plans={plans.map(({ id, name }) => ({ id, name }))} plan={null} items={[]} issues={[]} formats={[...FORMATS]} platforms={[...PLATFORMS]} checkups={checkups} approval={null} recycle={[]} />;
+    return <PlanView clientId={clientId} plans={plans.map(({ id, name }) => ({ id, name }))} plan={null} items={[]} issues={[]} formats={[...FORMATS]} platforms={[...PLATFORMS]} checkups={checkups} approval={null} recycle={[]} manual={!!sp.nuovo} />;
   }
 
   const rows = await db.select().from(editorialItems).where(eq(editorialItems.planId, plan.id)).orderBy(asc(editorialItems.scheduledAt));
@@ -73,6 +73,6 @@ export default async function PlanPage({ params, searchParams }: { params: Promi
       checkups={checkups}
       approval={{ enabled: !!client?.approvalEnabled, readyCount, pendingCount: rows.filter((i) => i.status === "da_approvare").length }}
       recycle={(await recycleSuggestions(clientId)).map((r) => ({ ...r, publishedAt: r.publishedAt.toISOString() }))}
-    />
+     manual={false} />
   );
 }

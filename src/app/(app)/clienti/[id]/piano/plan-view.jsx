@@ -66,7 +66,7 @@ const STATUS = {
   annullato: { label: 'Annullato', color: 'error' },
 };
 
-export function PlanView({ clientId, plans, plan, items, issues, formats, platforms, checkups, approval, recycle }) {
+export function PlanView({ clientId, plans, plan, items, issues, formats, platforms, checkups, approval, recycle, manual }) {
   const [tab, setTab] = useState('calendario');
   const [newAt, setNewAt] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -86,16 +86,23 @@ export function PlanView({ clientId, plans, plan, items, issues, formats, platfo
             {p.name}
           </Button>
         ))}
-        <Button component={RouterLink} href="?nuovo=1" startIcon={<Iconify icon="mingcute:add-line" />}>
-          Nuovo piano
-        </Button>
-        <Button startIcon={<Iconify icon="solar:atom-bold-duotone" />} onClick={() => setAiOpen(true)}>
-          Genera con l&apos;AI
-        </Button>
+        {/* Senza piani gli stessi comandi sono nel riquadro centrale: qui non si ripetono */}
+        {(plans.length > 0 || manual) && (
+          <>
+            <Button component={RouterLink} href="?nuovo=1" startIcon={<Iconify icon="mingcute:add-line" />}>
+              Nuovo piano
+            </Button>
+            <Button startIcon={<Iconify icon="solar:atom-bold-duotone" />} onClick={() => setAiOpen(true)}>
+              Genera con l&apos;AI
+            </Button>
+          </>
+        )}
         <PlanAiDialog open={aiOpen} onClose={() => setAiOpen(false)} clientId={clientId} checkups={checkups} platforms={platforms} />
-        <Button color="inherit" startIcon={<Iconify icon="eva:cloud-upload-fill" />} onClick={() => setImportOpen(true)}>
-          Importa da file
-        </Button>
+        {(plans.length > 0 || manual) && (
+          <Button color="inherit" startIcon={<Iconify icon="eva:cloud-upload-fill" />} onClick={() => setImportOpen(true)}>
+            Importa da file
+          </Button>
+        )}
         <PlanImportDialog
           open={importOpen}
           onClose={() => setImportOpen(false)}
@@ -121,7 +128,29 @@ export function PlanView({ clientId, plans, plan, items, issues, formats, platfo
         )}
       </Stack>
 
-      {!plan ? (
+      {!plan && !manual ? (
+        // Nessun piano: prima si sceglie la strada, poi (solo a mano) il modulo
+        <Card sx={{ p: { xs: 3, md: 5 }, textAlign: 'center' }}>
+          <Iconify icon="solar:calendar-date-bold" width={48} sx={{ color: 'primary.main', mb: 1 }} />
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Non c&apos;è ancora un piano editoriale
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3, maxWidth: 520, mx: 'auto' }}>
+            Il piano è il calendario dei contenuti da pubblicare. Scegli come prepararlo: potrai sempre modificarlo.
+          </Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ justifyContent: 'center' }}>
+            <Button variant="contained" size="large" startIcon={<Iconify icon="solar:atom-bold-duotone" />} onClick={() => setAiOpen(true)}>
+              Fallo preparare all&apos;AI (consigliato)
+            </Button>
+            <Button variant="outlined" size="large" color="inherit" startIcon={<Iconify icon="eva:cloud-upload-fill" />} onClick={() => setImportOpen(true)}>
+              Importa da Word o Excel
+            </Button>
+            <Button size="large" color="inherit" component={RouterLink} href="?nuovo=1" startIcon={<Iconify icon="mingcute:add-line" />}>
+              Crealo a mano
+            </Button>
+          </Stack>
+        </Card>
+      ) : !plan ? (
         <NewPlanForm clientId={clientId} platforms={platforms} />
       ) : (
         <>
