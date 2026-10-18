@@ -58,6 +58,8 @@ const MODES = [
   { key: 'sonnet', title: 'Claude Sonnet 5.5', text: 'Più veloce, circa metà costo. Analisi un po’ meno profonda.', cost: '≈ 2,5-5 €' },
   { key: 'misto', title: 'Misto', text: 'Sonnet raccoglie i dati e fa le domande, Opus scrive il documento.', cost: '≈ 3-6,5 €' },
 ];
+// Ambiti dei KPI come li legge l'utente
+const SCOPE_LABEL = { organico: 'Organico', sponsorizzato: 'Sponsorizzato', business: 'Business' };
 const STEPS = ['Dati del cliente', 'Ricognizione online', 'Domande al consulente', 'Ricerca approfondita', 'Scrittura', 'Revisione'];
 const STEP_OF = { ricognizione: 1, domande: 2, ricerca: 3, scrittura: 4, pronto: 5 };
 const WORKING = ['ricognizione', 'ricerca', 'scrittura'];
@@ -842,7 +844,7 @@ function KpiSnapshotCard({ checkup }) {
             {checkup.kpiSnapshot.map((k) => (
               <TableRow key={k.label}>
                 <TableCell>{k.label}</TableCell>
-                <TableCell>{k.scope}</TableCell>
+                <TableCell>{SCOPE_LABEL[k.scope] ?? k.scope}</TableCell>
                 <TableCell align="right">{fmt(k.value, k.unit)}</TableCell>
                 <TableCell align="right">{fmt(k.target, k.unit)}</TableCell>
                 <TableCell align="right"><StatusBadge status={k.status} /></TableCell>

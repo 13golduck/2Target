@@ -2,7 +2,7 @@
 
 import { ErrorText } from 'src/components/error-text';
 import { GettingStartedCard } from './getting-started-card';
-import { platformName } from 'src/lib/platforms';
+import { formatName, platformName } from 'src/lib/platforms';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Grid from '@mui/material/Grid';
@@ -257,7 +257,7 @@ function ItemRow({ item, secondary, right }) {
       href={`/pubblicazioni/${item.id}`}
       dot={FORMAT_COLOR[item.format]}
       primary={item.title}
-      secondary={secondary ?? `${item.clientName} · ${dayLabel(item.scheduledAt)} · ${item.format}`}
+      secondary={secondary ?? `${item.clientName} · ${dayLabel(item.scheduledAt)} · ${formatName(item.format)}`}
       right={right}
     />
   );

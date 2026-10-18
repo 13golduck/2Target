@@ -1,5 +1,6 @@
 'use client';
 
+import { formatName, platformName, platformsText } from 'src/lib/platforms';
 import { useRef, useState, useEffect, useTransition } from 'react';
 import Calendar from '@fullcalendar/react';
 import listPlugin from '@fullcalendar/list';
@@ -288,10 +289,10 @@ function PlanCalendar({ plan, items, onSelectDay }) {
         <Button size="small" variant="outlined" color="inherit" onClick={() => api()?.today()}>Oggi</Button>
         <Box sx={{ flex: 1 }} />
         <Stack direction="row" spacing={1.5} sx={{ display: { xs: 'none', md: 'flex' } }}>
-          {Object.entries(FORMAT_COLOR).slice(0, 4).map(([f, c]) => (
+          {Object.entries(FORMAT_COLOR).map(([f, c]) => (
             <Stack key={f} direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
               <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: c }} />
-              <Typography variant="caption">{f}</Typography>
+              <Typography variant="caption">{formatName(f)}</Typography>
             </Stack>
           ))}
         </Stack>
@@ -372,7 +373,7 @@ function PlanList({ items }) {
               <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: FORMAT_COLOR[i.format] ?? 'grey.500', flexShrink: 0 }} />
               <ListItemText
                 primary={i.title}
-                secondary={`${fmtDateTime(i.scheduledAt ? new Date(i.scheduledAt) : null)} · ${i.format} · ${[i.platform, ...i.crossPost].join(' + ')}`}
+                secondary={`${fmtDateTime(i.scheduledAt ? new Date(i.scheduledAt) : null)} · ${formatName(i.format)} · ${platformsText([i.platform, ...i.crossPost])}`}
                 slotProps={{ primary: { typography: 'subtitle2' } }}
               />
               <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexShrink: 0 }}>
@@ -407,7 +408,7 @@ function NewItemDialog({ planId, at, onClose, formats }) {
             <TextField name="title" label="Titolo" required autoFocus fullWidth />
             <Stack direction="row" spacing={2}>
               <TextField select name="format" label="Formato" defaultValue="reel" fullWidth>
-                {formats.map((f) => <MenuItem key={f} value={f}>{f}</MenuItem>)}
+                {formats.map((f) => <MenuItem key={f} value={f}>{formatName(f)}</MenuItem>)}
               </TextField>
               <TextField
                 name="scheduledAt"
@@ -448,7 +449,7 @@ function NewPlanForm({ clientId, platforms }) {
           <Grid size={12}>
             <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Piattaforme</Typography>
             {platforms.map((p) => (
-              <FormControlLabel key={p} control={<Checkbox name="platforms" value={p} defaultChecked={p === 'instagram'} />} label={p} />
+              <FormControlLabel key={p} control={<Checkbox name="platforms" value={p} defaultChecked={p === 'instagram'} />} label={platformName(p)} />
             ))}
           </Grid>
           <Grid size={12}><TextField name="brief" label="Brief del cliente" multiline minRows={4} fullWidth /></Grid>

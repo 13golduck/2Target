@@ -16,3 +16,11 @@ export const PLATFORM_INFO: Record<string, PlatformInfo> = {
 };
 
 export const platformName = (p: string) => PLATFORM_INFO[p]?.label ?? p;
+
+/** Formati dei contenuti come li legge l'utente. */
+export const FORMAT_LABEL: Record<string, string> = { reel: "Reel", post: "Post", carosello: "Carosello", storia: "Storia", video: "Video", articolo: "Articolo", email: "Email" };
+
+export const formatName = (f: string | null | undefined) => (f ? (FORMAT_LABEL[f] ?? f) : "");
+
+/** Elenco di piattaforme leggibile: «Instagram + Scheda Google». */
+export const platformsText = (list: (string | null | undefined)[]) => [...new Set(list.filter((p): p is string => !!p))].map(platformName).join(" + ");

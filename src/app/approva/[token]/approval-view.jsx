@@ -1,5 +1,6 @@
 'use client';
 
+import { formatName, platformsText } from 'src/lib/platforms';
 import { useState, useEffect, useTransition } from 'react';
 
 import Box from '@mui/material/Box';
@@ -101,7 +102,7 @@ export function ApprovalView({ invalid, token, client, channels, items }) {
                   <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography variant="subtitle2" noWrap>{i.title}</Typography>
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>{fmt(i.scheduledAt)} · {i.format}</Typography>
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>{fmt(i.scheduledAt)} · {formatName(i.format)}</Typography>
                     </Box>
                     <Label color={i.status === 'approvato' ? 'success' : 'warning'}>{i.status === 'approvato' ? 'Approvato' : 'Modifiche in corso'}</Label>
                   </Stack>
@@ -145,7 +146,7 @@ function ItemCard({ item, token, author, channels, clientName }) {
           <Stack spacing={2} sx={{ p: 3, height: 1 }}>
             <Box>
               <Typography variant="overline" sx={{ color: 'text.secondary' }}>
-                {fmt(item.scheduledAt)} · {item.format} · {[item.platform, ...item.crossPost].join(' + ')}
+                {fmt(item.scheduledAt)} · {formatName(item.format)} · {platformsText([item.platform, ...item.crossPost])}
               </Typography>
               <Typography variant="h6">{item.title}</Typography>
             </Box>

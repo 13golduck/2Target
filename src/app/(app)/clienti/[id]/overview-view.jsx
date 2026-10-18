@@ -1,5 +1,6 @@
 'use client';
 
+import { formatName } from 'src/lib/platforms';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Grid from '@mui/material/Grid';
@@ -105,7 +106,7 @@ export function OverviewView({ clientId, options, features, readOnly, steps, upc
                 {upcoming.map((i) => (
                   <ListItemButton key={i.id} component={RouterLink} href={`/pubblicazioni/${i.id}`} sx={{ borderRadius: 1, gap: 1.5 }}>
                     <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: FORMAT_COLOR[i.format] ?? 'grey.500', flexShrink: 0 }} />
-                    <ListItemText primary={i.title} secondary={`${fmtDateTime(i.scheduledAt ? new Date(i.scheduledAt) : null)} · ${i.format}`} slotProps={{ primary: { typography: 'subtitle2', noWrap: true } }} sx={{ minWidth: 0 }} />
+                    <ListItemText primary={i.title} secondary={`${fmtDateTime(i.scheduledAt ? new Date(i.scheduledAt) : null)} · ${formatName(i.format)}`} slotProps={{ primary: { typography: 'subtitle2', noWrap: true } }} sx={{ minWidth: 0 }} />
                     {i.errors > 0 ? <Label color="error">{i.errors} da completare</Label> : <Label color={STATUS[i.status]?.[1] ?? 'default'}>{STATUS[i.status]?.[0] ?? i.status}</Label>}
                   </ListItemButton>
                 ))}

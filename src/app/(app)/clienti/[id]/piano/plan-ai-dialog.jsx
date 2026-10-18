@@ -1,5 +1,6 @@
 'use client';
 
+import { platformName } from 'src/lib/platforms';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -151,7 +152,7 @@ export function PlanAiDialog({ open, onClose, clientId, checkups, platforms }) {
             <Box>
               <Typography variant="subtitle2">Piattaforme</Typography>
               {platforms.map((p) => (
-                <FormControlLabel key={p} control={<Checkbox checked={setup.platforms.includes(p)} onChange={() => togglePlatform(p)} />} label={p} />
+                <FormControlLabel key={p} control={<Checkbox checked={setup.platforms.includes(p)} onChange={() => togglePlatform(p)} />} label={platformName(p)} />
               ))}
             </Box>
             <TextField
