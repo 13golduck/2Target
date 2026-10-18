@@ -61,8 +61,8 @@ export function worstStatus(statuses: KpiStatus[]): KpiStatus {
 }
 
 export const STATUS_LABEL: Record<KpiStatus, string> = {
-  bene: "Bene",
-  male: "Male",
-  troppo_male: "Troppo male",
+  bene: "In linea",
+  male: "Da migliorare",
+  troppo_male: "Sotto obiettivo",
   in_attesa: "In attesa",
 };

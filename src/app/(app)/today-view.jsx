@@ -205,7 +205,7 @@ export function TodayView({ board, userName, start }) {
                     href={`/clienti/${k.clientId}/kpi`}
                     primary={`${k.clientName} · ${k.label}`}
                     secondary={k.message}
-                    right={<Label color={k.status === 'troppo_male' ? 'error' : 'warning'}>{k.status === 'troppo_male' ? 'Troppo male' : 'Male'}</Label>}
+                    right={<Label color={k.status === 'troppo_male' ? 'error' : 'warning'}>{k.status === 'troppo_male' ? 'Sotto obiettivo' : 'Da migliorare'}</Label>}
                   />
                 ))}
               </Panel>

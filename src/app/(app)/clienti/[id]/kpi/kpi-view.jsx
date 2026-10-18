@@ -1,5 +1,6 @@
 'use client';
 
+import { PLATFORM_INFO } from 'src/lib/platforms';
 import { useState } from 'react';
 
 import Box from '@mui/material/Box';
@@ -31,6 +32,9 @@ import { StatusBadge, STATUS_COLOR } from 'src/components/status-badge';
 
 import { addKpi, deleteKpi, addMeasurement } from '../../../actions';
 
+// Nomi dei canali come li vede l'utente
+const CHANNEL_NAME = { ...Object.fromEntries(Object.entries(PLATFORM_INFO).map(([k, v]) => [k, v.label])), search_console: 'Ricerche su Google', ga4: 'Visite al sito', google_ads: 'Google Ads', website: 'Sito web' };
+
 // ----------------------------------------------------------------------
 
 const SCOPES = [
@@ -48,12 +52,12 @@ export function KpiView({ clientId, kpis, metrics, readOnly = false }) {
     <>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3, justifyContent: 'space-between', alignItems: { sm: 'center' } }}>
         <Alert severity="info" variant="outlined" sx={{ flex: 1 }}>
-          Semaforo rispetto al target: <b>Bene</b> ≥ 90%, <b>Male</b> 60–90%, <b>Troppo male</b> sotto il 60%. Per i costi
-          (CPM, CPC, costo per contatto) più basso è meglio.
+          Verde (<b>In linea</b>) se sei almeno al 90% dell&apos;obiettivo, giallo (<b>Da migliorare</b>) tra 60 e 90%, rosso
+          (<b>Sotto obiettivo</b>) sotto il 60%. Per i costi vale il contrario: più basso è meglio.
         </Alert>
         {!readOnly && (
           <Button variant="contained" startIcon={<Iconify icon="mingcute:add-line" />} onClick={() => setNewKpi(true)}>
-            Nuovo KPI
+            Nuovo obiettivo
           </Button>
         )}
       </Stack>
@@ -109,7 +113,7 @@ function KpiCard({ kpi, onMeasure }) {
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="subtitle1">{kpi.label}</Typography>
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            {kpi.platform ?? 'tutti i canali'} · partenza {fmtMetric(kpi.baseline, kpi.unit)}
+            {CHANNEL_NAME[kpi.platform] ?? kpi.platform ?? 'tutti i canali'} · partenza {fmtMetric(kpi.baseline, kpi.unit)}
           </Typography>
           {kpi.evidence != null && <Box sx={{ mt: 0.5 }}><EvidenceHint evidence={kpi.evidence || 'Proposto alla consegna del check-up'} label="Dal check-up" /></Box>}
         </Box>
@@ -250,7 +254,7 @@ function NewKpiDialog({ open, onClose, clientId, metrics }) {
             </Grid>
             <Grid size={12}>
               <Alert severity="success" variant="outlined" icon={<Iconify icon="solar:restart-bold" />}>
-                Reach, engagement, salvataggi, condivisioni, crescita follower e tutte le metriche SEO si aggiornano da sole se il canale
+                Persone raggiunte, interazioni, salvataggi, condivisioni, crescita follower e tutte le metriche SEO si aggiornano da sole se il canale
                 indicato è collegato. Le altre si inseriscono a mano.
               </Alert>
             </Grid>
