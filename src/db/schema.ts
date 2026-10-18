@@ -7,6 +7,7 @@ import type { TikTokOptions } from "../lib/publishing/tiktok-rules";
 import type { BrandKitData, CreativeBrief, DesignReview } from "../lib/design-types";
 import { REASONING, REGISTERS } from "../lib/checkup-report";
 import {
+  type AnyMySqlColumn,
   mediumtext,
   boolean,
   date,
@@ -581,6 +582,10 @@ export const editorialItems = mysqlTable(
     collaborators: json("collaborators").$type<string[]>(),
     /** Instagram: tagga la sede della Pagina Facebook collegata (se ha un indirizzo). */
     tagLocation: boolean("tag_location").notNull().default(false),
+    /** Contenuto sempre valido: dopo qualche mese 2Target lo propone da riproporre. */
+    evergreen: boolean("evergreen").notNull().default(false),
+    /** Copia riproposta di questa scheda (riciclo dei contenuti). */
+    recycledFromId: int("recycled_from_id").references((): AnyMySqlColumn => editorialItems.id, { onDelete: "set null" }),
     referencesUrls: text("references_urls"),
     /** Brief grafico del Senior Graphic Designer AI (concept, layout, slide, palette, Canva/Adobe). */
     creativeBrief: json("creative_brief").$type<CreativeBrief>(),
