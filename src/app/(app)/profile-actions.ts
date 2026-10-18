@@ -16,7 +16,7 @@ import { decryptSecret } from "@/lib/secret-box";
 
 // Profili social: controllo di completezza, correzioni (dove Meta lo consente) e kit di creazione con l'AI.
 
-const path = (clientId: number) => `/clienti/${clientId}/canali`;
+const path = (clientId: number) => `/clienti/${clientId}/profili`;
 type Platform = (typeof PROFILE_PLATFORMS)[number];
 
 async function upsert(clientId: number, platform: Platform, set: Partial<typeof profileSetups.$inferInsert>, userId: number) {

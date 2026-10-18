@@ -43,7 +43,12 @@ const GROUPS = [
       { href: '/seo', label: 'SEO', icon: 'eva:search-fill' },
     ],
   },
-  { tabs: [{ href: '/canali', label: 'Canali', icon: 'eva:link-2-fill' }] },
+  {
+    tabs: [
+      { href: '/canali', label: 'Canali', icon: 'eva:link-2-fill' },
+      { href: '/profili', label: 'Profili', icon: 'solar:user-id-bold' },
+    ],
+  },
 ];
 
 // Sezioni visibili al Viewer (cliente): grafici e risultati
