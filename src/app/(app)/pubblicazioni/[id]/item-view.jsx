@@ -31,6 +31,7 @@ import { DashboardContent } from 'src/layouts/dashboard';
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { toast } from 'src/components/snackbar';
+import { confirmClick } from 'src/components/custom-dialog';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { BriefPanel } from './brief-panel';
@@ -124,7 +125,13 @@ export function ItemView({ saved, client, item, issues, series, personas, option
           ]}
           action={
             <Stack direction="row" spacing={1}>
-              <Button type="submit" formAction={deleteItem} formNoValidate color="error" startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}>
+              <Button
+                type="submit"
+                formAction={deleteItem}
+                formNoValidate
+                color="error"
+                onClick={(e) => confirmClick(e, { tone: 'error', title: 'Eliminare questa pubblicazione?', content: 'Si perdono testo, script, file caricati e programmazioni. Non si può annullare.', confirmText: 'Elimina' })}
+                startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}>
                 Elimina
               </Button>
               <Button type="submit" variant="contained" startIcon={<Iconify icon="eva:checkmark-fill" />}>

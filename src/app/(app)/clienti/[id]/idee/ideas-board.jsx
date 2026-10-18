@@ -20,6 +20,7 @@ import DialogContent from '@mui/material/DialogContent';
 
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
+import { toast } from 'src/components/snackbar';
 import { Scrollbar } from 'src/components/scrollbar';
 import { EvidenceHint } from 'src/components/evidence-hint';
 
@@ -275,11 +276,11 @@ function IdeaCard({ idea, onPlan, onMove, canPlan }) {
             </Tooltip>
           )}
           {idea.status !== 'pianificata' && (
-            <Box component="form" action={setIdeaStatus}>
+            <Box component="form" action={setIdeaStatus} onSubmit={() => toast.success('Idea scartata')}>
               <input type="hidden" name="ideaId" value={idea.id} />
-              <Tooltip title="Scarta">
-                <IconButton type="submit" name="status" value="scartata" size="small">
-                  <Iconify icon="solar:trash-bin-trash-bold" width={18} />
+              <Tooltip title="Scarta (non si cancella)">
+                <IconButton type="submit" name="status" value="scartata" size="small" aria-label="Scarta idea">
+                  <Iconify icon="solar:archive-down-minimlistic-bold" width={18} />
                 </IconButton>
               </Tooltip>
             </Box>

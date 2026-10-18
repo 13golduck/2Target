@@ -47,6 +47,21 @@ export function confirmSubmit(event, options) {
   });
 }
 
+/** Conferma prima del clic su un pulsante che invia un form (es. formAction={elimina}). */
+export function confirmClick(event, options) {
+  const button = event.currentTarget;
+  if (button.dataset.confirmed) {
+    delete button.dataset.confirmed;
+    return;
+  }
+  event.preventDefault();
+  askConfirm(options).then((ok) => {
+    if (!ok) return;
+    button.dataset.confirmed = '1';
+    button.click();
+  });
+}
+
 export function ConfirmHost() {
   const [state, setState] = useState(null);
 

@@ -15,6 +15,7 @@ import { fmtDateTime } from 'src/lib/format';
 import { Label } from 'src/components/label';
 import { Iconify } from 'src/components/iconify';
 import { toast } from 'src/components/snackbar';
+import { askConfirm } from 'src/components/custom-dialog';
 
 import { deleteReview, reviewUpload } from './design-actions';
 
@@ -176,7 +177,16 @@ export function DesignReviewPanel({ clientId, itemId, reviews, aiConfigured }) {
                       ))}
                     </Stack>
                     <Stack direction="row" sx={{ justifyContent: 'flex-end', mt: 1 }}>
-                      <IconButton size="small" onClick={() => start(() => deleteReview(r.id))} title="Elimina revisione">
+                      <IconButton size="small" onClick={async () => {
+                          if (!(await askConfirm({ tone: 'error', title: 'Eliminare la revisione?', confirmText: 'Elimina' }))) return;
+                          start(async () => {
+                            await deleteReview(r.id);
+                            toast.success('Revisione eliminata');
+                          });
+                        }}
+                        title="Elimina revisione"
+                        aria-label="Elimina revisione"
+                      >
                         <Iconify icon="solar:trash-bin-trash-bold" width={18} />
                       </IconButton>
                     </Stack>

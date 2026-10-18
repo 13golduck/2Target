@@ -431,9 +431,13 @@ function CostsCard({ costs, onAdd, readOnly = false }) {
                 <TableCell align="right">{eur(c.amount, 2)}</TableCell>
                 <TableCell align="right" padding="checkbox">
                   {!readOnly && (
-                    <Box component="form" action={deleteCost}>
+                    <Box
+                      component="form"
+                      action={deleteCost}
+                      onSubmit={(e) => confirmSubmit(e, { tone: 'error', title: 'Eliminare questo costo?', content: 'Cambiano costo per contatto e ritorno del marketing.', confirmText: 'Elimina' })}
+                    >
                       <input type="hidden" name="id" value={c.id} />
-                      <IconButton type="submit" size="small"><Iconify icon="solar:trash-bin-trash-bold" width={16} /></IconButton>
+                      <IconButton type="submit" size="small" title="Elimina costo" aria-label="Elimina costo"><Iconify icon="solar:trash-bin-trash-bold" width={16} /></IconButton>
                     </Box>
                   )}
                 </TableCell>

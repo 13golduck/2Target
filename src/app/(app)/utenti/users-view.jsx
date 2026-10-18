@@ -46,7 +46,9 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
   const [editing, setEditing] = useState(null); // {} = nuovo utente
   const [pending, start] = useTransition();
 
-  const toggleActive = (u) =>
+  const toggleActive = async (u) => {
+    // Disattivare toglie subito l'accesso: si chiede conferma (riattivare no)
+    if (u.active && !(await askConfirm({ tone: 'warning', title: `Disattivare ${u.name}?`, content: 'Non potrà più entrare finché non lo riattivi. I suoi dati restano.', confirmText: 'Disattiva' }))) return;
     start(async () => {
       const fd = new FormData();
       fd.set('id', u.id);
@@ -57,6 +59,7 @@ export function UsersView({ meId, users, roles, roleLabels, clients }) {
       if (r?.error) toast.error(r.error);
       else toast.success(u.active ? 'Utente disattivato' : 'Utente riattivato');
     });
+  };
 
   const invite = (u) =>
     start(async () => {
