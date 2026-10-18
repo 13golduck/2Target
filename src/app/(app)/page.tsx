@@ -6,6 +6,7 @@ import { requireUser, visibleClientIds } from "@/lib/auth";
 import { clientStatus, kpisWithStatus } from "@/lib/queries";
 import { canWrite, isViewer } from "@/lib/roles";
 import { todayBoard } from "@/lib/today";
+import { gettingStarted } from "@/lib/getting-started";
 import { ClientsView } from "./clients-view";
 
 export const metadata = { title: "Oggi" };
@@ -41,6 +42,7 @@ export default async function ClientsPage() {
     .where(eq(editorialItems.status, "da_approvare"))
     .groupBy(editorialItems.clientId);
   const board = isViewer(me.role) ? null : await todayBoard(ids);
+  const start = isViewer(me.role) ? null : await gettingStarted(me, ids);
 
   // Data del logo per cliente (solo se c'è un logo): l'immagine arriva da /api/logo
   const kits = list.length
@@ -72,5 +74,5 @@ export default async function ClientsPage() {
     };
   });
 
-  return <ClientsView clients={data} readOnly={!canWrite(me.role)} board={board} userName={me.name} />;
+  return <ClientsView clients={data} readOnly={!canWrite(me.role)} board={board} userName={me.name} start={start} />;
 }

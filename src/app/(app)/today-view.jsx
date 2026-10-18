@@ -1,5 +1,6 @@
 'use client';
 
+import { GettingStartedCard } from './getting-started-card';
 import { platformName } from 'src/lib/platforms';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -43,7 +44,7 @@ const waitingLabel = (iso) => {
   return `da ${d} ${d === 1 ? 'giorno' : 'giorni'}`;
 };
 
-export function TodayView({ board, userName }) {
+export function TodayView({ board, userName, start }) {
   const hour = new Date().getHours();
   const hello = hour < 13 ? 'Buongiorno' : hour < 18 ? 'Buon pomeriggio' : 'Buonasera';
   const problems = board.fallite.length + board.collegamenti.length + board.checkup.length + (board.salute?.length ?? 0);
@@ -64,6 +65,8 @@ export function TodayView({ board, userName }) {
       <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
         {new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Rome' })} · ecco cosa richiede attenzione su tutti i clienti
       </Typography>
+
+      {start && <GettingStartedCard steps={start} />}
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {counters.map((c) => (

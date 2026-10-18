@@ -30,12 +30,12 @@ import { TodayView } from './today-view';
 
 // ----------------------------------------------------------------------
 
-export function ClientsView({ clients, readOnly = false, board, userName = '' }) {
+export function ClientsView({ clients, readOnly = false, board, userName = '', start }) {
   const dialog = useBoolean();
 
   return (
     <DashboardContent>
-      {board && <TodayView board={board} userName={userName} />}
+      {board && <TodayView board={board} userName={userName} start={start} />}
 
       <CustomBreadcrumbs
         heading="Clienti"
