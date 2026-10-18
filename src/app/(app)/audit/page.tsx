@@ -6,7 +6,7 @@ import { inArray } from "drizzle-orm";
 import { parseAuditFilters, queryAudit, type AuditFilters } from "@/lib/audit-query";
 import { AuditView } from "./audit-view";
 
-export const metadata = { title: "Audit trail" };
+export const metadata = { title: "Registro attività" };
 
 // Audit trail, registro unico di azioni, errori e messaggi di sistema.
 // Super admin e Administrator vedono tutto; gli altri utenti solo le proprie voci (azioni ed errori).

@@ -191,7 +191,7 @@ export function AdsView({ month, dryRun, canPublish, kpi, advice, daily, adClien
                 onClick={exportCsv}
                 disabled={!rebill.length}
               >
-                Esporta CSV
+                Scarica per Excel
               </Button>
             }
           />
@@ -308,10 +308,10 @@ function Kpis({ kpi }) {
     { label: "Campagne attive", value: kpi.active, icon: "carbon:rocket", color: "info" },
     { label: "Contatti da Meta", value: kpi.leads, icon: "solar:user-plus-bold", color: "success" },
     { label: "Costo per contatto", value: kpi.costPerLead == null ? "—" : eur(kpi.costPerLead), icon: "solar:tag-price-bold", color: "secondary" },
-    { label: "CTR medio", value: kpi.ctr == null ? "—" : `${kpi.ctr.toLocaleString("it-IT")}%`, icon: "solar:cursor-bold", color: "primary" },
+    { label: "% di clic", value: kpi.ctr == null ? "—" : `${kpi.ctr.toLocaleString("it-IT")}%`, icon: "solar:cursor-bold", color: "primary" },
     { label: "Costo per clic", value: kpi.cpc == null ? "—" : eur(kpi.cpc), icon: "solar:hand-money-bold", color: "error" },
     { label: "Ricavi dalle campagne", value: eur(kpi.revenue), icon: "solar:graph-up-bold", color: "success" },
-    { label: "ROAS (ricavi / spesa)", value: kpi.roas == null ? "—" : `×${kpi.roas.toLocaleString("it-IT")}`, icon: "solar:chart-2-bold", color: "warning" },
+    { label: "Resa: € incassati per € spesi", value: kpi.roas == null ? "—" : kpi.roas.toLocaleString("it-IT", { maximumFractionDigits: 1 }), icon: "solar:chart-2-bold", color: "warning" },
   ];
   return (
     <Grid container spacing={2}>
@@ -358,7 +358,7 @@ function AdvicePanel({ advice }) {
           })}
         </Stack>
       ) : (
-        <EmptyContent title="Nessun consiglio" description="Le campagne attive non mostrano problemi. I consigli si aggiornano con la sincronizzazione notturna o con «Aggiorna»." sx={{ py: 5 }} />
+        <EmptyContent title="Nessun consiglio" description="Le campagne attive non mostrano problemi. I consigli si aggiornano con l’aggiornamento di ogni notte o con «Aggiorna»." sx={{ py: 5 }} />
       )}
     </Card>
   );

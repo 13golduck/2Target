@@ -205,7 +205,7 @@ export const TECH_ARTICLES: GuideArticle[] = [
           "**Profilo già collegato a un altro cliente**: un profilo appartiene a un solo cliente. Scollegalo prima dall'altro, se era un errore.",
         ],
       },
-      { tip: "Ogni errore resta registrato nell'**Audit trail** (categoria Errori) con i dettagli tecnici, utili se serve l'aiuto di un tecnico." },
+      { tip: "Ogni errore resta registrato nel **Registro attività** (categoria Errori) con i dettagli tecnici, utili se serve l'aiuto di un tecnico." },
     ],
     related: ["canali"],
   },

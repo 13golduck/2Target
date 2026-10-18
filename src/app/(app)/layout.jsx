@@ -61,7 +61,7 @@ export default async function AppLayout({ children }) {
             ]
           : []),
         // Registro unico: azioni, errori e messaggi di sistema (gli amministratori vedono tutto, gli altri le proprie voci)
-        { title: "Audit trail", path: "/audit", icon: <NavIcon name="ic-file" /> },
+        { title: "Registro attività", path: "/audit", icon: <NavIcon name="ic-file" /> },
         // Guida di tutte le funzioni, per tutti
         { title: "Guida", path: "/guida", icon: <NavIcon name="ic-tour" /> },
       ],

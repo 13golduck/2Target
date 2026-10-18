@@ -72,7 +72,7 @@ export function ReportView({ staff, client, checkup, template, content, personas
   const toc = useMemo(
     () =>
       [
-        { id: 'sintesi', label: 'Executive Summary' },
+        { id: 'sintesi', label: 'In sintesi' },
         ...template.filter((t) => t.key !== 'sintesi').map((t, i) => ({ id: t.key, label: `${i + 1}. ${t.title}` })),
         r?.evidence?.length ? { id: 'prove', label: 'Prove da documentare' } : null,
         checkup.sources.length ? { id: 'fonti', label: 'Fonti' } : null,
@@ -162,7 +162,7 @@ export function ReportView({ staff, client, checkup, template, content, personas
           <Cover client={client} checkup={checkup} headline={sec('sintesi').diagnosi || r?.executive?.headline} />
 
           {/* EXECUTIVE SUMMARY */}
-          <Section id="sintesi" kicker="In una pagina" title="Executive Summary">
+          <Section id="sintesi" kicker="In una pagina" title="In sintesi">
             {(sec('sintesi').diagnosi || r?.executive?.headline) && (
               <Typography sx={{ fontSize: 20, fontWeight: 600, lineHeight: 1.45, mb: 3 }}>{sec('sintesi').diagnosi || r?.executive?.headline}</Typography>
             )}
@@ -640,7 +640,7 @@ function Competitors({ competitors, clientName, clientEr }) {
     <>
       {bars.length >= 2 && (
         <Box className="avoid-break" sx={{ mb: 3, p: 2, borderRadius: 2, border: `1px solid ${C.line}` }}>
-          <SubTitle>Engagement rate a confronto</SubTitle>
+          <SubTitle>Coinvolgimento del pubblico a confronto (%)</SubTitle>
           <Chart type="bar" series={[{ name: 'Engagement rate', data: bars.map((b) => b.er) }]} options={chart} sx={{ height: 60 + bars.length * 44 }} />
           <Typography variant="caption" sx={{ color: C.soft }}>Il gap con i competitor misura quanto margine c’è sulla relazione con la community.</Typography>
         </Box>
@@ -656,9 +656,9 @@ function Competitors({ competitors, clientName, clientEr }) {
                 </Typography>
               </Box>
               <Stack direction="row" spacing={2.5} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-                <KeyData label="Community" value={c.community} />
+                <KeyData label="Seguaci" value={c.community} />
                 <KeyData label="Canali" value={c.channels} />
-                <KeyData label="ER" value={typeof c.er === 'number' ? `${c.er}%` : 'n.d.'} hint={c.erSource} />
+                <KeyData label="Coinvolgimento" value={typeof c.er === 'number' ? `${c.er}%` : 'n.d.'} hint={c.erSource} />
                 <KeyData
                   label="Pubblicità Meta"
                   value={c.ads === 'si' ? 'Attiva' : c.ads === 'no' ? 'Nessuna' : 'Non verificato'}
@@ -667,8 +667,8 @@ function Competitors({ competitors, clientName, clientEr }) {
               </Stack>
             </Stack>
             <Box className="g2" sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, p: 2 }}>
-              <ListBox title="Strengths" items={c.strengths} color={C.green} bg={C.greenSoft} icon="solar:check-circle-bold" />
-              <ListBox title="Weaknesses" items={c.weaknesses} color={C.red} bg={C.redSoft} icon="solar:close-circle-bold" />
+              <ListBox title="Punti di forza" items={c.strengths} color={C.green} bg={C.greenSoft} icon="solar:check-circle-bold" />
+              <ListBox title="Punti deboli" items={c.weaknesses} color={C.red} bg={C.redSoft} icon="solar:close-circle-bold" />
             </Box>
             <Stack direction="row" spacing={1.5} sx={{ mx: 2, mb: 2, p: 2, borderRadius: 2, bgcolor: C.goldSoft, border: `1px solid ${C.gold}` }}>
               <Iconify icon="solar:lightbulb-bolt-bold" width={22} sx={{ color: '#8A6A12', flexShrink: 0 }} />
@@ -730,7 +730,7 @@ function QuickWins({ items }) {
   const lvl = { basso: 0, medio: 1, alto: 2 };
   // Matrice impatto (alto in alto) × sforzo (basso a sinistra): in alto a sinistra i quick win
   const cells = [
-    { impact: 'alto', effort: 'low', title: 'Quick win', sub: 'Alto impatto, poco sforzo', color: C.green, bg: C.greenSoft },
+    { impact: 'alto', effort: 'low', title: 'Vittorie rapide', sub: 'Alto impatto, poco sforzo', color: C.green, bg: C.greenSoft },
     { impact: 'alto', effort: 'high', title: 'Progetti strategici', sub: 'Alto impatto, più sforzo', color: C.blue, bg: C.blueSoft },
     { impact: 'basso', effort: 'low', title: 'Riempitivi', sub: 'Poco impatto, poco sforzo', color: C.soft, bg: '#F6F7F8' },
     { impact: 'basso', effort: 'high', title: 'Da evitare', sub: 'Poco impatto, molto sforzo', color: C.red, bg: C.redSoft },

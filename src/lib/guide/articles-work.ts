@@ -205,7 +205,7 @@ export const WORK_ARTICLES: GuideArticle[] = [
       { p: "In alto lo stato: **Bozza → Da approvare → Approvato → Pubblicato** (o **Annullato**). L'etichetta **Da salvare** ricorda le modifiche non salvate: premi **Salva**." },
       {
         list: [
-          "**Testo**: titolo interno, hook (la frase d'apertura), caption, hashtag, primo commento, coautori Instagram, sede, invito all'azione e dove porta.",
+          "**Testo**: titolo interno, frase d'apertura, testo del post, hashtag, primo commento, coautori Instagram, sede, invito all'azione e dove porta.",
           "**Script e riprese**: idea di layout, voiceover, testo a schermo, musica e l'elenco delle clip da girare.",
           "**Produzione**: a che punto è. **Serve materiale dal cliente** lo fa comparire in Oggi.",
           "**Sponsorizzata**: obiettivo, budget e giorni, se il post andrà sponsorizzato.",
@@ -259,7 +259,7 @@ export const WORK_ARTICLES: GuideArticle[] = [
     keywords: ["obiettivi", "target", "semaforo", "misure", "risultati", "metriche"],
     blocks: [
       { p: "I KPI sono gli obiettivi del marketing (follower, copertura, contatti, costo per contatto…), divisi in **Organico**, **Sponsorizzato** e **Business**." },
-      { list: ["**Bene**: raggiunto almeno il 90% dell'obiettivo.", "**Male**: tra il 60% e il 90%.", "**Troppo male**: sotto il 60%.", "Per i costi vale il contrario: più basso è, meglio è."] },
+      { list: ["**In linea** (verde): raggiunto almeno il 90% dell'obiettivo.", "**Da migliorare** (giallo): tra il 60% e il 90%.", "**Sotto obiettivo** (rosso): sotto il 60%.", "Per i costi vale il contrario: più basso è, meglio è."] },
       { p: "Con **Nuovo KPI** scegli metrica, canale, obiettivo e punto di partenza. Se il canale è collegato, la misura si aggiorna da sola ogni notte; altrimenti si inserisce con **Aggiungi misura**." },
     ],
     related: ["lead", "report-mensile"],
@@ -396,16 +396,16 @@ export const WORK_ARTICLES: GuideArticle[] = [
   },
   {
     slug: "audit",
-    title: "Audit trail ed errori",
+    title: "Registro attività ed errori",
     category: "amministrazione",
     icon: "solar:file-text-bold",
     summary: "Il registro di chi ha fatto cosa, e degli errori.",
     audience: "team",
-    open: { path: "/audit", label: "Apri l'audit trail" },
+    open: { path: "/audit", label: "Apri il registro" },
     keywords: ["registro", "log", "storico", "errori", "chi ha fatto"],
     blocks: [
       { p: "Ogni azione importante (accessi, modifiche, pubblicazioni, collegamenti, errori) resta registrata con chi, quando e cosa è cambiato. Gli amministratori vedono tutto, gli altri le proprie voci." },
-      { p: "Si filtra per periodo, categoria, utente e cliente, e si esporta in CSV. Per segnalare un errore a un tecnico basta dargli il numero della voce." },
+      { p: "Si filtra per periodo, categoria, utente e cliente, e si scarica per Excel. Per segnalare un errore a un tecnico basta dargli il numero della voce." },
     ],
     related: ["problemi-frequenti"],
   },

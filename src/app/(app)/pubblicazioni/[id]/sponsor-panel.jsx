@@ -216,7 +216,7 @@ export function CampaignRow({ c, canPublish, busy, onAction, showClient }) {
         {c.targeting?.city ? `${c.targeting.city.name} +${c.targeting.city.radiusKm} km` : 'Tutta Italia'} · {c.targeting?.ageMin}-{c.targeting?.ageMax} anni
         {c.targeting?.gender && c.targeting.gender !== 'tutti' ? ` · ${c.targeting.gender}` : ''}
         {results.length > 0 && ` · ${results.map(([k, v]) => `${RESULT_LABEL[k] ?? k}: ${v.toLocaleString('it-IT')}`).join(' · ')}`}
-        {c.results?.frequenza > 0 && ` · frequenza ${c.results.frequenza.toLocaleString('it-IT')}`}
+        {c.results?.frequenza > 0 && ` · vista in media ${c.results.frequenza.toLocaleString('it-IT', { maximumFractionDigits: 1 })} volte da ogni persona`}
         {c.lastSyncAt && ` · aggiornato ${fmtDateTime(c.lastSyncAt)}`}
       </Typography>
       {c.roi && (c.roi.leads > 0 || c.roi.customers > 0) && <RoiLine roi={c.roi} currency="EUR" />}

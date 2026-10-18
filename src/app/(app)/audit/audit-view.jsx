@@ -172,8 +172,8 @@ export function AuditView({ admin, filters, people, clients, rows }) {
   return (
     <DashboardContent>
       <CustomBreadcrumbs
-        heading="Audit trail"
-        links={[{ name: 'Panoramica' }, { name: 'Audit trail' }]}
+        heading="Registro attività"
+        links={[{ name: 'Panoramica' }, { name: 'Registro attività' }]}
         action={
           <Button
             component="a"
@@ -182,7 +182,7 @@ export function AuditView({ admin, filters, people, clients, rows }) {
             color="inherit"
             startIcon={<Iconify icon="solar:download-bold" />}
           >
-            Esporta CSV
+            Scarica per Excel
           </Button>
         }
         sx={{ mb: 3 }}
