@@ -16,7 +16,7 @@ export type TodayItem = { id: number; clientId: number; clientName: string; titl
 
 export async function todayBoard(clientIds: number[] | null) {
   const visible = clientIds ?? (await db.select({ id: clients.id }).from(clients)).map((c) => c.id);
-  const empty = { inUscita: [], daApprovare: [], fallite: [], materiali: [], kpi: [], collegamenti: [], checkup: [], salute: [] };
+  const empty = { inUscita: [], daApprovare: [], fallite: [], materiali: [], kpi: [], collegamenti: [], checkup: [], salute: [], usciti: [] };
   if (!visible.length) return empty;
   const names = new Map((await db.select({ id: clients.id, name: clients.name }).from(clients).where(inArray(clients.id, visible))).map((c) => [c.id, c.name]));
   const now = new Date();
@@ -112,5 +112,17 @@ export async function todayBoard(clientIds: number[] | null) {
     problems: (s.checks ?? []).filter((c) => c.level !== "ok").map((c) => `${c.label}: ${c.value ?? ""}`.trim()),
   }));
 
-  return { inUscita, daApprovare, fallite, materiali, kpi, collegamenti, checkup, salute };
+  // Usciti nelle ultime 24 ore, con il link al post: l'esito positivo si vede senza aprire le schede
+  const usciti = (
+    await db
+      .select({ id: publications.id, itemId: publications.itemId, clientId: publications.clientId, permalink: publications.permalink, publishedAt: publications.publishedAt, title: editorialItems.title, platform: socialAccounts.platform, handle: socialAccounts.handle })
+      .from(publications)
+      .innerJoin(editorialItems, eq(editorialItems.id, publications.itemId))
+      .innerJoin(socialAccounts, eq(socialAccounts.id, publications.socialAccountId))
+      .where(and(inArray(publications.clientId, visible), eq(publications.status, "pubblicata"), gte(publications.publishedAt, new Date(now.getTime() - DAY))))
+      .orderBy(desc(publications.publishedAt))
+      .limit(30)
+  ).map((u) => ({ ...u, clientName: names.get(u.clientId) ?? "", publishedAt: u.publishedAt?.toISOString() ?? null }));
+
+  return { inUscita, daApprovare, fallite, materiali, kpi, collegamenti, checkup, salute, usciti };
 }

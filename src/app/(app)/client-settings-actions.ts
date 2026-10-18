@@ -34,7 +34,13 @@ export async function getApprovalLink(clientId: number) {
   return { link: approvalLink(clientId) };
 }
 
-const Report = z.object({ clientId: z.number().int().positive(), monthly: z.boolean(), email: z.string().trim().email().max(255).or(z.literal("")) });
+const Report = z.object({
+  clientId: z.number().int().positive(),
+  monthly: z.boolean(),
+  /** Avviso al cliente quando un suo post esce (stessa email del report). */
+  notifyPublished: z.boolean().default(false),
+  email: z.string().trim().email().max(255).or(z.literal("")),
+});
 
 export async function saveReportSettings(input: z.infer<typeof Report>) {
   const me = await requireWriter();
@@ -42,9 +48,10 @@ export async function saveReportSettings(input: z.infer<typeof Report>) {
   if (!p.success) return { error: "Indirizzo email non valido" };
   const v = p.data;
   await requireClientAccess(v.clientId);
-  if (v.monthly && !v.email) return { error: "Serve l'email a cui mandare il report" };
-  await db.update(clients).set({ reportMonthly: v.monthly, reportEmail: v.email || null }).where(eq(clients.id, v.clientId));
-  await audit({ userId: me.id, category: "canali", action: "report.impostazioni", description: v.monthly ? `Report mensile automatico a ${v.email}` : "Report mensile automatico disattivato", clientId: v.clientId });
+  if ((v.monthly || v.notifyPublished) && !v.email) return { error: "Serve l'email del cliente" };
+  await db.update(clients).set({ reportMonthly: v.monthly, notifyPublished: v.notifyPublished, reportEmail: v.email || null }).where(eq(clients.id, v.clientId));
+  const what = [v.monthly && "report mensile", v.notifyPublished && "avviso dei post usciti"].filter(Boolean).join(" e ");
+  await audit({ userId: me.id, category: "canali", action: "report.impostazioni", description: what ? `Al cliente (${v.email}): ${what}` : "Report mensile e avvisi al cliente disattivati", clientId: v.clientId });
   revalidatePath(`/clienti/${v.clientId}`);
   return { ok: true };
 }

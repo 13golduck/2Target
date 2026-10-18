@@ -37,7 +37,7 @@ export default async function ClientOverviewPage({ params }: { params: Promise<{
     db.select({ n: sql<number>`count(*)` }).from(editorialItems).where(and(eq(editorialItems.clientId, clientId), eq(editorialItems.status, "pubblicato"), gte(editorialItems.scheduledAt, monthStart))),
   ]);
 
-  const [options] = await db.select({ reportMonthly: clients.reportMonthly, reportEmail: clients.reportEmail, approvalEnabled: clients.approvalEnabled }).from(clients).where(eq(clients.id, clientId));
+  const [options] = await db.select({ reportMonthly: clients.reportMonthly, notifyPublished: clients.notifyPublished, reportEmail: clients.reportEmail, approvalEnabled: clients.approvalEnabled }).from(clients).where(eq(clients.id, clientId));
   const ids = channels.map((c) => c.id);
   const followers = ids.length
     ? await db

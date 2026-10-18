@@ -19,6 +19,7 @@ import { Iconify } from 'src/components/iconify';
 // ----------------------------------------------------------------------
 // «Oggi»: le cose da fare su tutti i clienti. Ogni riga porta dritta dove si risolve.
 
+const PLATFORM_NAME = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', linkedin: 'LinkedIn' };
 const FORMAT_COLOR = { reel: '#B8860B', post: '#2E7D32', carosello: '#0288D1', storia: '#7B1FA2', video: '#C62828' };
 
 const dayLabel = (iso) => {
@@ -115,6 +116,39 @@ export function TodayView({ board, userName }) {
                     primary={`${s.clientName} · sito`}
                     secondary={s.problems[0] ?? 'Controllo salute del sito'}
                     right={<Label color={s.severity === 'grave' ? 'error' : 'warning'}>{s.severity === 'grave' ? 'Sito' : 'Sito'}</Label>}
+                  />
+                ))}
+              </Panel>
+            )}
+
+            {(board.usciti ?? []).length > 0 && (
+              <Panel title="Usciti nelle ultime 24 ore" icon="solar:check-read-linear" color="success.main">
+                {board.usciti.map((u) => (
+                  <LinkRow
+                    key={`u${u.id}`}
+                    href={`/pubblicazioni/${u.itemId}`}
+                    primary={u.title}
+                    secondary={`${u.clientName} · ${PLATFORM_NAME[u.platform] ?? u.platform} @${u.handle} · ${dayLabel(u.publishedAt)}`}
+                    right={
+                      u.permalink ? (
+                        // Non un <a>: la riga è già un link alla scheda (link annidati non sono validi)
+                        <Label
+                          component="span"
+                          role="link"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.open(u.permalink, '_blank', 'noopener');
+                          }}
+                          color="success"
+                          sx={{ cursor: 'pointer' }}
+                        >
+                          Apri il post
+                        </Label>
+                      ) : (
+                        <Label color="success">Uscito</Label>
+                      )
+                    }
                   />
                 ))}
               </Panel>

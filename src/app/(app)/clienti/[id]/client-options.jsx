@@ -28,15 +28,16 @@ import { previewReport, saveReportSettings } from '../../client-settings-actions
 
 export function ClientOptions({ clientId, options, readOnly }) {
   const [monthly, setMonthly] = useState(options.reportMonthly);
+  const [notify, setNotify] = useState(options.notifyPublished);
   const [email, setEmail] = useState(options.reportEmail ?? '');
   const [preview, setPreview] = useState(null);
   const [busy, start] = useTransition();
 
   const save = () =>
     start(async () => {
-      const r = await saveReportSettings({ clientId, monthly, email });
+      const r = await saveReportSettings({ clientId, monthly, notifyPublished: notify, email });
       if (r.error) toast.error(r.error);
-      else toast.success(monthly ? `Report mensile attivo: arriverà a ${email} dal 3 di ogni mese` : 'Report mensile disattivato');
+      else toast.success(monthly || notify ? `Salvato: le email arriveranno a ${email}` : 'Report e avvisi al cliente disattivati');
     });
 
   const show = () =>
@@ -55,13 +56,26 @@ export function ClientOptions({ clientId, options, readOnly }) {
 
   return (
     <Card>
-      <CardHeader title="Report e approvazione" />
+      <CardHeader title="Report, avvisi e approvazione" />
       <Stack spacing={2} sx={{ p: 3, pt: 2 }}>
         <FormControlLabel
           control={<Switch checked={monthly} onChange={(e) => setMonthly(e.target.checked)} disabled={readOnly} />}
           label="Report mensile automatico al cliente"
         />
-        <TextField size="small" type="email" label="Email del cliente" value={email} onChange={(e) => setEmail(e.target.value)} disabled={readOnly || !monthly} fullWidth helperText="Parte il 3 di ogni mese con i dati del mese chiuso" />
+        <FormControlLabel
+          control={<Switch checked={notify} onChange={(e) => setNotify(e.target.checked)} disabled={readOnly} />}
+          label="Avvisa il cliente quando un post esce (con il link)"
+        />
+        <TextField
+          size="small"
+          type="email"
+          label="Email del cliente"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={readOnly || !(monthly || notify)}
+          fullWidth
+          helperText="Report: il 3 di ogni mese con i dati del mese chiuso. Avvisi: appena il post è online (mai per le prove in simulazione)."
+        />
         {!readOnly && (
           <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
             <Button size="small" variant="contained" onClick={save} loading={busy}>Salva</Button>
