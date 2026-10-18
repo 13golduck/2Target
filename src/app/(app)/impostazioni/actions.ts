@@ -227,3 +227,14 @@ export async function setPublishingLive(on: boolean) {
   revalidatePath("/impostazioni");
   return { ok: true };
 }
+
+/** Backup del database subito (oltre a quello notturno). */
+export async function runBackupNow() {
+  const me = await requireUser();
+  if (!isAdminRole(me.role)) return { error: "Solo un amministratore può eseguire il backup" };
+  if (!(await settingsUnlocked(me.id))) return LOCKED;
+  const { runBackup } = await import("@/lib/system/backup");
+  const r = await runBackup("manuale", me.id);
+  revalidatePath("/impostazioni");
+  return r.ok ? { ok: true, bytes: r.bytes } : { error: `Backup non riuscito: ${r.error}` };
+}

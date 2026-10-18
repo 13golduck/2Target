@@ -8,6 +8,8 @@ import { getMailSettingsForForm, getMailTest } from "@/lib/mail";
 import { integrationStatus } from "@/lib/integrations/keys";
 import { appUrl } from "@/lib/integrations/config";
 import { SETTINGS_TTL_MIN, settingsUnlocked } from "@/lib/settings-access";
+import { backupDir, listBackups } from "@/lib/system/backup";
+import { currentHealth } from "@/lib/system/watchdog";
 import { SettingsGate } from "./settings-gate";
 import { SettingsView } from "./settings-view";
 
@@ -19,7 +21,17 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
   const { primo } = await searchParams;
   // Seconda verifica: anche da collegato serve un codice nuovo ricevuto via email
   if (!(await settingsUnlocked(me.id))) return <SettingsGate minutes={SETTINGS_TTL_MIN} />;
-  const [mail, lastTest, limits, method, plan, integrations, fx] = await Promise.all([getMailSettingsForForm(), getMailTest(), getLimits(), getMethodology(), planMethod.get(), integrationStatus(), fxRate()]);
+  const [mail, lastTest, limits, method, plan, integrations, fx, checks, backups] = await Promise.all([
+    getMailSettingsForForm(),
+    getMailTest(),
+    getLimits(),
+    getMethodology(),
+    planMethod.get(),
+    integrationStatus(),
+    fxRate(),
+    currentHealth(),
+    listBackups(),
+  ]);
   return (
     <SettingsView
       mail={mail}
@@ -30,6 +42,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       planMethod={{ version: plan.version, text: plan.text, at: plan.at, isDefault: plan.isDefault }}
       firstAccess={primo === "1"}
       integrations={{ status: integrations, appUrl: appUrl() }}
+      system={{ checks, backups: backups.map((b) => ({ ...b, at: b.at.toISOString() })), backupDir: backupDir() }}
     />
   );
 }
