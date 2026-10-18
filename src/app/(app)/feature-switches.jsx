@@ -29,7 +29,7 @@ export function FeatureSwitches({ id, title, subheader, features, onSave, readOn
     });
 
   return (
-    <Card id={id}>
+    <Card id={id} sx={{ scrollMarginTop: 96 }}>
       <CardHeader title={title} subheader={subheader} />
       <Stack divider={<Divider flexItem />} sx={{ px: 3, pt: 1 }}>
         {features.map((f) => (

@@ -42,27 +42,31 @@ export function SystemCard({ checks, backups, backupDir }) {
     });
 
   return (
-    <Card id="sistema">
+    <Card id="sistema" sx={{ scrollMarginTop: 96 }}>
       <CardHeader
         title="Stato del sistema"
         subheader="Controlli automatici ogni 15 minuti: se qualcosa diventa rosso gli amministratori ricevono un'email."
         action={<Label color={LEVEL[worst].color}>{worst === 'ok' ? 'Tutto ok' : LEVEL[worst].word}</Label>}
+        sx={{ flexWrap: 'wrap', gap: 1, '& .MuiCardHeader-action': { m: 0, alignSelf: 'center' } }}
       />
       <Stack divider={<Divider flexItem />} sx={{ px: 3, pt: 2 }}>
         {checks.map((c) => (
-          <Stack key={c.key} direction="row" spacing={1.5} sx={{ py: 1.25, alignItems: 'center' }}>
+          <Stack key={c.key} direction="row" spacing={1.5} sx={{ py: 1.25, alignItems: { xs: 'flex-start', sm: 'center' } }}>
             <Iconify icon={LEVEL[c.level].icon} sx={{ color: `${LEVEL[c.level].color}.main`, flexShrink: 0 }} />
-            <Typography variant="subtitle2" sx={{ width: 240, flexShrink: 0 }}>
+            {/* Su telefono etichetta e dettaglio vanno uno sotto l'altro */}
+            <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ flex: 1, minWidth: 0, gap: { xs: 0.25, sm: 1.5 } }}>
+            <Typography variant="subtitle2" sx={{ width: { sm: 240 }, flexShrink: 0 }}>
               {c.label}
             </Typography>
             <Typography variant="body2" sx={{ color: c.level === 'ok' ? 'text.secondary' : `${LEVEL[c.level].color}.dark` }}>
               {c.detail}
             </Typography>
+            </Stack>
           </Stack>
         ))}
       </Stack>
       <Box sx={{ p: 3 }}>
-        <Stack direction="row" sx={{ alignItems: 'center', mb: 1 }}>
+        <Stack direction="row" sx={{ alignItems: 'center', mb: 1, flexWrap: 'wrap', gap: 1 }}>
           <Typography variant="subtitle1" sx={{ flex: 1 }}>
             Backup del database
           </Typography>
@@ -72,7 +76,7 @@ export function SystemCard({ checks, backups, backupDir }) {
         </Stack>
         <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
           Ogni notte alle 2. Si conservano gli ultimi 7 giorni, 4 settimane e 6 mesi nella cartella privata del server{' '}
-          <code>{backupDir}</code> (fuori dal sito, non scaricabile dal browser). Per un ripristino chiedi al tecnico: è un file SQL
+          <Box component="code" sx={{ wordBreak: 'break-all' }}>{backupDir}</Box> (fuori dal sito, non scaricabile dal browser). Per un ripristino chiedi al tecnico: è un file SQL
           compresso.
         </Typography>
         {backups.length ? (

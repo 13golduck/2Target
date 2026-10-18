@@ -290,7 +290,7 @@ export function SettingsView({ mail, lastTest, limits, fx, method, planMethod, f
       </Card>
 
       {integrations && (
-        <Box id="integrazioni" sx={{ mt: 3 }}>
+        <Box id="integrazioni" sx={{ mt: 3, scrollMarginTop: 96 }}>
           <IntegrationsCard status={integrations.status} appUrl={integrations.appUrl} />
         </Box>
       )}

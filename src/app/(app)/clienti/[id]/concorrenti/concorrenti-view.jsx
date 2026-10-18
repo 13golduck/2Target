@@ -108,6 +108,7 @@ export function ConcorrentiView({ clientId, canEdit, client, rows, insights }) {
               </Stack>
             )
           }
+          sx={{ flexWrap: 'wrap', gap: 2, '& .MuiCardHeader-action': { m: 0, alignSelf: 'center' } }}
         />
         <Box sx={{ p: 3, pt: 2 }}>
           {!rows.length ? (
