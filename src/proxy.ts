@@ -40,7 +40,7 @@ export default auth((request) => {
   return NextResponse.next({ request: { headers } });
 });
 
-const VIEWER_PATHS = [/^\/$/, /^\/api\/logo\/\d+$/, /^\/clienti\/\d+$/, /^\/clienti\/\d+\/(kpi|seo|lead)$/, /^\/report\/\d+$/, /^\/errori$/, /^\/audit(\/export)?$/, /^\/profilo$/];
+const VIEWER_PATHS = [/^\/$/, /^\/api\/logo\/\d+$/, /^\/clienti\/\d+$/, /^\/clienti\/\d+\/(kpi|seo|lead)$/, /^\/report\/\d+$/, /^\/errori$/, /^\/audit(\/export)?$/, /^\/profilo$/, /^\/guida(\/[\w-]+)?$/];
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico|logo|.*\\.(?:svg|png|jpg|webp)$).*)"],
