@@ -71,7 +71,7 @@ export function SeoView({ clientId, ai, searchConsole, analytics, businessProfil
       {googleAds.map((a) => <GoogleAdsBlock key={a.id} data={a} />)}
       {websites.length > 0 && (
         <Box>
-          <Typography variant="h6" sx={{ mb: 2 }}>Velocità e SEO tecnica (PageSpeed, mobile)</Typography>
+          <Typography variant="h6" sx={{ mb: 2 }}>Velocità del sito sul telefono (PageSpeed)</Typography>
           <Grid container spacing={3}>
             {websites.map((w) => (
               <Grid key={w.id} size={{ xs: 12, md: 6 }}>
@@ -115,7 +115,7 @@ function SearchConsoleBlock({ data, clientId, readOnly }) {
   const cards = [
     { label: 'Clic', value: n(clicks), delta: prevClicks ? clicks / prevClicks - 1 : null, yoy: yoy(now?.clicks, year?.clicks) },
     { label: 'Impressioni', value: n(impr), delta: prevImpr ? impr / prevImpr - 1 : null, yoy: yoy(now?.impressions, year?.impressions) },
-    { label: 'CTR medio', value: pct(impr ? clicks / impr : null), delta: prevImpr && impr ? clicks / impr / (prevClicks / prevImpr) - 1 : null },
+    { label: '% di chi clicca', value: pct(impr ? clicks / impr : null), delta: prevImpr && impr ? clicks / impr / (prevClicks / prevImpr) - 1 : null },
     { label: 'Posizione media', value: n(pos(0), 1), delta: pos(28) && pos(0) ? -(pos(0) / pos(28) - 1) : null },
   ];
 
@@ -142,7 +142,7 @@ function SearchConsoleBlock({ data, clientId, readOnly }) {
     <Box>
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
         <Iconify icon="socials:google" width={24} />
-        <Typography variant="h6" sx={{ flex: 1 }}>Search Console · {data.name}</Typography>
+        <Typography variant="h6" sx={{ flex: 1 }}>Ricerche su Google · {data.name}</Typography>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
           Ultimi 28 giorni rispetto ai 28 precedenti{data.lastSyncAt && ` · aggiornato ${fmtDateTime(new Date(data.lastSyncAt))}`}
         </Typography>
@@ -208,7 +208,7 @@ function SearchConsoleBlock({ data, clientId, readOnly }) {
                       <TableCell>{tab === 'queries' ? 'Ricerca' : 'Pagina'}</TableCell>
                       <TableCell align="right">Clic</TableCell>
                       <TableCell align="right">Impressioni</TableCell>
-                      <TableCell align="right">CTR</TableCell>
+                      <TableCell align="right">% clic</TableCell>
                       <TableCell align="right">Posizione</TableCell>
                     </TableRow>
                   </TableHead>
@@ -424,7 +424,7 @@ function DevicesCard({ devices }) {
                   )}
                 </Stack>
                 <LinearProgress variant="determinate" value={total ? (d.clicks / total) * 100 : 0} sx={{ height: 6, borderRadius: 1 }} />
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>Posizione media {n(d.position, 1)} · CTR {pct(d.ctr)}</Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>Posizione media {n(d.position, 1)} · {pct(d.ctr)} clicca</Typography>
               </Box>
             );
           })}
@@ -441,7 +441,7 @@ function OpportunitiesTable({ rows }) {
     <>
       <Typography variant="body2" sx={{ px: 2, pt: 2, color: 'text.secondary' }}>
         Ricerche da spingere: già visibili su Google ma con pochi clic. «Quasi in prima pagina» = posizione 4-20: un contenuto migliore o
-        link interni possono farle salire. «CTR basso» = già in alto ma poco cliccate: rivedere titolo e descrizione della pagina.
+        link interni possono farle salire. «Pochi clic» = già in alto ma poco cliccate: rivedere titolo e descrizione della pagina.
       </Typography>
       <Scrollbar sx={{ maxHeight: 520 }}>
         <TableContainer>
@@ -461,7 +461,7 @@ function OpportunitiesTable({ rows }) {
                 <TableRow key={r.key} hover>
                   <TableCell sx={{ maxWidth: 360, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.key}</TableCell>
                   <TableCell>
-                    <Label color={r.reason === 'ctr_basso' ? 'warning' : 'info'}>{r.reason === 'ctr_basso' ? 'CTR basso: rivedi titolo' : 'Quasi in prima pagina'}</Label>
+                    <Label color={r.reason === 'ctr_basso' ? 'warning' : 'info'}>{r.reason === 'ctr_basso' ? 'Pochi clic: rivedi il titolo' : 'Quasi in prima pagina'}</Label>
                   </TableCell>
                   <TableCell align="right">{n(r.impressions)}</TableCell>
                   <TableCell align="right">{n(r.clicks)}</TableCell>
@@ -662,11 +662,11 @@ function GoogleAdsBlock({ data }) {
         <Grid size={{ xs: 6, md: 3 }}><StatCard label="Clic" value={n(clicks.now)} delta={clicks.delta} /></Grid>
         <Grid size={{ xs: 6, md: 3 }}><StatCard label="Conversioni" value={n(conv.now, 1)} delta={conv.delta} /></Grid>
         <Grid size={{ xs: 6, md: 3 }}>
-          <StatCard label={value.now ? `Costo per conversione · ROAS ${n(value.now / (spend.now || 1), 1)}x` : 'Costo per conversione'} value={cpa == null ? '—' : euro(cpa)} delta={null} />
+          <StatCard label={value.now ? `Costo per conversione · ogni € speso ne ha resi ${n(value.now / (spend.now || 1), 1)}` : 'Costo per conversione'} value={cpa == null ? '—' : euro(cpa)} delta={null} />
         </Grid>
         <Grid size={12}>
           <Card>
-            <CardHeader title="Spesa e conversioni" subheader="Ultimi 90 giorni · la spesa mensile entra da sola nei costi di marketing dei Lead (costo per lead, CAC, ROI)" />
+            <CardHeader title="Spesa e conversioni" subheader="Ultimi 90 giorni · la spesa mensile entra da sola nei costi di marketing dei Lead (costo per contatto, costo per cliente acquisito, ritorno)" />
             <Chart
               type="line"
               series={[
@@ -688,10 +688,10 @@ function GoogleAdsBlock({ data }) {
                     <TableRow>
                       <TableCell>Campagna</TableCell>
                       <TableCell align="right">Spesa</TableCell>
-                      <TableCell align="right">Impression</TableCell>
+                      <TableCell align="right">Volte mostrato</TableCell>
                       <TableCell align="right">Clic</TableCell>
-                      <TableCell align="right">CTR</TableCell>
-                      <TableCell align="right">CPC</TableCell>
+                      <TableCell align="right">% clic</TableCell>
+                      <TableCell align="right">Costo per clic</TableCell>
                       <TableCell align="right">Conversioni</TableCell>
                       <TableCell align="right">Costo / conversione</TableCell>
                     </TableRow>
@@ -739,7 +739,7 @@ function AnalyticsBlock({ data }) {
     <Card>
       <CardHeader
         avatar={<Iconify icon="solar:chart-square-outline" width={24} />}
-        title={`Analytics 4 · ${data.name}`}
+        title={`Visite al sito · ${data.name}`}
         subheader={`Ultimi 28 giorni: ${n(tot('sessions_total'))} sessioni · ${n(tot('sessions_organic_search'))} da Google · ${n(tot('sessions_organic_social') + tot('sessions_paid_social'))} dai social · ${n(tot('key_events'))} conversioni`}
       />
       <Chart
@@ -819,7 +819,7 @@ function AnalyticsDetails({ data }) {
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell>Sorgente / mezzo</TableCell>
+                  <TableCell>Da dove arrivano</TableCell>
                   <TableCell>Campagna</TableCell>
                   <TableCell align="right">Sessioni</TableCell>
                   <TableCell align="right">Conversioni</TableCell>
@@ -860,7 +860,7 @@ function AnalyticsDetails({ data }) {
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell>Evento chiave</TableCell>
+                  <TableCell>Azione importante sul sito</TableCell>
                   <TableCell align="right">Totale</TableCell>
                   <TableCell>Da dove arrivano</TableCell>
                 </TableRow>
@@ -916,7 +916,7 @@ function PageSpeedCard({ site }) {
             <Score label="Prestazioni" value={r.performance} />
             <Score label="SEO" value={r.seo} />
             <Score label="Accessibilità" value={r.accessibility} />
-            <Score label="Best practice" value={r.bestPractices} />
+            <Score label="Buone regole" value={r.bestPractices} />
           </Stack>
           <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
             LCP {r.lcp ?? '—'} · CLS {r.cls ?? '—'} · TBT {r.tbt ?? '—'}
