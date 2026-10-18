@@ -8,35 +8,22 @@ import { db } from "@/db";
 import { CHANNEL_KINDS, clients, connections, editorialItems, socialAccounts } from "@/db/schema";
 import { requireWriter, userCanPublish } from "@/lib/auth";
 import { forgetFromClient, siteKey } from "@/lib/integrations/client-channels";
-import { decryptSecret, encryptSecret } from "@/lib/secret-box";
-import * as google from "@/lib/integrations/google";
-import * as instagram from "@/lib/integrations/instagram";
-import * as linkedin from "@/lib/integrations/linkedin";
+import { encryptSecret } from "@/lib/secret-box";
 import * as meta from "@/lib/integrations/meta";
-import * as tiktok from "@/lib/integrations/tiktok";
+import { PROVIDER_MODULES, providerLabel } from "@/lib/integrations/providers";
 import { accessToken, syncChannel, syncClient, updateKpisFromData } from "@/lib/integrations/sync";
 import { audit } from "@/lib/audit";
 import { META } from "@/lib/integrations/config";
 
 const path = (clientId: number) => `/clienti/${clientId}/canali`;
-const PROVIDER_LABEL: Record<string, string> = { meta: "Meta", google: "Google", tiktok: "TikTok", instagram: "Instagram", linkedin: "LinkedIn" };
 
 /** Canali disponibili per un collegamento (letti dalla piattaforma, senza token verso il browser). */
 export async function assetsFor(connectionId: number) {
   await requireWriter();
   const [conn] = await db.select().from(connections).where(eq(connections.id, connectionId));
   if (!conn) return { conn: null, assets: [] as { key: string; kind: string; handle: string; name: string; pictureUrl?: string }[] };
-  const token = ["tiktok", "instagram", "linkedin"].includes(conn.provider) ? await accessToken(conn) : decryptSecret(conn.accessTokenEnc)!;
-  const raw =
-    conn.provider === "meta"
-      ? await meta.listAssets(token)
-      : conn.provider === "tiktok"
-        ? await tiktok.listAssets(token)
-        : conn.provider === "instagram"
-          ? await instagram.listAssets(token)
-          : conn.provider === "linkedin"
-            ? await linkedin.listAssets(token)
-            : await google.listAssets(token);
+  // accessToken rinnova i token in scadenza (Instagram, Threads, TikTok, LinkedIn, Google, Pinterest)
+  const raw = await PROVIDER_MODULES[conn.provider].listAssets(await accessToken(conn));
   return {
     conn,
     assets: raw.map((a) => ({ key: `${a.kind}|${a.externalId}`, kind: a.kind, handle: a.handle, name: a.name, pictureUrl: "pictureUrl" in a ? a.pictureUrl : undefined })),
@@ -50,7 +37,7 @@ export async function attachChannels(f: FormData) {
   const [conn] = await db.select().from(connections).where(eq(connections.id, connectionId));
   if (!conn) return;
   const chosen = new Set(f.getAll("asset").map(String));
-  const token = ["tiktok", "instagram", "linkedin"].includes(conn.provider) ? await accessToken(conn) : decryptSecret(conn.accessTokenEnc)!;
+  const token = await accessToken(conn);
 
   const ids: number[] = [];
   const refused: string[] = [];
@@ -70,27 +57,12 @@ export async function attachChannels(f: FormData) {
       if (other) refused.push(`@${a.handle} è già collegato al cliente ${other}`);
       else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, a.pictureUrl, encryptSecret(a.pageToken)));
     }
-  } else if (conn.provider === "tiktok" || conn.provider === "instagram") {
-    // Un solo profilo per collegamento; Instagram usa il token dell'utente (si rinnova da solo), non un token di Pagina
-    for (const a of conn.provider === "tiktok" ? await tiktok.listAssets(token) : await instagram.listAssets(token)) {
-      if (!chosen.has(`${a.kind}|${a.externalId}`)) continue;
-      const other = await owner(a.kind, a.externalId);
-      if (other) refused.push(`@${a.handle} è già collegato al cliente ${other}`);
-      else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, a.pictureUrl, null));
-    }
-  } else if (conn.provider === "linkedin") {
-    // Pagine aziendali: si legge e si pubblica con il token di chi le amministra
-    for (const a of await linkedin.listAssets(token)) {
-      if (!chosen.has(`${a.kind}|${a.externalId}`)) continue;
-      const other = await owner(a.kind, a.externalId);
-      if (other) refused.push(`${a.name} è già collegata al cliente ${other}`);
-      else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, a.pictureUrl, null));
-    }
   } else {
-    for (const a of await google.listAssets(token)) {
+    // Tutti gli altri: si legge e si pubblica con il token dell'utente collegato (si rinnova da solo), senza token di Pagina
+    for (const a of await PROVIDER_MODULES[conn.provider].listAssets(token)) {
       if (!chosen.has(`${a.kind}|${a.externalId}`)) continue;
       const other = await owner(a.kind, a.externalId);
-      if (other) refused.push(`${a.handle} è già collegato al cliente ${other}`);
+      if (other) refused.push(`${a.name} è già collegato al cliente ${other}`);
       else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, a.pictureUrl, null));
     }
   }
@@ -105,7 +77,7 @@ export async function attachChannels(f: FormData) {
     userId: me.id,
     category: "canali",
     action: "canali.collegati",
-    description: `Collegati ${ids.length} canali da ${PROVIDER_LABEL[conn.provider]} (${conn.accountName})${refused.length ? ` · ${refused.length} rifiutati perché di un altro cliente` : ""}`,
+    description: `Collegati ${ids.length} canali da ${providerLabel(conn.provider)} (${conn.accountName})${refused.length ? ` · ${refused.length} rifiutati perché di un altro cliente` : ""}`,
     clientId: conn.clientId,
     meta: refused.length ? { rifiutati: refused } : null,
   });
@@ -179,7 +151,7 @@ export async function removeConnection(f: FormData) {
   // I canali restano (con i dati storici) ma risultano scollegati
   await db.update(socialAccounts).set({ connected: false, assetTokenEnc: null }).where(eq(socialAccounts.connectionId, conn.id));
   await db.delete(connections).where(eq(connections.id, conn.id));
-  await audit({ userId: me.id, category: "canali", action: "collegamento.rimosso", description: `Scollegato l'account ${PROVIDER_LABEL[conn.provider]} «${conn.accountName}»`, clientId: conn.clientId });
+  await audit({ userId: me.id, category: "canali", action: "collegamento.rimosso", description: `Scollegato l'account ${providerLabel(conn.provider)} «${conn.accountName}»`, clientId: conn.clientId });
   revalidatePath(path(conn.clientId));
 }
 

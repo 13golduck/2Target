@@ -5,12 +5,8 @@ import { NextResponse } from "next/server";
 import { auth, userCanPublish } from "@/lib/auth";
 import { getClient } from "@/lib/queries";
 import { signPayload } from "@/lib/secret-box";
-import { appUrl, isConfigured, type Provider } from "@/lib/integrations/config";
-import * as google from "@/lib/integrations/google";
-import * as instagram from "@/lib/integrations/instagram";
-import * as linkedin from "@/lib/integrations/linkedin";
-import * as meta from "@/lib/integrations/meta";
-import * as tiktok from "@/lib/integrations/tiktok";
+import { appUrl, isConfigured } from "@/lib/integrations/config";
+import { isProvider, PROVIDER_MODULES } from "@/lib/integrations/providers";
 
 // Avvio del collegamento: porta l'utente alla pagina di consenso della piattaforma.
 
@@ -29,7 +25,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
   }
   const client = clientId ? await getClient(clientId) : null;
   if (!client) return NextResponse.json({ message: "Cliente non trovato" }, { status: 404 });
-  if (!["meta", "google", "tiktok", "instagram", "linkedin"].includes(provider) || !isConfigured(provider as Provider)) {
+  if (!isProvider(provider) || !isConfigured(provider)) {
     return NextResponse.redirect(`${appUrl(request)}/clienti/${clientId}/canali?errore=${encodeURIComponent(`${provider} non è ancora configurato`)}`);
   }
 
@@ -37,16 +33,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
   // che qualcuno faccia completare a un altro un collegamento avviato da lui (CSRF).
   const nonce = randomBytes(16).toString("base64url");
   const state = signPayload({ provider, clientId, uid: session.user.id, nonce });
-  const url =
-    provider === "meta"
-      ? meta.authorizeUrl(state, request)
-      : provider === "tiktok"
-        ? tiktok.authorizeUrl(state, request)
-        : provider === "instagram"
-          ? instagram.authorizeUrl(state, request)
-          : provider === "linkedin"
-            ? linkedin.authorizeUrl(state, request)
-            : google.authorizeUrl(state, request);
+  const url = PROVIDER_MODULES[provider].authorizeUrl(state, request);
 
   const res = NextResponse.redirect(url);
   res.cookies.set("oauth_nonce", nonce, { httpOnly: true, sameSite: "lax", secure: appUrl(request).startsWith("https"), path: "/api/connect", maxAge: 600 });
