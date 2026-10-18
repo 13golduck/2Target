@@ -63,7 +63,7 @@ export function healthChecks(f: HealthFacts): Check[] {
     failedAfterOk
       ? { key: "backup", label: "Backup del database", level: "errore", detail: `ultimo tentativo non riuscito: ${b.lastError ?? "errore sconosciuto"}` }
       : bAge != null && bAge <= BACKUP_LATE_HOURS * HOUR
-        ? { key: "backup", label: "Backup del database", level: "ok", detail: `ultimo ${ago(bAge)} fa · ${b.count} copie conservate` }
+        ? { key: "backup", label: "Backup del database", level: "ok", detail: `ultimo ${ago(bAge)} fa · ${b.count} ${b.count === 1 ? "copia conservata" : "copie conservate"}` }
         : { key: "backup", label: "Backup del database", level: "attenzione", detail: bAge == null ? "nessun backup ancora: il primo parte stanotte" : `ultimo ${ago(bAge)} fa` },
   );
 
