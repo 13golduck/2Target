@@ -253,6 +253,13 @@
       "when": 1792358382155,
       "tag": "0035_lead_per_campagna",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "5",
+      "when": 1792358720441,
+      "tag": "0036_opzioni_pubblicazione",
+      "breakpoints": true
     }
   ]
 }

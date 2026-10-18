@@ -575,6 +575,12 @@ export const editorialItems = mysqlTable(
     cta: text("cta"),
     ctaDestination: mysqlEnum("cta_destination", CTA_DESTINATIONS),
     ctaUrl: varchar("cta_url", { length: 500 }),
+    /** Primo commento pubblicato subito dopo il post (Instagram e Facebook), es. per gli hashtag. */
+    firstComment: text("first_comment"),
+    /** Instagram: fino a 3 coautori (nomi utente) del post. */
+    collaborators: json("collaborators").$type<string[]>(),
+    /** Instagram: tagga la sede della Pagina Facebook collegata (se ha un indirizzo). */
+    tagLocation: boolean("tag_location").notNull().default(false),
     referencesUrls: text("references_urls"),
     /** Brief grafico del Senior Graphic Designer AI (concept, layout, slide, palette, Canva/Adobe). */
     creativeBrief: json("creative_brief").$type<CreativeBrief>(),
@@ -838,6 +844,8 @@ export const publications = mysqlTable(
     mediaIds: json("media_ids").$type<number[]>().notNull(),
     /** Impostazioni scelte per la piattaforma (TikTok: visibilità, interazioni, contenuto commerciale). */
     options: json("options").$type<TikTokOptions>(),
+    /** Instagram/Facebook: primo commento, coautori e sede, copiati dalla scheda al momento della programmazione. */
+    extras: json("extras").$type<PublishExtras>(),
     attempts: int("attempts").notNull().default(0),
     /** TikTok: publish_id dell'invio avviato, per controllarne l'esito (e non ripubblicare) nei giri successivi. */
     remoteId: varchar("remote_id", { length: 120 }),
@@ -856,6 +864,9 @@ export const publications = mysqlTable(
 
 
 // ── Sponsorizzate (Meta Marketing API) ───────────────────────────────
+/** Opzioni di pubblicazione per Instagram e Facebook. */
+export type PublishExtras = { firstComment?: string; collaborators?: string[]; tagLocation?: boolean };
+
 export const AD_CAMPAIGN_STATUSES = ["in_avvio", "attiva", "in_pausa", "terminata", "errore"] as const;
 /**
  * boost: promozione di un post già pubblicato; campagna: inserzione nuova creata dalla scheda del piano
