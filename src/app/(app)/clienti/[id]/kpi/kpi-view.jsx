@@ -22,6 +22,8 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { fmtDate, fmtMetric } from 'src/lib/format';
 
 import { Iconify } from 'src/components/iconify';
+import { toast } from 'src/components/snackbar';
+import { confirmSubmit } from 'src/components/custom-dialog';
 import { Chart, useChart } from 'src/components/chart';
 import { EmptyContent } from 'src/components/empty-content';
 import { EvidenceHint } from 'src/components/evidence-hint';
@@ -149,9 +151,13 @@ function KpiCard({ kpi, onMeasure }) {
         <Button size="small" variant="soft" startIcon={<Iconify icon="mingcute:add-line" />} onClick={onMeasure}>
           Aggiungi misura
         </Button>
-        <Box component="form" action={deleteKpi}>
+        <Box
+          component="form"
+          action={deleteKpi}
+          onSubmit={(e) => confirmSubmit(e, { tone: 'error', title: 'Togliere questo obiettivo?', content: 'Non compare più tra i KPI del cliente, insieme alle misure inserite.', confirmText: 'Togli' })}
+        >
           <input type="hidden" name="kpiId" value={kpi.id} />
-          <IconButton type="submit" size="small" title="Disattiva KPI">
+          <IconButton type="submit" size="small" title="Togli obiettivo" aria-label="Togli obiettivo">
             <Iconify icon="solar:trash-bin-trash-bold" width={18} />
           </IconButton>
         </Box>
@@ -169,7 +175,15 @@ function MeasureDialog({ kpi, onClose }) {
   return (
     <Dialog open={!!kpi} onClose={onClose} fullWidth maxWidth="xs">
       {kpi && (
-        <Box component="form" action={async (fd) => { await addMeasurement(fd); onClose(); }}>
+        <Box
+          component="form"
+          action={async (fd) => {
+            const r = await addMeasurement(fd);
+            if (r?.error) return toast.error(r.error);
+            toast.success('Misura salvata');
+            onClose();
+          }}
+        >
           <DialogTitle>Nuova misura · {kpi.label}</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
@@ -195,7 +209,15 @@ function MeasureDialog({ kpi, onClose }) {
 function NewKpiDialog({ open, onClose, clientId, metrics }) {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <Box component="form" action={async (fd) => { await addKpi(fd); onClose(); }}>
+      <Box
+        component="form"
+        action={async (fd) => {
+          const r = await addKpi(fd);
+          if (r?.error) return toast.error(r.error);
+          toast.success('Obiettivo aggiunto');
+          onClose();
+        }}
+      >
         <DialogTitle>Nuovo KPI</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ pt: 1 }}>

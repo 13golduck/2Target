@@ -514,9 +514,9 @@ function ManualDialog({ clientId, open, onClose }) {
             const r = await addManualChannel(fd);
             if (r?.error) {
               toast.error(r.error);
-              if (r.error.startsWith('Sito aggiunto')) onClose();
             } else {
-              toast.success('Canale aggiunto');
+              if (r?.warning) toast.warning(r.warning);
+              else toast.success('Canale aggiunto');
               onClose();
             }
           })

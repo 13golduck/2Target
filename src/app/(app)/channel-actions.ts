@@ -187,9 +187,10 @@ export async function addManualChannel(f: FormData) {
     const [ch] = await db.select().from(socialAccounts).where(r.insertId ? eq(socialAccounts.id, r.insertId) : and(eq(socialAccounts.clientId, clientId), eq(socialAccounts.platform, "website"), eq(socialAccounts.handle, handle)));
     try {
       await syncChannel(ch);
-    } catch (e) {
+    } catch {
       revalidatePath(path(clientId));
-      return { error: `Sito aggiunto, ma l'analisi PageSpeed non è riuscita: ${(e as Error).message}` };
+      // Il sito è salvato: è un avviso, non un errore (il dettaglio resta nell'errore di sincronizzazione del canale)
+      return { ok: true, warning: "Sito aggiunto. L'analisi della velocità non è riuscita ora: riprova più tardi con «Aggiorna ora»." };
     }
   }
   revalidatePath(path(clientId));

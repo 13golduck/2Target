@@ -336,8 +336,12 @@ function PlanCalendar({ plan, items, onSelectDay }) {
           dateClick={(arg) => onSelectDay(`${arg.dateStr.slice(0, 10)}T18:00`)}
           eventDrop={(arg) => {
             start(async () => {
-              await rescheduleItem(Number(arg.event.id), arg.event.start.toISOString());
-              toast.success(`Spostato a ${fmtDateTime(arg.event.start)}`);
+              const r = await rescheduleItem(Number(arg.event.id), arg.event.start.toISOString()).catch(() => ({ error: 'errore di rete' }));
+              // Se il salvataggio non riesce, la pubblicazione torna dov'era: il calendario non deve mentire
+              if (r?.error) {
+                arg.revert();
+                toast.error(`Non sono riuscito a spostarla (${r.error}): riprova`);
+              } else toast.success(`Spostato a ${fmtDateTime(arg.event.start)}`);
             });
           }}
         />

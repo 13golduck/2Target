@@ -47,9 +47,9 @@ export async function addKpi(f: FormData) {
   const me = await requireWriter();
   const clientId = int(f, "clientId")!;
   const metric = METRIC_BY_KEY[String(f.get("metricKey"))];
-  if (!metric) return;
+  if (!metric) return { error: "Scegli la metrica" };
   const target = parseMetricInput(f.get("target"), metric.unit);
-  if (target == null || target <= 0) return;
+  if (target == null || target <= 0) return { error: "Scrivi un obiettivo maggiore di zero" };
   await db.insert(s.kpis).values({
     clientId,
     metricKey: metric.key,
@@ -63,20 +63,23 @@ export async function addKpi(f: FormData) {
   });
   await audit({ userId: me.id, category: "clienti", action: "kpi.nuovo", description: `Aggiunto il KPI «${str(f, "label") ?? metric.label}» (obiettivo ${target})`, clientId });
   revalidatePath(`/clienti/${clientId}`, "layout");
+  return { ok: true };
 }
 
 export async function addMeasurement(f: FormData) {
   const me = await requireWriter();
   const kpiId = int(f, "kpiId")!;
   const [kpi] = await db.select().from(s.kpis).where(eq(s.kpis.id, kpiId));
-  if (!kpi) return;
+  if (!kpi) return { error: "Obiettivo non trovato" };
   const value = parseMetricInput(f.get("value"), METRIC_BY_KEY[kpi.metricKey]?.unit ?? "n");
   const periodStart = str(f, "periodStart");
   const periodEnd = str(f, "periodEnd");
-  if (value == null || !periodStart || !periodEnd) return;
+  if (value == null) return { error: "Scrivi un valore numerico" };
+  if (!periodStart || !periodEnd) return { error: "Indica il periodo" };
   await db.insert(s.kpiMeasurements).values({ kpiId, value, periodStart, periodEnd, sample: int(f, "sample") });
   await audit({ userId: me.id, category: "clienti", action: "kpi.misura", description: `Inserita la misura ${value} per «${kpi.label}» (${periodStart} → ${periodEnd})`, clientId: kpi.clientId, target: `kpi:${kpiId}` });
   revalidatePath(`/clienti/${kpi.clientId}`, "layout");
+  return { ok: true };
 }
 
 export async function deleteKpi(f: FormData) {
@@ -183,13 +186,14 @@ export async function moveIdea(ideaId: number, status: string) {
 export async function rescheduleItem(itemId: number, iso: string) {
   const me = await requireWriter();
   const when = new Date(iso);
-  if (Number.isNaN(when.getTime())) return;
+  if (Number.isNaN(when.getTime())) return { error: "Data non valida" };
   const [item] = await db.select({ clientId: s.editorialItems.clientId, planId: s.editorialItems.planId, title: s.editorialItems.title, scheduledAt: s.editorialItems.scheduledAt }).from(s.editorialItems).where(eq(s.editorialItems.id, itemId));
-  if (!item) return;
+  if (!item) return { error: "Pubblicazione non trovata" };
   await db.update(s.editorialItems).set({ scheduledAt: when }).where(eq(s.editorialItems.id, itemId));
   await syncPendingPublications(itemId, me.id);
   await audit({ userId: me.id, category: "contenuti", action: "pubblicazione.data", description: `Spostata la pubblicazione «${item.title}» nel calendario`, clientId: item.clientId, target: `pubblicazione:${itemId}`, meta: { prima: item.scheduledAt?.toISOString() ?? null, dopo: when.toISOString() } });
   revalidatePath(`/clienti/${item.clientId}/piano`);
+  return { ok: true };
 }
 
 export async function voteIdea(f: FormData) {
