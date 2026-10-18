@@ -35,7 +35,7 @@ const dayLabel = (iso) => {
 export function TodayView({ board, userName }) {
   const hour = new Date().getHours();
   const hello = hour < 13 ? 'Buongiorno' : hour < 18 ? 'Buon pomeriggio' : 'Buonasera';
-  const problems = board.fallite.length + board.collegamenti.length + board.checkup.length;
+  const problems = board.fallite.length + board.collegamenti.length + board.checkup.length + (board.salute?.length ?? 0);
 
   const counters = [
     { label: 'In uscita in 7 giorni', value: board.inUscita.length, icon: 'solar:calendar-date-bold', color: 'info' },
@@ -106,6 +106,15 @@ export function TodayView({ board, userName }) {
                     primary={`${c.clientName} · check-up`}
                     secondary={c.aiState === 'domande' ? 'Aspetta le tue risposte per proseguire' : c.aiState === 'errore' ? (c.aiError ?? 'Fermato da un errore') : 'Fermato: premi Riprendi'}
                     right={<Label color={c.aiState === 'domande' ? 'info' : 'warning'}>{c.aiState === 'domande' ? 'Domande' : 'Fermo'}</Label>}
+                  />
+                ))}
+                {(board.salute ?? []).map((s) => (
+                  <LinkRow
+                    key={`s${s.id}`}
+                    href={`/clienti/${s.clientId}/canali`}
+                    primary={`${s.clientName} · sito`}
+                    secondary={s.problems[0] ?? 'Controllo salute del sito'}
+                    right={<Label color={s.severity === 'grave' ? 'error' : 'warning'}>{s.severity === 'grave' ? 'Sito' : 'Sito'}</Label>}
                   />
                 ))}
               </Panel>

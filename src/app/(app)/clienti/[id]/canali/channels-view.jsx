@@ -342,6 +342,7 @@ function ChannelCard({ channel: c, canPublish }) {
           ))}
         </Stack>
       )}
+      {c.platform === 'website' && c.health && <SiteHealth health={c.health} />}
       {posting && <QuickPostDialog channel={c} onClose={() => setPosting(false)} />}
       {c.recentPosts.length > 0 && (
         <>
@@ -371,6 +372,50 @@ function ChannelCard({ channel: c, canPublish }) {
         </>
       )}
     </Card>
+  );
+}
+
+// ----------------------------------------------------------------------
+// Salute del sito: SSL, scadenza dominio, DNS, reindirizzamenti e segnali di compromissione.
+
+const HEALTH_ICON = { ok: 'solar:check-circle-bold', attenzione: 'solar:danger-triangle-bold', grave: 'solar:shield-warning-bold' };
+const HEALTH_COLOR = { ok: 'success', attenzione: 'warning', grave: 'error' };
+
+function SiteHealth({ health }) {
+  return (
+    <>
+      <Divider sx={{ borderStyle: 'dashed' }} />
+      <Box sx={{ px: 3, py: 2 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: health.checks.some((x) => x.level !== 'ok') ? 1.5 : 0 }}>
+          <Iconify icon="solar:shield-check-bold" width={18} sx={{ color: 'text.secondary' }} />
+          <Typography variant="subtitle2" sx={{ flex: 1 }}>Salute del sito</Typography>
+          <Label color={HEALTH_COLOR[health.severity]} startIcon={<Iconify icon={HEALTH_ICON[health.severity]} />}>
+            {health.severity === 'ok' ? 'Tutto a posto' : `${health.score}/100`}
+          </Label>
+        </Stack>
+        <Stack spacing={1}>
+          {health.checks
+            .filter((x) => x.level !== 'ok')
+            .map((x) => (
+              <Stack key={x.key} direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
+                <Iconify icon={HEALTH_ICON[x.level]} width={16} sx={{ color: `${HEALTH_COLOR[x.level]}.main`, mt: 0.3, flexShrink: 0 }} />
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2">
+                    <b>{x.label}</b>
+                    {x.value ? ` — ${x.value}` : ''}
+                  </Typography>
+                  {x.hint && <Typography variant="caption" sx={{ color: 'text.secondary' }}>{x.hint}</Typography>}
+                </Box>
+              </Stack>
+            ))}
+        </Stack>
+        {health.checkedAt && (
+          <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 1.5 }}>
+            Controllato {fmtDate(health.checkedAt, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+          </Typography>
+        )}
+      </Box>
+    </>
   );
 }
 

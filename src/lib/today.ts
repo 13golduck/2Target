@@ -4,6 +4,7 @@ import { and, asc, desc, eq, gte, inArray, isNull, lte, ne, notInArray } from "d
 import { db } from "@/db";
 import { checkups, clients, connections, editorialItems, publications, socialAccounts } from "@/db/schema";
 import { itemIssues } from "@/lib/editorial-plan";
+import { siteHealthAlerts } from "@/lib/integrations/site-health";
 import { toPlanItem } from "@/lib/plan-adapter";
 import { kpisWithStatus } from "@/lib/queries";
 
@@ -15,7 +16,7 @@ export type TodayItem = { id: number; clientId: number; clientName: string; titl
 
 export async function todayBoard(clientIds: number[] | null) {
   const visible = clientIds ?? (await db.select({ id: clients.id }).from(clients)).map((c) => c.id);
-  const empty = { inUscita: [], daApprovare: [], fallite: [], materiali: [], kpi: [], collegamenti: [], checkup: [] };
+  const empty = { inUscita: [], daApprovare: [], fallite: [], materiali: [], kpi: [], collegamenti: [], checkup: [], salute: [] };
   if (!visible.length) return empty;
   const names = new Map((await db.select({ id: clients.id, name: clients.name }).from(clients).where(inArray(clients.id, visible))).map((c) => [c.id, c.name]));
   const now = new Date();
@@ -101,5 +102,15 @@ export async function todayBoard(clientIds: number[] | null) {
       .where(and(inArray(checkups.clientId, visible), inArray(checkups.aiState, ["domande", "errore", "interrotto"]), isNull(checkups.archivedAt)))
   ).map((c) => ({ ...c, clientName: names.get(c.clientId) ?? "" }));
 
-  return { inUscita, daApprovare, fallite, materiali, kpi, collegamenti, checkup };
+  // Salute dei siti: SSL in scadenza/scaduto, dominio in scadenza, cambi di DNS, reindirizzamenti sospetti
+  const salute = (await siteHealthAlerts(visible)).map((s) => ({
+    id: s.id,
+    clientId: s.clientId,
+    clientName: names.get(s.clientId) ?? "",
+    url: s.url,
+    severity: s.severity,
+    problems: (s.checks ?? []).filter((c) => c.level !== "ok").map((c) => `${c.label}: ${c.value ?? ""}`.trim()),
+  }));
+
+  return { inUscita, daApprovare, fallite, materiali, kpi, collegamenti, checkup, salute };
 }

@@ -3,7 +3,7 @@ import { ensureIntegrationKeys } from "@/lib/integrations/keys";
 
 import { db } from "@/db";
 import { isoDaysAgo } from "@/lib/format";
-import { channelDaily, checkups, clients, connections, seoSnapshots, socialAccounts, socialPosts } from "@/db/schema";
+import { channelDaily, checkups, clients, connections, seoSnapshots, siteHealthChecks, socialAccounts, socialPosts } from "@/db/schema";
 import { META, isConfigured } from "@/lib/integrations/config";
 import { canPublishWithScopes as linkedinCanPublish } from "@/lib/integrations/linkedin";
 import { requireClientAccess, userCanPublish } from "@/lib/auth";
@@ -50,6 +50,8 @@ export default async function ChannelsPage({ params, searchParams }: { params: P
   const daily = ids.length ? await db.select().from(channelDaily).where(and(inArray(channelDaily.socialAccountId, ids), gte(channelDaily.day, since))) : [];
   const posts = ids.length ? await db.select().from(socialPosts).where(inArray(socialPosts.socialAccountId, ids)).orderBy(desc(socialPosts.publishedAt)) : [];
   const speeds = ids.length ? await db.select().from(seoSnapshots).where(and(inArray(seoSnapshots.socialAccountId, ids), eq(seoSnapshots.kind, "pagespeed"))).orderBy(desc(seoSnapshots.id)) : [];
+  // Ultimo controllo salute per ogni sito (il più recente per canale, ordinando per data)
+  const healthRows = ids.length ? await db.select().from(siteHealthChecks).where(inArray(siteHealthChecks.socialAccountId, ids)).orderBy(desc(siteHealthChecks.checkedAt)) : [];
 
   // Scelta dei canali subito dopo il collegamento
   let picker = null;
@@ -146,6 +148,10 @@ export default async function ChannelsPage({ params, searchParams }: { params: P
           .slice(0, 6)
           .map((p) => ({ id: p.id, mediaType: p.mediaType, permalink: p.permalink, caption: p.caption, thumbnailUrl: p.thumbnailUrl, publishedAt: p.publishedAt?.toISOString() ?? null, metrics: p.metrics ?? {} })),
         pagespeed: (speeds.find((s) => s.socialAccountId === c.id)?.rows?.[0] as Record<string, unknown> | undefined) ?? null,
+        health: (() => {
+          const h = healthRows.find((r) => r.socialAccountId === c.id);
+          return h ? { score: h.score, severity: h.severity, checks: h.checks ?? [], checkedAt: h.checkedAt?.toISOString() ?? null } : null;
+        })(),
       }))}
       picker={picker}
     />
