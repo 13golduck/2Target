@@ -19,6 +19,13 @@ describe("checkPublishable", () => {
     expect(checkPublishable("instagram", "carosello", [jpg, jpg, mp4], "")).toBeNull();
     expect(checkPublishable("instagram", "carosello", Array(11).fill(jpg), "")).toMatch(/da 2 a 10/);
   });
+  it("reel e carosello senza media non escono come post di solo testo (anche su Facebook e LinkedIn)", () => {
+    expect(checkPublishable("facebook", "reel", [], "Testo")).toMatch(/richiede un video/);
+    expect(checkPublishable("linkedin", "video", [jpg], "Testo")).toMatch(/richiede un video/);
+    expect(checkPublishable("facebook", "carosello", [jpg], "Testo")).toMatch(/da 2 a 10/);
+    expect(checkPublishable("facebook", "post", [], "Solo testo")).toBeNull();
+    expect(checkPublishable("facebook", "reel", [mp4], "")).toBeNull();
+  });
   it("Instagram: un solo file fuori dal carosello, reel solo video", () => {
     expect(checkPublishable("instagram", "post", [jpg, jpg], "")).toMatch(/un solo file/);
     expect(checkPublishable("instagram", "reel", [jpg], "")).toMatch(/video/);

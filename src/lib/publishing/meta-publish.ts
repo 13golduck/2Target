@@ -57,6 +57,10 @@ export function isDryRun() {
 export function checkPublishable(platform: string, format: string, media: { kind: string; mime: string }[], caption: string) {
   const images = media.filter((m) => m.kind === "image");
   const videos = media.filter((m) => m.kind === "video");
+  // Il formato della scheda vale su tutti i profili: un reel senza video o un carosello senza foto non deve
+  // uscire come post di solo testo (Facebook e LinkedIn lo accetterebbero)
+  if ((format === "reel" || format === "video") && !videos.length) return `Il ${format} richiede un video: caricalo nella scheda`;
+  if (format === "carosello" && images.length + videos.length < 2) return "Il carosello va da 2 a 10 foto o video: caricali nella scheda";
   if (platform === "instagram") {
     if (!media.length) return "Instagram richiede almeno una foto o un video";
     if (images.some((m) => m.mime !== "image/jpeg")) return "Instagram accetta solo foto JPEG: ricarica le immagini (2Target le converte da sola)";
