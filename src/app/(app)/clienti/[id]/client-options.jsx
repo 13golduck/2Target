@@ -8,6 +8,7 @@ import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import Switch from '@mui/material/Switch';
+import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import CardHeader from '@mui/material/CardHeader';
 import Typography from '@mui/material/Typography';
@@ -21,7 +22,7 @@ import { RouterLink } from 'src/routes/components';
 import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
 
-import { previewReport, saveReportSettings } from '../../client-settings-actions';
+import { previewReport, saveReportSettings, monthlyReportLinkAction } from '../../client-settings-actions';
 
 // ----------------------------------------------------------------------
 // Report mensile automatico al cliente e stato dell'approvazione via link.
@@ -31,6 +32,23 @@ export function ClientOptions({ clientId, options, readOnly }) {
   const [notify, setNotify] = useState(options.notifyPublished);
   const [email, setEmail] = useState(options.reportEmail ?? '');
   const [preview, setPreview] = useState(null);
+  // Ultimi 6 mesi chiusi, dal più recente: il report si apre per il mese scelto
+  const [months] = useState(() =>
+    Array.from({ length: 6 }, (_, i) => {
+      const d = new Date();
+      d.setUTCDate(1);
+      d.setUTCMonth(d.getUTCMonth() - 1 - i);
+      return { value: d.toISOString().slice(0, 7), label: d.toLocaleDateString('it-IT', { month: 'long', year: 'numeric', timeZone: 'UTC' }) };
+    }),
+  );
+  const [month, setMonth] = useState(months[0].value);
+
+  const openReport = () =>
+    start(async () => {
+      const r = await monthlyReportLinkAction(clientId, month);
+      if (r.error) toast.error(r.error);
+      else window.open(r.link, '_blank', 'noopener');
+    });
   const [busy, start] = useTransition();
 
   const save = () =>
@@ -83,6 +101,14 @@ export function ClientOptions({ clientId, options, readOnly }) {
             <Button size="small" color="inherit" onClick={test} disabled={busy}>Mandala a me</Button>
           </Stack>
         )}
+        <Stack direction="row" spacing={1} sx={{ pt: 1, borderTop: 1, borderColor: 'divider', alignItems: 'center' }}>
+          <TextField select size="small" label="Report del mese" value={month} onChange={(e) => setMonth(e.target.value)} sx={{ flex: 1, textTransform: 'capitalize' }}>
+            {months.map((m) => (
+              <MenuItem key={m.value} value={m.value} sx={{ textTransform: 'capitalize' }}>{m.label}</MenuItem>
+            ))}
+          </TextField>
+          <Button size="small" variant="outlined" onClick={openReport} disabled={busy}>Apri (PDF e video)</Button>
+        </Stack>
         <Box sx={{ pt: 1, borderTop: 1, borderColor: 'divider' }}>
           <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mt: 1 }}>
             <Typography variant="body2" sx={{ flex: 1 }}>Approvazione via link</Typography>

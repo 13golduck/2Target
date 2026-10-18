@@ -10,7 +10,7 @@ import { approvalLink } from "@/lib/approval";
 import { audit } from "@/lib/audit";
 import { requireClientAccess, requireWriter } from "@/lib/auth";
 import { itemIssues } from "@/lib/editorial-plan";
-import { buildMonthlyReport, previousMonth } from "@/lib/monthly-report";
+import { reportLink, buildMonthlyReport, previousMonth } from "@/lib/monthly-report";
 import { sendMail } from "@/lib/mail";
 import { toPlanItem } from "@/lib/plan-adapter";
 
@@ -74,6 +74,13 @@ export async function sendForApproval(planId: number) {
 }
 
 /** Anteprima del report del mese scorso (HTML) e invio di prova a chi lo chiede. */
+/** Link alla pagina del report di un mese (PDF e video), lo stesso che riceve il cliente. */
+export async function monthlyReportLinkAction(clientId: number, month: string) {
+  await requireClientAccess(clientId);
+  if (!/^\d{4}-\d{2}$/.test(month)) return { error: "Mese non valido" };
+  return { link: reportLink(clientId, month) };
+}
+
 export async function previewReport(clientId: number, sendToMe = false) {
   const me = await requireWriter();
   await requireClientAccess(clientId);
