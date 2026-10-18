@@ -49,6 +49,12 @@ jobs:
           rm -rf dist/drizzle && cp -r drizzle dist/drizzle
           # Il .env non c'è: le variabili si impostano nell'app Node.js di Plesk
           rm -f dist/.env*
+          # FFmpeg per controllare e convertire i video: il programma Linux scaricato da `npm ci` (pacchetto
+          # ffmpeg-static) non viene incluso da Next nel pacchetto standalone, quindi si copia a mano e si prova
+          test -x node_modules/ffmpeg-static/ffmpeg || node node_modules/ffmpeg-static/install.js
+          mkdir -p dist/node_modules/ffmpeg-static
+          cp node_modules/ffmpeg-static/ffmpeg node_modules/ffmpeg-static/package.json node_modules/ffmpeg-static/LICENSE node_modules/ffmpeg-static/ffmpeg.LICENSE dist/node_modules/ffmpeg-static/
+          dist/node_modules/ffmpeg-static/ffmpeg -version | head -1
           # Versione mostrata nei messaggi di sistema dell'audit trail
           echo "${GITHUB_SHA::7}" > dist/VERSION
           cat > dist/README.md <<'MD'
