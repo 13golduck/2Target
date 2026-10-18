@@ -14,6 +14,7 @@ import * as linkedin from "./linkedin";
 import * as meta from "./meta";
 import * as tiktok from "./tiktok";
 import type { DailyValue, PostData } from "./meta";
+import * as youtube from "./youtube";
 
 type Channel = typeof socialAccounts.$inferSelect;
 type Connection = typeof connections.$inferSelect;
@@ -184,6 +185,10 @@ export async function syncChannel(channel: Channel) {
         const r = await google.syncBusinessProfile(userToken, id);
         await saveDaily(channel.id, r.daily);
         for (const s of r.snapshots) await db.insert(seoSnapshots).values({ socialAccountId: channel.id, ...s });
+      } else if (channel.platform === "youtube") {
+        const r = await youtube.syncYouTube(userToken, id);
+        await saveDaily(channel.id, r.daily);
+        await savePosts(channel.id, r.posts);
       } else if (channel.platform === "google_ads") {
         const r = await google.syncGoogleAds(userToken, id);
         await saveDaily(channel.id, r.daily);

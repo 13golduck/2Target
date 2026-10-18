@@ -52,6 +52,10 @@ export const GOOGLE = {
   get adsDeveloperToken() {
     return integrationKey("googleAdsDeveloperToken");
   },
+  /** YouTube (canale, video, statistiche) nel collegamento Google. Si spegne con GOOGLE_YOUTUBE_ENABLED=false. */
+  get youtubeEnabled() {
+    return process.env.GOOGLE_YOUTUBE_ENABLED !== "false";
+  },
   /** Google Ads attivo: l'accesso (Test/Explorer/Base) è del progetto Google Cloud. Si spegne con GOOGLE_ADS_ENABLED=false. */
   get adsEnabled() {
     return process.env.GOOGLE_ADS_ENABLED !== "false";
@@ -62,7 +66,7 @@ export const GOOGLE = {
   },
   /** Versione delle API Google Ads (Google ne ritira una all'anno: si aggiorna da qui o con GOOGLE_ADS_VERSION). */
   adsVersion: process.env.GOOGLE_ADS_VERSION ?? "v22",
-  // Search Console, Analytics 4, Business Profile e Google Ads (se attivo)
+  // Search Console, Analytics 4, Business Profile, Google Ads e YouTube (se attivi)
   get scopes() {
     return [
       "openid",
@@ -71,6 +75,7 @@ export const GOOGLE = {
       "https://www.googleapis.com/auth/analytics.readonly",
       "https://www.googleapis.com/auth/business.manage",
       ...(this.adsEnabled ? ["https://www.googleapis.com/auth/adwords"] : []),
+      ...(this.youtubeEnabled ? ["https://www.googleapis.com/auth/youtube.readonly", "https://www.googleapis.com/auth/yt-analytics.readonly"] : []),
     ];
   },
 };

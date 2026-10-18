@@ -4,6 +4,7 @@ import { ensureIntegrationKeys } from "@/lib/integrations/keys";
 import { GOOGLE, callbackUrl } from "./config";
 import { ApiError, getJson, qs } from "./http";
 import type { DailyValue } from "./meta";
+import * as youtube from "./youtube";
 
 // Google: Search Console (SEO), Analytics 4 (traffico), Business Profile (scheda Google del cliente),
 // Google Ads (campagne a pagamento) e PageSpeed Insights (velocità e SEO tecnica).
@@ -58,10 +59,11 @@ export async function refreshAccessToken(refreshToken: string) {
 }
 
 export interface GoogleAsset {
-  kind: "search_console" | "ga4" | "business_profile" | "google_ads";
+  kind: "search_console" | "ga4" | "business_profile" | "google_ads" | "youtube";
   externalId: string;
   handle: string;
   name: string;
+  pictureUrl?: string;
 }
 
 export async function listAssets(token: string): Promise<GoogleAsset[]> {
@@ -85,6 +87,8 @@ export async function listAssets(token: string): Promise<GoogleAsset[]> {
   // Business Profile e Google Ads: richiedono permessi in più (gli account collegati prima vanno ricollegati)
   out.push(...(await listBusinessProfiles(token).catch(() => [])));
   out.push(...(await listAdsAccounts(token).catch(() => [])));
+  // YouTube: permessi in più (chi ha collegato Google prima va ricollegato)
+  if (GOOGLE.youtubeEnabled) out.push(...(await youtube.listChannels(token).catch(() => [])));
   return out;
 }
 

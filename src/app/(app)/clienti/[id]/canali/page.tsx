@@ -133,6 +133,7 @@ export default async function ChannelsPage({ params, searchParams }: { params: P
           followers: last(c.id, "followers"),
           likesTotal: last(c.id, "likes_total"),
           videosTotal: last(c.id, "posts_total"),
+          views30: sum(c.id, "views"),
           reach30: sum(c.id, "reach"),
           clicks30: sum(c.id, "seo_clicks"),
           impressions30: sum(c.id, "seo_impressions"),

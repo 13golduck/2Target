@@ -54,7 +54,7 @@ export const CHANNEL = {
   facebook: { label: 'Facebook', icon: 'socials:facebook' },
   tiktok: { label: 'TikTok', icon: 'socials:tiktok' },
   linkedin: { label: 'LinkedIn', icon: 'socials:linkedin' },
-  youtube: { label: 'YouTube', icon: 'solar:play-circle-bold' },
+  youtube: { label: 'YouTube', icon: 'socials:youtube' },
   search_console: { label: 'Search Console', icon: 'socials:google' },
   ga4: { label: 'Analytics 4', icon: 'solar:chart-square-outline' },
   business_profile: { label: 'Scheda Google', icon: 'custom:location-fill' },
@@ -64,7 +64,7 @@ export const CHANNEL = {
 
 const PROVIDERS = [
   { key: 'meta', name: 'Meta', what: 'Instagram e pagine Facebook: profilo, follower, post e statistiche', icons: ['socials:instagram', 'socials:facebook'] },
-  { key: 'google', name: 'Google', what: 'Search Console, Analytics 4, scheda Google (Business Profile) e Google Ads', icons: ['socials:google'] },
+  { key: 'google', name: 'Google', what: 'Search Console, Analytics 4, scheda Google (Business Profile), Google Ads e YouTube', icons: ['socials:google', 'socials:youtube'] },
   { key: 'instagram', name: 'Instagram senza Facebook', what: 'Per i profili professionali senza Pagina Facebook: accesso con Instagram, statistiche e pubblicazione', icons: ['socials:instagram'] },
   { key: 'tiktok', name: 'TikTok', what: 'Profilo, video e statistiche · pubblicazione di video e foto', icons: ['socials:tiktok'] },
   { key: 'linkedin', name: 'LinkedIn', what: 'Pagina aziendale: follower, statistiche, post e pubblicazione (accede chi amministra la pagina)', icons: ['socials:linkedin'] },
@@ -245,6 +245,12 @@ function ChannelCard({ channel: c, canPublish }) {
           { label: 'Reach 30 gg', value: c.platform === 'instagram' ? c.stats.reach30 : null },
           { label: 'Post letti', value: c.stats.posts },
         ]
+      : c.platform === 'youtube'
+        ? [
+            { label: 'Iscritti', value: c.stats.followers },
+            { label: 'Visualizzazioni 30 gg', value: c.stats.views30 },
+            { label: 'Video', value: c.stats.videosTotal },
+          ]
       : c.platform === 'tiktok'
         ? [
             { label: 'Follower', value: c.stats.followers },

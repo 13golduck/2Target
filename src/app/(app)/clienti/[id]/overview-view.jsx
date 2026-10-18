@@ -27,7 +27,7 @@ import { ClientOptions } from './client-options';
 const FORMAT_COLOR = { reel: '#B78A0F', post: '#00A76F', carosello: '#00B8D9', storia: '#8E33FF', video: '#637381' };
 const STATUS = { bozza: ['Bozza', 'default'], da_approvare: ['Da approvare', 'warning'], approvato: ['Approvato', 'info'] };
 const KPI_COLOR = { bene: 'success', male: 'warning', troppo_male: 'error', in_attesa: 'default' };
-const PLATFORM_ICON = { instagram: 'socials:instagram', facebook: 'socials:facebook', tiktok: 'socials:tiktok', linkedin: 'socials:linkedin', youtube: 'solar:play-circle-bold' };
+const PLATFORM_ICON = { instagram: 'socials:instagram', facebook: 'socials:facebook', tiktok: 'socials:tiktok', linkedin: 'socials:linkedin', youtube: 'socials:youtube' };
 const CHECKUP_STATE = { pronto: 'Pronto', domande: 'Aspetta le tue risposte', errore: 'Fermato da un errore', interrotto: 'Fermato', ricognizione: 'In lavorazione', ricerca: 'In lavorazione', scrittura: 'In lavorazione', da_avviare: 'Da avviare' };
 
 export function OverviewView({ clientId, options, readOnly, steps, upcoming, counters, kpis, channels, checkup, plan }) {

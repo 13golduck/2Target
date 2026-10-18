@@ -91,7 +91,7 @@ export async function attachChannels(f: FormData) {
       if (!chosen.has(`${a.kind}|${a.externalId}`)) continue;
       const other = await owner(a.kind, a.externalId);
       if (other) refused.push(`${a.handle} è già collegato al cliente ${other}`);
-      else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, undefined, null));
+      else ids.push(await upsertChannel(conn.clientId, conn.id, a.kind, a.externalId, a.handle, a.name, a.pictureUrl, null));
     }
   }
 
