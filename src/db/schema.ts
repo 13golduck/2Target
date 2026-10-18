@@ -669,6 +669,8 @@ export const leads = mysqlTable(
     message: text("message"),
     source: mysqlEnum("source", LEAD_SOURCES).notNull().default("altro"),
     campaignId: int("campaign_id").references(() => campaigns.id, { onDelete: "set null" }),
+    /** Sponsorizzata che ha portato il contatto (modulo Meta, oppure utm_campaign=2t-<id> dal sito). */
+    adCampaignId: int("ad_campaign_id").references(() => adCampaigns.id, { onDelete: "set null" }),
     editorialItemId: int("editorial_item_id").references(() => editorialItems.id, { onDelete: "set null" }),
     utmSource: varchar("utm_source", { length: 120 }),
     utmMedium: varchar("utm_medium", { length: 120 }),

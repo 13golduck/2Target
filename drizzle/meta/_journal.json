@@ -246,6 +246,13 @@
       "when": 1792357852446,
       "tag": "0034_avvisi_pubblicazione",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "5",
+      "when": 1792358382155,
+      "tag": "0035_lead_per_campagna",
+      "breakpoints": true
     }
   ]
 }
