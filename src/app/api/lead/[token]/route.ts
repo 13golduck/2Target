@@ -2,7 +2,8 @@ import { and, eq, gte, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "@/db";
-import { clients, LEAD_SOURCES, leadEvents, leads } from "@/db/schema";
+import { adCampaigns, clients, LEAD_SOURCES, leadEvents, leads } from "@/db/schema";
+import { campaignIdFromUtm } from "@/lib/ads/roi";
 import { audit } from "@/lib/audit";
 import { notifyNewLeads } from "@/lib/lead-notify";
 
@@ -96,6 +97,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   // Tetto durevole per cliente: regge ai riavvii e non si aggira falsificando l'IP
   if (await clientFlooded(client.id)) return NextResponse.json({ ok: false, message: "Troppe richieste" }, { status: 429, headers: cors });
 
+  // Arrivato da una sponsorizzata di 2Target (utm_campaign=2t-<id>)? Solo se la campagna è di questo cliente
+  const fromCampaign = campaignIdFromUtm(get("utm_campaign"));
+  const [adCampaign] = fromCampaign
+    ? await db.select({ id: adCampaigns.id, itemId: adCampaigns.itemId }).from(adCampaigns).where(and(eq(adCampaigns.id, fromCampaign), eq(adCampaigns.clientId, client.id)))
+    : [];
+
   const now = new Date();
   const [r] = await db.insert(leads).values({
     clientId: client.id,
@@ -112,6 +119,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     landingUrl: get("page", 500) ?? request.headers.get("referer")?.slice(0, 500) ?? null,
     stage: "nuovo",
     stageChangedAt: now,
+    adCampaignId: adCampaign?.id ?? null,
+    editorialItemId: adCampaign?.itemId ?? null,
   });
   await db.insert(leadEvents).values({ leadId: r.insertId, toStage: "nuovo", at: now });
   // Avviso immediato al responsabile del cliente (in sottofondo: il modulo del sito non aspetta l'email)

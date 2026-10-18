@@ -13,6 +13,7 @@ import { decryptSecret } from "@/lib/secret-box";
 import { clientAdsExposure, metaUserToken, toEur } from "./ads";
 import { createNewAd, uploadImage, uploadVideo, type CreativeMedia, type NewAdObjective, type Placement } from "./meta-campaigns";
 import { createLeadForm, fetchFormLeads, mapLeadFields } from "./meta-leads";
+import { utmCampaign } from "./roi";
 
 // Campagne nuove e moduli contatti: le regole di 2Target sopra ./meta-campaigns e ./meta-leads.
 // Le stesse delle sponsorizzate dei post: account scelto in Canali, chi paga fissato al lancio, tetto mensile
@@ -122,6 +123,8 @@ export async function launchNewCampaign(i: NewCampaignInput) {
       else uploaded.push({ kind: "image", hash: await uploadImage(token, client.adAccountId, await readFile(mediaPath(m.storageKey)), m.fileName) });
     }
     const r = await createNewAd({
+      // Contatti dal sito attribuiti a questa campagna (vedi /api/lead e ads/roi)
+      urlTags: `utm_source=${i.placement === "instagram" ? "instagram" : "facebook"}&utm_medium=paid&utm_campaign=${utmCampaign(id)}`,
       userToken: token,
       adAccountId: client.adAccountId,
       name: `${client.name} · ${i.name}`,
@@ -217,8 +220,9 @@ export async function syncLeadForms(clientId: number) {
   if (!ident.pageToken) return { added: 0, errors: ["Pagina Facebook non collegata: impossibile leggere i contatti dei moduli"] };
 
   // Campagne Meta del cliente → scheda del piano, per collegare il lead al contenuto che l'ha generato
-  const camps = await db.select({ meta: adCampaigns.metaCampaignId, itemId: adCampaigns.itemId }).from(adCampaigns).where(eq(adCampaigns.clientId, clientId));
-  const itemOf = (metaCampaignId?: string) => camps.find((c) => c.meta && c.meta === metaCampaignId)?.itemId ?? null;
+  const camps = await db.select({ id: adCampaigns.id, meta: adCampaigns.metaCampaignId, itemId: adCampaigns.itemId }).from(adCampaigns).where(eq(adCampaigns.clientId, clientId));
+  const campOf = (metaCampaignId?: string) => camps.find((c) => c.meta && c.meta === metaCampaignId);
+  const itemOf = (metaCampaignId?: string) => campOf(metaCampaignId)?.itemId ?? null;
 
   let added = 0;
   const errors: string[] = [];
@@ -244,6 +248,7 @@ export async function syncLeadForms(clientId: number) {
             message: m.message,
             source: "meta_ads",
             editorialItemId: itemOf(l.campaign_id),
+            adCampaignId: campOf(l.campaign_id)?.id ?? null,
             utmSource: "facebook",
             utmMedium: "lead_ads",
             utmCampaign: f.name.slice(0, 200),

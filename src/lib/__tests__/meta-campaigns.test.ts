@@ -95,8 +95,9 @@ describe("lancio di un'inserzione nuova", () => {
 
   it("campagna contatti: obiettivo, ottimizzazione e Pagina promossa; tutto in pausa, poi acceso dal basso", async () => {
     const calls = fakeGraph();
-    const r = await createNewAd(input);
+    const r = await createNewAd({ ...input, urlTags: "utm_source=facebook&utm_medium=paid&utm_campaign=2t-5" });
     expect(r).toEqual({ campaignId: "id1", adSetId: "id2", creativeId: "id3", adId: "id4" });
+    expect(calls[2].body.get("url_tags")).toBe("utm_source=facebook&utm_medium=paid&utm_campaign=2t-5");
     expect(calls[0].body.get("objective")).toBe("OUTCOME_LEADS");
     expect(calls[1].body.get("optimization_goal")).toBe("LEAD_GENERATION");
     expect(calls[1].body.get("destination_type")).toBe("ON_AD");

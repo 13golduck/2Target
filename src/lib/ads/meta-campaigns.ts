@@ -183,6 +183,8 @@ export type NewAdInput = {
   endAt: Date;
   targeting: TargetingInput;
   creative: CreativeInput;
+  /** Parametri aggiunti da Meta ai link (UTM): permettono di attribuire alla campagna i contatti dal sito. */
+  urlTags?: string;
 };
 
 export type NewAdResult = { campaignId: string; adSetId: string; creativeId: string; adId: string };
@@ -225,6 +227,7 @@ export async function createNewAd(i: NewAdInput): Promise<NewAdResult> {
     const creative = await post<{ id: string }>(`${account}/adcreatives`, {
       name: label,
       object_story_spec: JSON.stringify(buildObjectStorySpec(i.creative)),
+      ...(i.urlTags ? { url_tags: i.urlTags } : {}),
       access_token: token,
     });
 
