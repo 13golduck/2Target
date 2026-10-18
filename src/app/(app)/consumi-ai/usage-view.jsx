@@ -57,7 +57,7 @@ export function UsageView({ isAdmin, configured, running, status, fx, tokens, mo
         {ratio < 1 && warning && <Alert severity="warning">Superato il {Math.round(limits.warnPct * 100)}% del budget mensile.</Alert>}
 
         <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid size={{ xs: 12, md: isAdmin ? 6 : 12 }}>
             <Card sx={{ p: 3, height: 1 }}>
               <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>Spesa del mese</Typography>
               <Typography variant="h3">
@@ -70,6 +70,9 @@ export function UsageView({ isAdmin, configured, running, status, fx, tokens, mo
               </Typography>
             </Card>
           </Grid>
+          {/* Dettagli tecnici (token e cache): solo per gli amministratori */}
+          {isAdmin && (
+          <>
           <Grid size={{ xs: 6, md: 3 }}>
             <Card sx={{ p: 3, height: 1 }}>
               <Typography variant="subtitle2" sx={{ color: 'text.secondary' }}>Letti dalla cache</Typography>
@@ -86,6 +89,8 @@ export function UsageView({ isAdmin, configured, running, status, fx, tokens, mo
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>token in uscita · {tokens.searches} ricerche web</Typography>
             </Card>
           </Grid>
+          </>
+          )}
         </Grid>
 
         <Grid container spacing={3}>
@@ -109,7 +114,7 @@ export function UsageView({ isAdmin, configured, running, status, fx, tokens, mo
                   <TableRow>
                     <TableCell>Cliente</TableCell>
                     <TableCell align="right">Check-up</TableCell>
-                    <TableCell align="right">Chiamate</TableCell>
+                    <TableCell align="right">Lavori AI</TableCell>
                     <TableCell align="right">Spesa</TableCell>
                   </TableRow>
                 </TableHead>
