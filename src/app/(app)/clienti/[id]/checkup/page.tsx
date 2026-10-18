@@ -33,7 +33,7 @@ export default async function CheckupPage({ params, searchParams }: { params: Pr
     createdAt: c.createdAt.toISOString(),
     completedAt: c.completedAt?.toISOString() ?? null,
     deliveredAt: c.deliveredAt?.toISOString() ?? null,
-    costUsd: Number(costs.find((x) => x.checkupId === c.id)?.cost ?? 0),
+    costEur: Number(costs.find((x) => x.checkupId === c.id)?.cost ?? 0),
     archived: !!c.archivedAt,
   }));
   // Si apre il più recente non archiviato; gli archiviati restano raggiungibili dallo storico
@@ -120,7 +120,7 @@ export default async function CheckupPage({ params, searchParams }: { params: Pr
         cacheWriteTokens: r.cacheWriteTokens,
         webSearches: r.webSearches,
         webFetches: r.webFetches,
-        costUsd: r.costEur,
+        costEur: r.costEur,
         durationMs: r.durationMs,
       }))}
       template={CHECKUP_SECTIONS}

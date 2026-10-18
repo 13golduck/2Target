@@ -60,6 +60,9 @@ const MODES = [
 ];
 // Ambiti dei KPI come li legge l'utente
 const SCOPE_LABEL = { organico: 'Organico', sponsorizzato: 'Sponsorizzato', business: 'Business' };
+/** Importo in euro all'italiana (1.234,56 €). */
+const eur = (n, digits) => `${Number(n ?? 0).toLocaleString('it-IT', { minimumFractionDigits: digits, maximumFractionDigits: digits })} €`;
+
 const STEPS = ['Dati del cliente', 'Ricognizione online', 'Domande al consulente', 'Ricerca approfondita', 'Scrittura', 'Revisione'];
 const STEP_OF = { ricognizione: 1, domande: 2, ricerca: 3, scrittura: 4, pronto: 5 };
 const WORKING = ['ricognizione', 'ricerca', 'scrittura'];
@@ -360,7 +363,7 @@ function StartWizard({ aiConfigured, client, previous }) {
 
 function WorkingPanel({ checkup, runs }) {
   const label = { ricognizione: 'Ricognizione online in corso', ricerca: 'Ricerca approfondita in corso', scrittura: 'Scrittura del check-up in corso' }[checkup.aiState];
-  const spent = runs.reduce((t, r) => t + r.costUsd, 0);
+  const spent = runs.reduce((t, r) => t + r.costEur, 0);
   const searches = runs.reduce((t, r) => t + r.webSearches, 0);
   return (
     <Card sx={{ p: 3 }}>
@@ -371,7 +374,7 @@ function WorkingPanel({ checkup, runs }) {
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>{checkup.aiProgress ?? 'Avvio…'}</Typography>
         </Box>
         <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'right' }}>
-          {searches} ricerche finora<br />≈ {spent.toFixed(2).replace('.', ',')} €
+          {searches} ricerche finora<br />≈ {eur(spent, 2)}
         </Typography>
         <StopButton checkupId={checkup.id} />
       </Stack>
@@ -777,7 +780,7 @@ function HistoryBar({ history, current, isNew, showArchived }) {
                   {' · '}
                   {h.aiState === 'interrotto' ? 'interrotto' : STATUS[h.status].label.toLowerCase()}
                   {h.aiMode && ` · ${MODE_SHORT[h.aiMode]}`}
-                  {h.costUsd > 0 && ` · ${h.costUsd.toFixed(2).replace('.', ',')} €`}
+                  {h.costEur > 0 && ` · ${eur(h.costEur, 2)}`}
                 </span>
               }
             />
@@ -868,7 +871,7 @@ function UsageCard({ runs, mode, compact }) {
       cache: t.cache + r.cacheReadTokens,
       searches: t.searches + r.webSearches,
       fetches: t.fetches + r.webFetches,
-      cost: t.cost + r.costUsd,
+      cost: t.cost + r.costEur,
       ms: t.ms + (r.durationMs ?? 0),
     }),
     { input: 0, output: 0, cache: 0, searches: 0, fetches: 0, cost: 0, ms: 0 }
@@ -877,7 +880,7 @@ function UsageCard({ runs, mode, compact }) {
     { label: 'Token in ingresso', value: k(tot.input), sub: `di cui ${k(tot.cache)} dalla cache` },
     { label: 'Token in uscita', value: k(tot.output), sub: 'ragionamento + testo' },
     { label: 'Ricerche web', value: tot.searches, sub: `${tot.fetches} pagine lette` },
-    { label: 'Costo stimato', value: `${tot.cost.toFixed(2)} $`, sub: `${Math.round(tot.ms / 60000)} min di lavoro` },
+    { label: 'Costo stimato', value: eur(tot.cost, 2), sub: `${Math.round(tot.ms / 60000)} min di lavoro` },
   ];
   return (
     <Card sx={{ height: 1 }}>
@@ -916,7 +919,7 @@ function UsageCard({ runs, mode, compact }) {
                   <TableCell align="right">{k(r.inputTokens + r.cacheReadTokens + r.cacheWriteTokens)}</TableCell>
                   <TableCell align="right">{k(r.outputTokens)}</TableCell>
                   <TableCell align="right">{r.webSearches || '—'}</TableCell>
-                  <TableCell align="right">{r.costUsd.toFixed(3).replace('.', ',')} €</TableCell>
+                  <TableCell align="right">{eur(r.costEur, 3)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

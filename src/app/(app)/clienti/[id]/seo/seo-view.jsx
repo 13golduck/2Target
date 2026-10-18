@@ -38,6 +38,9 @@ import { Label } from 'src/components/label';
 import { saveBrandTerms } from '../../../client-settings-actions';
 import { startSeoAnalysis } from '../../../seo-actions';
 
+
+/** Variazione percentuale all'italiana (virgola decimale). */
+const pctNum = (n, digits) => n.toLocaleString('it-IT', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 // ----------------------------------------------------------------------
 
 const n = (v, d = 0) => (v == null || Number.isNaN(v) ? '—' : Number(v).toLocaleString('it-IT', { maximumFractionDigits: d }));
@@ -157,13 +160,13 @@ function SearchConsoleBlock({ data, clientId, readOnly }) {
                 <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', color: c.delta >= 0 ? 'success.main' : 'error.main' }}>
                   <Iconify icon={c.delta >= 0 ? 'eva:trending-up-fill' : 'eva:trending-down-fill'} width={18} />
                   <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                    {c.delta >= 0 ? '+' : ''}{(c.delta * 100).toFixed(1)}%
+                    {c.delta >= 0 ? '+' : ''}{pctNum(c.delta * 100, 1)}%
                   </Typography>
                 </Stack>
               )}
               {c.yoy != null && Number.isFinite(c.yoy) && (
                 <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
-                  {c.yoy >= 0 ? '+' : ''}{(c.yoy * 100).toFixed(1)}% sull&apos;anno prima
+                  {c.yoy >= 0 ? '+' : ''}{pctNum(c.yoy * 100, 1)}% sull&apos;anno prima
                 </Typography>
               )}
             </Card>
@@ -419,7 +422,7 @@ function DevicesCard({ devices }) {
                   <Typography variant="subtitle2">{n(d.clicks)} clic</Typography>
                   {delta != null && (
                     <Typography variant="caption" sx={{ ml: 1, width: 56, textAlign: 'right', color: delta >= 0 ? 'success.main' : 'error.main' }}>
-                      {delta >= 0 ? '+' : ''}{(delta * 100).toFixed(0)}%
+                      {delta >= 0 ? '+' : ''}{pctNum(delta * 100, 0)}%
                     </Typography>
                   )}
                 </Stack>
@@ -540,7 +543,7 @@ function StatCard({ label, value, delta, invert }) {
       {delta != null && Number.isFinite(delta) && (
         <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', color: good ? 'success.main' : 'error.main' }}>
           <Iconify icon={delta >= 0 ? 'eva:trending-up-fill' : 'eva:trending-down-fill'} width={18} />
-          <Typography variant="caption" sx={{ fontWeight: 600 }}>{delta >= 0 ? '+' : ''}{(delta * 100).toFixed(1)}%</Typography>
+          <Typography variant="caption" sx={{ fontWeight: 600 }}>{delta >= 0 ? '+' : ''}{pctNum(delta * 100, 1)}%</Typography>
         </Stack>
       )}
     </Card>
