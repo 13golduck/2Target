@@ -117,6 +117,8 @@ export const clients = mysqlTable("clients", {
   reportLastMonth: varchar("report_last_month", { length: 7 }),
   /** Parole del brand per separare le ricerche con il nome del cliente (oltre a nome e dominio), separate da virgola. */
   brandTerms: varchar("brand_terms", { length: 500 }),
+  /** Funzioni spente per questo cliente (es. { lead: false }); quelle non indicate seguono l'impostazione generale. */
+  features: json("features").$type<Partial<Record<string, boolean>>>(),
   createdAt: created(),
 });
 
