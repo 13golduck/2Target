@@ -83,7 +83,7 @@ type Discovery = {
 };
 
 /** Un account Instagram professionale collegato a 2Target (di qualsiasi cliente, o di Golduck) da usare come lente. */
-async function discoveryLens() {
+export async function discoveryLens() {
   const [lens] = await db
     .select({ externalId: socialAccounts.externalId, token: socialAccounts.assetTokenEnc })
     .from(socialAccounts)
@@ -94,7 +94,7 @@ async function discoveryLens() {
   return lens?.externalId && token ? { igId: lens.externalId, token } : null;
 }
 
-async function instagramDiscovery(username: string, lens: { igId: string; token: string }) {
+export async function instagramDiscovery(username: string, lens: { igId: string; token: string }) {
   // Il nome entra nell'espressione dei campi dell'API: solo caratteri ammessi da Instagram
   if (!/^[a-z0-9._]{1,30}$/.test(username)) throw new Error("nome del profilo non valido");
   const fields = `business_discovery.username(${username}){username,name,biography,website,followers_count,follows_count,media_count,media.limit(12){timestamp,media_type,media_product_type,like_count,comments_count,permalink}}`;
