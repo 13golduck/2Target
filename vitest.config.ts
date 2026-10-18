@@ -1,7 +1,9 @@
 import path from "node:path";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
+  // La build (.next/standalone) contiene una copia dei sorgenti: i test si eseguono solo da src
+  test: { exclude: [...configDefaults.exclude, ".next/**"] },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
