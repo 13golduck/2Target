@@ -418,7 +418,7 @@ function NewItemDialog({ planId, at, onClose, formats }) {
                 fullWidth
               />
             </Stack>
-            <Alert severity="info">Dopo la creazione si apre la scheda completa: hook, layout, script, clip, caption, CTA e sponsorizzata.</Alert>
+            <Alert severity="info">Dopo si apre la pubblicazione completa: testo, riprese, invito all’azione e sponsorizzata.</Alert>
           </Stack>
         </DialogContent>
         <DialogActions>

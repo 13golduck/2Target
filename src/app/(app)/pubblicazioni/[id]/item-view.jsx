@@ -51,7 +51,7 @@ const L = {
   production: { da_fare: 'Da fare', materiale_richiesto: 'Materiale richiesto al cliente', in_montaggio: 'In montaggio', pronto: 'Pronto' },
   destination: { sito: 'Sito web', telefono: 'Telefono', whatsapp: 'WhatsApp', direct: 'Messaggio diretto', modulo: 'Modulo contatti', nessuna: 'Nessuna' },
   objective: { notorieta: 'Notorietà', traffico: 'Traffico', interazione: 'Interazione', contatti: 'Contatti (lead)', messaggi: 'Messaggi', chiamate: 'Chiamate', vendite: 'Vendite' },
-  source: { cliente: 'Gira il cliente', golduck: 'Giriamo noi', ai: 'Immagine AI', stock: 'Stock' },
+  source: { cliente: 'Gira il cliente', golduck: 'Giriamo noi', ai: 'Immagine AI', stock: 'Foto d’archivio' },
 };
 const FLOW = ['bozza', 'da_approvare', 'approvato', 'pubblicato'];
 /** Piattaforme su cui la scheda può uscire anche, oltre al social principale. */
@@ -215,10 +215,10 @@ export function ItemView({ saved, client, item, issues, series, personas, option
               <Box {...panel('testo')}>
                 <Stack spacing={2.5}>
                   <TextField name="title" label="Titolo (interno)" defaultValue={item.title} required fullWidth />
-                  <TextField name="hook" label="Hook · prima frase o primi 3 secondi" defaultValue={item.hook ?? ''} multiline minRows={2} fullWidth />
+                  <TextField name="hook" label="Frase d’apertura (i primi 3 secondi)" defaultValue={item.hook ?? ''} multiline minRows={2} fullWidth />
                   <TextField
                     name="caption"
-                    label="Caption"
+                    label="Testo del post"
                     value={caption}
                     onChange={(e) => setCaption(e.target.value)}
                     multiline
@@ -259,9 +259,9 @@ export function ItemView({ saved, client, item, issues, series, personas, option
                       sx={{ flexShrink: 0 }}
                     />
                   </Stack>
-                  <TextField name="cta" label="CTA · invito all'azione nel testo" defaultValue={item.cta ?? ''} placeholder="es. Chiamami per una prima consulenza" fullWidth />
+                  <TextField name="cta" label="Invito all'azione (nel testo)" defaultValue={item.cta ?? ''} placeholder="es. Chiamami per una prima consulenza" fullWidth />
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                    <TextField select name="ctaDestination" label="Dove porta la CTA" value={destination} onChange={(e) => setDestination(e.target.value)} fullWidth>
+                    <TextField select name="ctaDestination" label="Dove porta l’invito" value={destination} onChange={(e) => setDestination(e.target.value)} fullWidth>
                       <MenuItem value="">—</MenuItem>
                       {Object.entries(L.destination).map(([k, v]) => <MenuItem key={k} value={k}>{v}</MenuItem>)}
                     </TextField>
@@ -336,7 +336,7 @@ export function ItemView({ saved, client, item, issues, series, personas, option
                     options={suggested}
                     defaultValue={item.adButton ?? ''}
                     renderInput={(params) => (
-                      <TextField {...params} name="adButton" label="Pulsante dell'inserzione" helperText={destination ? `Consigliati per «${L.destination[destination]}»` : 'Scegli prima dove porta la CTA (scheda Testo)'} />
+                      <TextField {...params} name="adButton" label="Pulsante dell'inserzione" helperText={destination ? `Consigliati per «${L.destination[destination]}»` : 'Scegli prima dove porta l’invito (scheda Testo)'} />
                     )}
                   />
                   <Stack direction="row" spacing={2}>
@@ -432,7 +432,7 @@ export function ItemView({ saved, client, item, issues, series, personas, option
                       ))}
                     </ToggleButtonGroup>
                   </Box>
-                  <TextField select name="stage" label="Fase del funnel" defaultValue={item.stage ?? ''} size="small" fullWidth>
+                  <TextField select name="stage" label="Obiettivo del contenuto" defaultValue={item.stage ?? ''} size="small" fullWidth>
                     <MenuItem value="">—</MenuItem>
                     {options.stages.map((s) => <MenuItem key={s.key} value={s.key}>{s.label}</MenuItem>)}
                   </TextField>
@@ -441,7 +441,7 @@ export function ItemView({ saved, client, item, issues, series, personas, option
                       <MenuItem value="">—</MenuItem>
                       {series.map((x) => <MenuItem key={x.id} value={x.id}>{x.name}</MenuItem>)}
                     </TextField>
-                    <TextField select name="personaId" label="Buyer persona" defaultValue={item.personaId ?? ''} size="small" fullWidth>
+                    <TextField select name="personaId" label="A chi parla" defaultValue={item.personaId ?? ''} size="small" fullWidth>
                       <MenuItem value="">—</MenuItem>
                       {personas.map((x) => <MenuItem key={x.id} value={x.id}>{x.name}</MenuItem>)}
                     </TextField>

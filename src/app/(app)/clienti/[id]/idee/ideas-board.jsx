@@ -158,7 +158,7 @@ export function IdeasBoard({ clientId, ideas, plans, formats, stages }) {
                   <MenuItem value="">—</MenuItem>
                   {formats.map((f) => <MenuItem key={f} value={f}>{f}</MenuItem>)}
                 </TextField>
-                <TextField select name="stage" label="Fase del funnel" defaultValue="" fullWidth>
+                <TextField select name="stage" label="Obiettivo del contenuto" defaultValue="" fullWidth>
                   <MenuItem value="">—</MenuItem>
                   {stages.map((s) => <MenuItem key={s.key} value={s.key}>{s.label}</MenuItem>)}
                 </TextField>

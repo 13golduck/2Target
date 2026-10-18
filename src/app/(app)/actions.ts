@@ -273,7 +273,7 @@ export async function createItem(f: FormData) {
 }
 
 const ITEM_LABELS: Record<string, string> = {
-  title: "Titolo", platform: "Piattaforma", crossPost: "Pubblica anche su", format: "Formato", stage: "Fase del funnel", seriesId: "Rubrica",
+  title: "Titolo", platform: "Piattaforma", crossPost: "Pubblica anche su", format: "Formato", stage: "Obiettivo del contenuto", seriesId: "Rubrica",
   personaId: "Buyer persona", scheduledAt: "Data di pubblicazione", hook: "Gancio", layoutNotes: "Layout", script: "Script", shotList: "Scene",
   onScreenText: "Testo a schermo", audioNotes: "Audio", caption: "Didascalia", hashtags: "Hashtag", cta: "CTA", ctaDestination: "Destinazione CTA",
   ctaUrl: "Link CTA", referencesUrls: "Riferimenti", needsClientMaterial: "Serve materiale del cliente", productionNotes: "Note di produzione",
