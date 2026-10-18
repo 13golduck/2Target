@@ -3,7 +3,10 @@
 import Tab from '@mui/material/Tab';
 import Card from '@mui/material/Card';
 import Tabs from '@mui/material/Tabs';
+import Stack from '@mui/material/Stack';
 import Avatar from '@mui/material/Avatar';
+import Tooltip from '@mui/material/Tooltip';
+import IconButton from '@mui/material/IconButton';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -51,6 +54,21 @@ const GROUPS = [
     ],
   },
 ];
+
+// Articolo della Guida per ogni scheda: il pulsante «?» porta alla spiegazione della pagina aperta
+const HELP = {
+  '': 'panoramica-cliente',
+  '/checkup': 'check-up',
+  '/brand': 'brand',
+  '/concorrenti': 'concorrenti',
+  '/idee': 'idee',
+  '/piano': 'piano-editoriale',
+  '/kpi': 'kpi',
+  '/lead': 'lead',
+  '/seo': 'seo',
+  '/canali': 'canali',
+  '/profili': 'profili-social',
+};
 
 // Sezioni visibili al Viewer (cliente): grafici e risultati
 const VIEWER_TABS = ['/kpi', '/lead', '/seo'];
@@ -101,7 +119,13 @@ export function ClientHeader({ client, clients, viewer = false, hiddenTabs, chil
         }
         links={[{ name: viewer ? 'Clienti' : 'Oggi', href: '/' }, { name: client.name }]}
         action={
-          clients?.length > 1 && (
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+            <Tooltip title="Come funziona questa pagina">
+              <IconButton component={RouterLink} href={`/guida/${HELP[section] ?? ''}`} aria-label="Guida di questa pagina">
+                <Iconify icon="solar:info-circle-bold" />
+              </IconButton>
+            </Tooltip>
+            {clients?.length > 1 && (
             <TextField
               select
               size="small"
@@ -115,7 +139,8 @@ export function ClientHeader({ client, clients, viewer = false, hiddenTabs, chil
                 <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
               ))}
             </TextField>
-          )
+            )}
+          </Stack>
         }
         sx={{ mb: 3 }}
       />
