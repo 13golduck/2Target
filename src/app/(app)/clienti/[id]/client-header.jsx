@@ -26,6 +26,7 @@ const GROUPS = [
     tabs: [
       { href: '/checkup', label: 'Check-up', icon: 'solar:notes-bold-duotone' },
       { href: '/brand', label: 'Brand', icon: 'solar:palette-bold' },
+      { href: '/concorrenti', label: 'Concorrenti', icon: 'solar:cup-star-bold' },
     ],
   },
   {
