@@ -46,15 +46,25 @@ export const TECH_ARTICLES: GuideArticle[] = [
     icon: "custom:send-fill",
     summary: "Dalla scheda approvata al post online: subito o all'ora scelta, su uno o più profili.",
     audience: "team",
-    keywords: ["programmare", "pubblicazione", "post", "uscita", "orario", "simulazione", "riprova", "errore", "reel", "carosello", "storia"],
+    keywords: ["crea post", "nuovo post", "programmare", "pubblicazione", "post", "uscita", "orario", "simulazione", "riprova", "errore", "reel", "carosello", "storia"],
     blocks: [
       { p: "2Target pubblica da sola su Facebook, Instagram, TikTok, LinkedIn, Threads, Pinterest, YouTube (Shorts) e sulla scheda Google. Pubblica solo schede **approvate**." },
-      { h: "Un post alla volta" },
+      { h: "Il modo più veloce: «Crea post»" },
+      {
+        steps: [
+          "Premi **Crea post** in alto, in qualsiasi pagina.",
+          "**Dove**: scegli il cliente; i suoi profili collegati sono già spuntati (togli quelli che non servono).",
+          "**Cosa**: scrivi il testo (oppure scrivi in due parole l'idea e premi **Scrivi con l'AI**) e trascina foto o video. Un video diventa un reel, più file un carosello. A destra vedi l'anteprima.",
+          "**Quando**: scegli data e ora (anche dagli orari migliori suggeriti) oppure **Pubblica ora**, poi **Programma**.",
+        ],
+      },
+      { p: "Il post entra da solo nel piano editoriale in corso. Se per quel cliente è attiva l'approvazione via link, o se non sei abilitato a pubblicare, va in «Da approvare» ed esce dopo l'ok. Per TikTok, sponsorizzate, script e riprese usa la scheda completa." },
+      { h: "Dalla scheda completa" },
       {
         steps: [
           "Apri la scheda del contenuto (dal piano editoriale o dal calendario).",
           "Carica foto o video nella scheda e controlla testo e hashtag. L'anteprima mostra come apparirà.",
-          "Porta la scheda in **Approvato** e premi **Salva**.",
+          "Porta la scheda in **Approvato** (in alto): si salva da sola.",
           "Nel riquadro **Pubblica sui profili del cliente** spunta i profili su cui deve uscire.",
           "Premi **Programma per …** (all'ora indicata nella scheda) oppure **Pubblica ora**, e conferma.",
         ],
