@@ -24,7 +24,6 @@ import Typography from '@mui/material/Typography';
 import Autocomplete from '@mui/material/Autocomplete';
 import ToggleButton from '@mui/material/ToggleButton';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 
 import { DashboardContent } from 'src/layouts/dashboard';
 
@@ -40,7 +39,7 @@ import { SponsorPanel } from './sponsor-panel';
 import { PostPreview } from './post-preview';
 import { DesignReviewPanel } from '../../design-review-panel';
 import { saveItem, deleteItem } from '../../actions';
-import { PLATFORM_INFO } from 'src/lib/platforms';
+import { PLATFORM_INFO, formatName } from 'src/lib/platforms';
 
 // ----------------------------------------------------------------------
 // Editor della pubblicazione: a sinistra il contenuto diviso in schede, a destra l'anteprima dal vivo,
@@ -59,7 +58,7 @@ const CROSS_POST_PLATFORMS = ['instagram', 'facebook', 'tiktok', 'linkedin', 'th
 
 // In quale scheda sta il campo citato da un controllo (per portarci con un clic)
 const ISSUE_TAB = [
-  [/caption|hashtag|cta|destinazione|link|hook/i, 'testo'],
+  [/testo del post|hashtag|invito|destinazione|link|apertura/i, 'testo'],
   [/sponsorizzat|pulsante|budget|durata|pubblico/i, 'sponsor'],
   [/clip|scena|script|layout/i, 'script'],
   [/materiale|produzione/i, 'produzione'],
@@ -237,26 +236,25 @@ export function ItemView({ saved, client, item, issues, series, personas, option
                     fullWidth
                     helperText="Esce come primo commento subito dopo il post, su Instagram e Facebook (non nelle storie): utile per hashtag o link."
                   />
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' } }}>
-                    <TextField
-                      name="collaborators"
-                      label="Coautori Instagram · facoltativo"
-                      defaultValue={(item.collaborators ?? []).map((c) => `@${c}`).join(', ')}
-                      placeholder="@studio.rossi, @mario_bianchi"
-                      fullWidth
-                      helperText="Fino a 3 profili: il post compare anche sul loro profilo se accettano l'invito."
-                    />
+                  {/* Campo a tutta larghezza e interruttori sotto: affiancati il campo si schiacciava */}
+                  <TextField
+                    name="collaborators"
+                    label="Coautori Instagram · facoltativo"
+                    defaultValue={(item.collaborators ?? []).map((c) => `@${c}`).join(', ')}
+                    placeholder="@studio.rossi, @mario_bianchi"
+                    fullWidth
+                    helperText="Fino a 3 profili: il post compare anche sul loro profilo se accettano l'invito."
+                  />
+                  <Stack direction="row" spacing={3} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
                     <FormControlLabel
                       control={<Switch name="evergreen" defaultChecked={item.evergreen} />}
                       label="Sempre valido"
                       title="Dopo 3 mesi dall'uscita 2Target lo propone da riproporre nel piano"
-                      sx={{ flexShrink: 0 }}
                     />
                     <FormControlLabel
                       control={<Switch name="tagLocation" defaultChecked={item.tagLocation} />}
                       label="Tagga la sede"
                       title="Su Instagram il post riporta il luogo della Pagina Facebook collegata (serve un indirizzo sulla Pagina)"
-                      sx={{ flexShrink: 0 }}
                     />
                   </Stack>
                   <TextField name="cta" label="Invito all'azione (nel testo)" defaultValue={item.cta ?? ''} placeholder="es. Chiamami per una prima consulenza" fullWidth />
@@ -418,7 +416,7 @@ export function ItemView({ saved, client, item, issues, series, personas, option
                   )}
                   <Stack direction="row" spacing={2}>
                     <TextField select name="format" label="Formato" value={format} onChange={(e) => setFormat(e.target.value)} fullWidth>
-                      {options.formats.map((f) => <MenuItem key={f} value={f}>{f}</MenuItem>)}
+                      {options.formats.map((f) => <MenuItem key={f} value={f}>{formatName(f)}</MenuItem>)}
                     </TextField>
                     <TextField select name="platform" label="Social principale" value={platform} onChange={(e) => setPlatform(e.target.value)} fullWidth>
                       {options.platforms.map((p) => <MenuItem key={p} value={p}>{PLATFORM_INFO[p]?.label ?? p}</MenuItem>)}
@@ -426,11 +424,12 @@ export function ItemView({ saved, client, item, issues, series, personas, option
                   </Stack>
                   <Box>
                     <Typography variant="caption" sx={{ color: 'text.secondary' }}>Pubblica anche su</Typography>
-                    <ToggleButtonGroup size="small" sx={{ display: 'flex', flexWrap: 'wrap', mt: 0.5 }}>
+                    {/* Griglia che va a capo: con 8 piattaforme una riga sola schiaccia icone e nomi */}
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(124px, 1fr))', gap: 1, mt: 0.5 }}>
                       {CROSS_POST_PLATFORMS.map((p) => (
                         <CrossPost key={p} platform={p} defaultChecked={item.crossPost.includes(p)} disabled={p === platform} />
                       ))}
-                    </ToggleButtonGroup>
+                    </Box>
                   </Box>
                   <TextField select name="stage" label="Obiettivo del contenuto" defaultValue={item.stage ?? ''} size="small" fullWidth>
                     <MenuItem value="">—</MenuItem>
@@ -528,9 +527,19 @@ function CrossPost({ platform, defaultChecked, disabled }) {
   const [on, setOn] = useState(defaultChecked);
   const info = PLATFORM_INFO[platform];
   return (
-    <ToggleButton value={platform} selected={on && !disabled} disabled={disabled} onChange={() => setOn(!on)} sx={{ gap: 0.75, textTransform: 'none', flex: 1 }}>
-      <Iconify icon={info?.icon} width={18} />
-      {info?.label ?? platform}
+    <ToggleButton
+      value={platform}
+      size="small"
+      selected={on && !disabled}
+      disabled={disabled}
+      onChange={() => setOn(!on)}
+      title={disabled ? 'È il social principale' : undefined}
+      sx={{ gap: 0.75, textTransform: 'none', justifyContent: 'flex-start', px: 1.25, whiteSpace: 'nowrap', minWidth: 0 }}
+    >
+      <Iconify icon={info?.icon} width={18} sx={{ flexShrink: 0 }} />
+      <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        {info?.label ?? platform}
+      </Box>
       {on && !disabled && <input type="hidden" name="crossPost" value={platform} />}
     </ToggleButton>
   );
