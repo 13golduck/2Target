@@ -20,7 +20,7 @@ import { MainSection, layoutClasses, HeaderSection, LayoutSection } from '../cor
 // Layout del pannello 2Target (dal kit Minimal, senza le parti dimostrative).
 // navData e user arrivano dal server (src/app/(app)/layout.tsx).
 
-export function DashboardLayout({ sx, children, navData, user, logoutAction, layoutQuery = 'lg' }) {
+export function DashboardLayout({ sx, children, navData, user, logoutAction, headerAction, layoutQuery = 'lg' }) {
   const theme = useTheme();
   const settings = useSettingsContext();
   const navVars = dashboardNavColorVars(theme, settings.state.navColor, 'vertical');
@@ -48,6 +48,8 @@ export function DashboardLayout({ sx, children, navData, user, logoutAction, lay
         ),
         rightArea: (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
+            {/* Azione principale sempre a portata (es. «Crea post»), passata dal layout dell'app */}
+            {headerAction}
             <SettingsButton />
             <AccountMenu user={user} logoutAction={logoutAction} />
           </Box>

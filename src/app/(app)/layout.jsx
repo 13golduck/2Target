@@ -13,6 +13,7 @@ import { logout } from "../login/actions";
 import { ErrorReporter } from "./error-reporter";
 import { ConfirmHost } from "src/components/custom-dialog";
 import { WelcomeTour } from "./welcome-tour";
+import { CreatePostButton } from "./create-post/create-post";
 
 /** Logo del cliente al posto dell'icona grigia nel menu. */
 function ClientLogo({ id, version, name }) {
@@ -103,7 +104,9 @@ export default async function AppLayout({ children }) {
   const [me] = await db.select({ tourDoneAt: users.tourDoneAt }).from(users).where(eq(users.id, user.id));
 
   return (
-    <DashboardLayout navData={navData} user={{ name: user.name, role: ROLE_LABELS[user.role] ?? user.role }} logoutAction={logout}>
+    <DashboardLayout
+      navData={navData}
+      headerAction={viewer ? null : <CreatePostButton clients={list.map((c) => ({ id: c.id, name: c.name, logo: c.logoAt ? `/api/logo/${c.id}?tipo=icona&v=${c.logoAt.getTime()}` : null }))} />} user={{ name: user.name, role: ROLE_LABELS[user.role] ?? user.role }} logoutAction={logout}>
       <ErrorReporter />
       <ConfirmHost />
       <Suspense fallback={null}>
