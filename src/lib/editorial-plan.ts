@@ -68,11 +68,12 @@ export function itemIssues(item: EditorialItem): Issue[] {
     out.push({ level, itemId: item.id, message: `"${item.title}": manca ${field}` });
 
   if (!item.scheduledAt) miss("la data di pubblicazione");
-  if (!item.caption?.trim()) miss("la caption");
-  if (!item.hashtags?.length) miss("l'elenco hashtag");
-  if (!item.cta?.trim()) miss("la CTA");
-  if (!item.layoutNotes?.trim()) miss("l'idea di layout", VIDEO_FORMATS.includes(item.format) ? "avviso" : "errore");
-  if (!item.hook?.trim()) miss("l'hook iniziale", "avviso");
+  if (!item.caption?.trim()) miss("il testo del post");
+  // Suggerimenti, non errori: un post semplice (es. da «Crea post») può uscire anche senza
+  if (!item.hashtags?.length) miss("l'elenco hashtag", "avviso");
+  if (!item.cta?.trim()) miss("l'invito all'azione", "avviso");
+  if (!item.layoutNotes?.trim()) miss("l'idea di layout", "avviso");
+  if (!item.hook?.trim()) miss("la frase d'apertura", "avviso");
 
   if (VIDEO_FORMATS.includes(item.format) && item.format !== "storia") {
     if (!item.script?.trim()) miss("lo script / voiceover");
@@ -80,7 +81,7 @@ export function itemIssues(item: EditorialItem): Issue[] {
   }
 
   if (item.ctaDestination && ["sito", "modulo"].includes(item.ctaDestination) && !item.ctaUrl) {
-    miss("il link di destinazione della CTA");
+    miss("il link a cui porta l'invito all'azione");
   }
 
   if (item.isPaid) {

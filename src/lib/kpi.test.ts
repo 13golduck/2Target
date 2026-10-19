@@ -74,8 +74,8 @@ describe("planIssues (brief Lesioli)", () => {
     expect(msgs).toContain("reel: 1 pianificati su 2 richiesti");
     expect(msgs.some((m) => m.startsWith("Settimana del 21 settembre: 1"))).toBe(true);
     expect(msgs.some((m) => m.includes("oltre il budget"))).toBe(true);
-    expect(msgs).toContain('"Camera con soppalco": manca la caption');
-    expect(msgs).toContain('"Camera con soppalco": manca il link di destinazione della CTA');
+    expect(msgs).toContain('"Camera con soppalco": manca il testo del post');
+    expect(msgs).toContain(`"Camera con soppalco": manca il link a cui porta l'invito all'azione`);
     expect(msgs.some((m) => m.includes('"Chiama ora" non è tipico'))).toBe(true);
   });
   it("non segnala la cadenza delle settimane già passate", () => {
