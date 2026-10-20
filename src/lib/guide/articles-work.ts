@@ -188,8 +188,10 @@ export const WORK_ARTICLES: GuideArticle[] = [
     open: { clientTab: "piano", label: "Piano editoriale" },
     keywords: ["approvazione", "link", "cliente approva", "modifiche", "ok cliente"],
     blocks: [
+      { p: "Si attiva per cliente: **Panoramica del cliente → Approvazione del cliente obbligatoria** (oppure dal piano, in **Approvazione cliente**). Accesa, ogni post creato con «Crea post» o nello Studio aspetta l'ok del cliente; appena approvato **esce da solo** alla data e sui profili scelti. Spenta, i post escono quando li programmi." },
       { steps: ["Nel piano apri **Approvazione cliente** e accendi l'interruttore.", "**Manda n** porta in approvazione le bozze complete dei prossimi 30 giorni.", "**Crea il link da mandare al cliente** e mandaglielo (vale 60 giorni).", "Il cliente scrive il suo nome e per ogni contenuto preme **Approva** o **Chiedi modifiche** con un commento.", "Le risposte compaiono nella scheda del contenuto, in **Risposte del cliente**."] },
       { warn: "Spegnendo l'approvazione, i link già mandati smettono di funzionare." },
+      { tip: "Se il cliente approva dopo la data prevista, il post non esce da solo: chi l'aveva preparato riceve un avviso per scegliere una nuova data." },
     ],
     related: ["piano-editoriale"],
   },

@@ -40,6 +40,40 @@ export const TECH_ARTICLES: GuideArticle[] = [
     related: ["pubblicare", "problemi-collegamento", "integrazioni"],
   },
   {
+    slug: "studio",
+    title: "Lo Studio: creare un post con l'AI",
+    category: "pubblicazione",
+    icon: "solar:atom-bold-duotone",
+    summary: "Testo, grafica e video a quattro mani con l'AI, in quattro passi e tutto in una schermata.",
+    audience: "team",
+    keywords: ["studio", "ai", "intelligenza artificiale", "grafica", "carosello", "video", "montaggio", "reel", "musica", "immagine ai", "nano banana", "versioni", "chat"],
+    blocks: [
+      { p: "Premi **Crea post**, scegli il cliente e **Con l'AI**, poi scrivi cosa ti serve (es. «reel di 15 secondi sulla promo di ottobre, tono caldo»). Lo Studio si apre e l'AI prepara una prima versione." },
+      { h: "Come è fatto" },
+      {
+        list: [
+          "**A sinistra la chat**: chiedi modifiche a parole («accorcia il testo», «fai 4 slide», «scritta finale più grande»). Ogni risposta dell'AI è una nuova versione.",
+          "**Al centro il passo** su cui lavori; **a destra l'anteprima** del post come apparirà.",
+          "**In alto il pulsante del prossimo passo**: dice sempre cosa fare dopo (Salva, Esporta nel post, Crea il video…).",
+          "**Versione n** in alto: chi l'ha fatta (tu o l'AI) e il ritorno a una versione precedente con **Torna a questa**.",
+        ],
+      },
+      { h: "I quattro passi" },
+      {
+        steps: [
+          "**Contenuto**: titolo, testo, hashtag, formato e i file. Con **Immagine AI** crei un'immagine nuova o modifichi una foto del cliente (sfondo, luce, ambientazione).",
+          "**Grafica o video** (facoltativo). **Grafica**: pagine e livelli con colori e logo del cliente, poi **Esporta nel post**. **Video**: scegli i pezzi dei video, aggiungi scritte e musica, poi **Crea il video** (lo compone il server in pochi secondi).",
+          "**Quando e dove**: profili, data e ora (anche gli orari migliori), poi **Programma** o **Pubblica ora**. Se il cliente deve approvare, il pulsante diventa **Manda in approvazione**.",
+          "**Uscite**: dove è programmato o uscito il post, con eventuali errori.",
+        ],
+      },
+      { tip: "Il post esce con l'ultima cosa esportata: la grafica oppure il video, mai entrambi. Le foto e i video usati restano nel **materiale** e non escono da soli." },
+      { warn: "Per la musica usa solo brani con licenza per i social (libreria acquistata o brani tuoi): quella di Instagram e TikTok non si può usare da strumenti esterni." },
+      { p: "La spesa dell'AI di ogni progetto compare sotto il titolo; le immagini AI hanno un loro tetto mensile in Impostazioni → Limiti AI." },
+    ],
+    related: ["pubblicare", "approvazione-cliente"],
+  },
+  {
     slug: "pubblicare",
     title: "Pubblicare e programmare i post",
     category: "pubblicazione",
@@ -50,15 +84,16 @@ export const TECH_ARTICLES: GuideArticle[] = [
     blocks: [
       { p: "2Target pubblica da sola su Facebook, Instagram, TikTok, LinkedIn, Threads, Pinterest, YouTube (Shorts) e sulla scheda Google. Pubblica solo schede **approvate**." },
       { h: "Il modo più veloce: «Crea post»" },
+      { p: "**Crea post** in alto chiede il cliente e il modo: **Semplice** (i tre passi qui sotto), **Avanzato** (apre una scheda completa vuota) o **Con l'AI** (apre lo Studio: vedi l'articolo dedicato)." },
       {
         steps: [
-          "Premi **Crea post** in alto, in qualsiasi pagina.",
-          "**Dove**: scegli il cliente; i suoi profili collegati sono già spuntati (togli quelli che non servono).",
+          "Premi **Crea post** in alto, scegli il cliente e il modo **Semplice**.",
+          "**Dove**: i profili collegati del cliente sono già spuntati (togli quelli che non servono).",
           "**Cosa**: scrivi il testo (oppure scrivi in due parole l'idea e premi **Scrivi con l'AI**) e trascina foto o video. Un video diventa un reel, più file un carosello. A destra vedi l'anteprima.",
           "**Quando**: scegli data e ora (anche dagli orari migliori suggeriti) oppure **Pubblica ora**, poi **Programma**.",
         ],
       },
-      { p: "Il post entra da solo nel piano editoriale in corso. Se per quel cliente è attiva l'approvazione via link, o se non sei abilitato a pubblicare, va in «Da approvare» ed esce dopo l'ok. Per TikTok, sponsorizzate, script e riprese usa la scheda completa." },
+      { p: "Il post entra da solo nel piano editoriale in corso. Se per quel cliente è obbligatoria l'approvazione, o se non sei abilitato a pubblicare, va in «Da approvare» ed **esce da solo dopo l'ok**, alla data e sui profili scelti. Per TikTok, sponsorizzate, script e riprese usa la scheda completa." },
       { h: "Dalla scheda completa" },
       {
         steps: [
