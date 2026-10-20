@@ -227,6 +227,8 @@ export async function replaceDesignOutputs(input: z.infer<typeof Outputs>) {
   const { state } = await currentVersion(itemId);
   const used = [...new Set((state.design?.pages ?? []).flatMap((pg) => pg.layers.flatMap((l) => (l.type === "immagine" ? [l.mediaId] : []))))];
   if (used.length) await db.update(mediaAssets).set({ itemId: null, studioItemId: itemId }).where(and(inArray(mediaAssets.id, used), eq(mediaAssets.itemId, itemId)));
+  // Il post esce con la grafica oppure con il video: l'eventuale montaggio torna nel materiale
+  await db.update(mediaAssets).set({ itemId: null, studioItemId: itemId }).where(and(eq(mediaAssets.itemId, itemId), eq(mediaAssets.origin, "video")));
 
   for (const [i, id] of mediaIds.entries()) await db.update(mediaAssets).set({ position: i }).where(eq(mediaAssets.id, id));
   await syncPendingPublications(itemId, ctx.me.id);

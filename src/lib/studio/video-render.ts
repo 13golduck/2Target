@@ -93,8 +93,8 @@ export async function startVideoRender(o: { itemId: number; clientId: number; us
 }
 
 /**
- * Il nuovo montaggio prende il posto dei precedenti; i video usati nel montaggio passano nel materiale
- * (altrimenti uscirebbero due volte). Il montaggio va per primo tra i file del post.
+ * Il nuovo montaggio prende il posto dei precedenti; i video usati nel montaggio e l'eventuale grafica
+ * esportata passano nel materiale (altrimenti uscirebbero insieme al video). Il montaggio va per primo.
  */
 async function replacePreviousOutputs(itemId: number, mediaId: number, edit: VideoEdit) {
   const old = await db.select().from(mediaAssets).where(and(eq(mediaAssets.itemId, itemId), eq(mediaAssets.origin, "video"), ne(mediaAssets.id, mediaId)));
@@ -102,5 +102,7 @@ async function replacePreviousOutputs(itemId: number, mediaId: number, edit: Vid
   for (const m of old) await removeMediaFile(m.storageKey);
   const used = [...new Set(edit.clips.map((c) => c.mediaId))];
   await db.update(mediaAssets).set({ itemId: null, studioItemId: itemId }).where(and(inArray(mediaAssets.id, used), eq(mediaAssets.itemId, itemId)));
+  // Il post esce con il video oppure con la grafica: la grafica esportata torna nel materiale
+  await db.update(mediaAssets).set({ itemId: null, studioItemId: itemId }).where(and(eq(mediaAssets.itemId, itemId), eq(mediaAssets.origin, "grafica")));
   await db.update(mediaAssets).set({ position: 0 }).where(eq(mediaAssets.id, mediaId));
 }
