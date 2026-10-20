@@ -239,8 +239,15 @@ export async function prepareVideoAsset(assetId: number) {
 
 /** All'avvio: riprende i video rimasti a metà (il riavvio di Plesk interrompe FFmpeg). Uno alla volta. */
 export async function resumeVideoPreparation() {
-  const stuck = await db.select({ id: mediaAssets.id }).from(mediaAssets).where(eq(mediaAssets.processState, "in_lavorazione"));
-  for (const v of stuck) await prepareVideoAsset(v.id);
+  const stuck = await db.select({ id: mediaAssets.id, origin: mediaAssets.origin }).from(mediaAssets).where(eq(mediaAssets.processState, "in_lavorazione"));
+  for (const v of stuck) {
+    // Un montaggio dello Studio interrotto non si riprende da qui (servono le scritte del browser): si rifà
+    if (v.origin === "video") {
+      await db.update(mediaAssets).set({ processState: "errore", processNote: "Montaggio interrotto dal riavvio dell'app: esportalo di nuovo dallo Studio" }).where(eq(mediaAssets.id, v.id));
+      continue;
+    }
+    await prepareVideoAsset(v.id);
+  }
 }
 
 /**
