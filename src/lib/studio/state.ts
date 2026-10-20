@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { DesignSchema } from "./design";
+import { VideoEditSchema } from "./video";
 
 // 2Target Studio: il progetto di un post è uno «stato» (testo, hashtag, formato, titolo; poi grafica e video).
 // L'AI e chi lavora lo cambiano con le stesse operazioni, e ogni cambio salvato è una versione.
@@ -18,10 +19,12 @@ export const StudioStateSchema = z.object({
   format: z.enum(STUDIO_FORMATS),
   /** Grafica del post (null = si pubblicano le foto caricate così come sono). Le versioni vecchie non l'hanno. */
   design: DesignSchema.nullable().default(null),
+  /** Montaggio video (null = nessuno): il server lo compone in un MP4 quando lo si esporta nel post. */
+  video: VideoEditSchema.nullable().default(null),
 });
 export type StudioState = z.infer<typeof StudioStateSchema>;
 
-export const EMPTY_STATE: StudioState = { title: "Nuovo post", caption: "", hashtags: "", format: "post", design: null };
+export const EMPTY_STATE: StudioState = { title: "Nuovo post", caption: "", hashtags: "", format: "post", design: null, video: null };
 
 /** Operazioni sul progetto. I nomi sono quelli che l'AI usa nella risposta strutturata. */
 export const StudioOpSchema = z.discriminatedUnion("op", [
@@ -31,6 +34,8 @@ export const StudioOpSchema = z.discriminatedUnion("op", [
   z.object({ op: z.literal("formato"), format: z.enum(STUDIO_FORMATS) }),
   z.object({ op: z.literal("grafica"), design: DesignSchema.describe("Grafica completa: sostituisce quella attuale") }),
   z.object({ op: z.literal("grafica_rimuovi") }),
+  z.object({ op: z.literal("video"), video: VideoEditSchema.describe("Montaggio completo: sostituisce quello attuale") }),
+  z.object({ op: z.literal("video_rimuovi") }),
 ]);
 export type StudioOp = z.infer<typeof StudioOpSchema>;
 
@@ -62,17 +67,21 @@ export function applyOps(state: StudioState, ops: StudioOp[]): StudioState {
         return { ...s, design: o.design };
       case "grafica_rimuovi":
         return { ...s, design: null };
+      case "video":
+        return { ...s, video: o.video };
+      case "video_rimuovi":
+        return { ...s, video: null };
     }
   }, state);
 }
 
-const FIELD_LABELS = { title: "titolo", caption: "testo", hashtags: "hashtag", format: "formato", design: "grafica" } as const;
+const FIELD_LABELS = { title: "titolo", caption: "testo", hashtags: "hashtag", format: "formato", design: "grafica", video: "video" } as const;
 
 /** Riassunto di una versione quando chi l'ha fatta non ne ha scritto uno: «Modifiche a testo e hashtag». */
 export function describeChanges(before: StudioState, after: StudioState) {
   const fields = Object.keys(FIELD_LABELS) as (keyof typeof FIELD_LABELS)[];
-  // La grafica è un oggetto: si confronta il contenuto, non il riferimento
-  const changed = fields.filter((k) => (k === "design" ? JSON.stringify(before.design) !== JSON.stringify(after.design) : before[k] !== after[k]));
+  // Grafica e video sono oggetti: si confronta il contenuto, non il riferimento
+  const changed = fields.filter((k) => (k === "design" || k === "video" ? JSON.stringify(before[k]) !== JSON.stringify(after[k]) : before[k] !== after[k]));
   const names = changed.map((k) => FIELD_LABELS[k]);
   if (!names.length) return "Nessuna modifica";
   const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} e ${names.at(-1)}`;
@@ -84,6 +93,7 @@ export function describeChanges(before: StudioState, after: StudioState) {
 export function stateFromItem(item: { title: string; caption: string | null; hashtags: string | null; format: string }): StudioState {
   return {
     design: null,
+    video: null,
     title: item.title,
     caption: item.caption ?? "",
     hashtags: item.hashtags ?? "",

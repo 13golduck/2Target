@@ -48,12 +48,14 @@ describe("grafica", () => {
     expect(applyOps(withDesign, [{ op: "grafica_rimuovi" }]).design).toBeNull();
   });
   it("le versioni salvate prima della grafica si leggono ancora", () => {
-    expect(StudioStateSchema.parse({ title: "T", caption: "", hashtags: "", format: "post" }).design).toBeNull();
+    const old = StudioStateSchema.parse({ title: "T", caption: "", hashtags: "", format: "post" });
+    expect(old.design).toBeNull();
+    expect(old.video).toBeNull();
   });
 });
 
 describe("stateFromItem", () => {
   it("porta a «post» i formati che lo Studio non gestisce", () => {
-    expect(stateFromItem({ title: "T", caption: null, hashtags: null, format: "articolo" })).toEqual({ title: "T", caption: "", hashtags: "", format: "post", design: null });
+    expect(stateFromItem({ title: "T", caption: null, hashtags: null, format: "articolo" })).toEqual({ title: "T", caption: "", hashtags: "", format: "post", design: null, video: null });
   });
 });

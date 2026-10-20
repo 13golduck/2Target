@@ -17,6 +17,7 @@ import { removeMediaFile } from "@/lib/media";
 import { syncPendingPublications } from "@/lib/publishing/sync";
 import { initialStatus, planFor } from "@/lib/quick-post";
 import { placeAsBackground, sanitizeDesign } from "@/lib/studio/design";
+import { sanitizeVideo } from "@/lib/studio/video";
 import { ASPECT_RATIOS, aspectForSize, type AspectRatio } from "@/lib/studio/image-tools";
 import { createStudioImage } from "@/lib/studio/studio-images";
 import { applyOps, describeChanges, EMPTY_STATE, StudioStateSchema, type StudioState } from "@/lib/studio/state";
@@ -29,11 +30,16 @@ import { addMessage, addVersion, clientBrand, clientPlatforms, currentVersion, m
 
 const path = (itemId: number) => `/studio/${itemId}`;
 
-/** La grafica può usare solo le foto di questo progetto (gli id arrivano dal browser o dall'AI). */
+/** Grafica e video usano solo i file di questo progetto (gli id arrivano dal browser o dall'AI). */
 async function safeState(itemId: number, state: StudioState): Promise<StudioState> {
-  if (!state.design) return state;
-  const images = (await mediaOf(itemId)).filter((m) => m.kind === "image").map((m) => m.id);
-  return { ...state, design: sanitizeDesign(state.design, images) };
+  if (!state.design && !state.video) return state;
+  const media = await mediaOf(itemId);
+  const images = media.filter((m) => m.kind === "image").map((m) => m.id);
+  return {
+    ...state,
+    design: state.design ? sanitizeDesign(state.design, images) : null,
+    video: state.video ? sanitizeVideo(state.video, media) : null,
+  };
 }
 
 async function itemFor(itemId: number) {
