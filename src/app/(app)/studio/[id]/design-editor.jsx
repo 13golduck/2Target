@@ -27,11 +27,15 @@ import { Iconify } from 'src/components/iconify';
 
 // ----------------------------------------------------------------------
 // Editor della grafica dello Studio. Il disegno è in pixel della misura finale (es. 1080×1350) e si mostra
-// in scala; l'esportazione ridisegna ogni pagina alla misura piena. Ogni livello è un gruppo Konva
+// in scala; l'esportazione ridisegna ogni pagina alla misura piena, in JPEG. Ogni livello è un gruppo Konva
 // posizionato in (x, y) con i contenuti da 0 a larghezza/altezza: così spostare, ridimensionare e ruotare
 // funziona allo stesso modo per testi, foto, logo e forme.
 
 const MAX_PREVIEW_WIDTH = 520;
+// Spazio occupato sopra e sotto la tela nello Studio (intestazione, passi, pagine, pulsanti)
+const CHROME_HEIGHT = 380;
+const MIN_PREVIEW_HEIGHT = 320;
+const JPEG_QUALITY = 0.92;
 const FONT_LABELS = Object.fromEntries(DESIGN_FONTS.map((f) => [f, f.replace(' Variable', '')]));
 
 // Immagini già caricate, condivise tra le pagine (stesso indirizzo = stesso file)
@@ -111,7 +115,7 @@ function LayerContent({ layer, mediaUrl, logoUrl }) {
 
 // ----------------------------------------------------------------------
 
-export default function DesignEditor({ design, onChange, images, logoUrl, onExport, exporting }) {
+export default function DesignEditor({ design, onChange, images, logoUrl, onExport, exporting, wide, registerExport }) {
   const [pageIndex, setPageIndex] = useState(0);
   const [selectedId, setSelectedId] = useState(null);
   const [fontsReady, setFontsReady] = useState(0);
@@ -121,9 +125,11 @@ export default function DesignEditor({ design, onChange, images, logoUrl, onExpo
   const trRef = useRef(null);
   const nodes = useRef(new Map());
   const [boxWidth, setBoxWidth] = useState(MAX_PREVIEW_WIDTH);
+  const [viewHeight, setViewHeight] = useState(900);
 
   const { width, height } = DESIGN_SIZES[design.size];
-  const scale = Math.min(boxWidth, MAX_PREVIEW_WIDTH) / width;
+  // La tela sta tutta nello schermo: si adatta alla larghezza della colonna e all'altezza della finestra
+  const scale = Math.min(Math.min(boxWidth, MAX_PREVIEW_WIDTH) / width, Math.max(MIN_PREVIEW_HEIGHT, viewHeight - CHROME_HEIGHT) / height);
   const page = design.pages[Math.min(pageIndex, design.pages.length - 1)];
   const selected = page.layers.find((l) => l.id === selectedId) ?? null;
   const mediaUrl = useCallback((id) => images.find((m) => m.id === id)?.url ?? null, [images]);
@@ -134,7 +140,13 @@ export default function DesignEditor({ design, onChange, images, logoUrl, onExpo
     if (!el) return undefined;
     const ro = new ResizeObserver(([entry]) => setBoxWidth(Math.max(240, entry.contentRect.width)));
     ro.observe(el);
-    return () => ro.disconnect();
+    const onResize = () => setViewHeight(window.innerHeight);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', onResize);
+    };
   }, []);
 
   // I font si scaricano solo quando servono: appena pronti si ridisegna (Konva non lo fa da solo)
@@ -233,12 +245,23 @@ export default function DesignEditor({ design, onChange, images, logoUrl, onExpo
       // Si aspetta che React mostri la pagina; toBlob la ridisegna da sé. Niente requestAnimationFrame:
       // con la scheda del browser in secondo piano non scatta e l'esportazione resterebbe ferma
       await new Promise((r) => setTimeout(r, 80));
-      const blob = await stageRef.current.toBlob({ pixelRatio: 1 / scale, mimeType: 'image/png' });
+      // JPEG: Instagram non accetta PNG; la pagina ha sempre uno sfondo pieno, quindi la trasparenza non serve
+      const blob = await stageRef.current.toBlob({ pixelRatio: 1 / scale, mimeType: 'image/jpeg', quality: JPEG_QUALITY });
       blobs.push(blob);
     }
     setPageIndex(0);
     onExport(blobs, { width, height });
   };
+
+  // Il pulsante «Esporta nel post» in alto nello Studio chiama la stessa esportazione
+  const exportRef = useRef(exportPages);
+  useEffect(() => {
+    exportRef.current = exportPages;
+  });
+  useEffect(() => {
+    registerExport?.(() => exportRef.current());
+    return () => registerExport?.(null);
+  }, [registerExport]);
 
   const onKeyDown = (e) => {
     if (!selected || !['Delete', 'Backspace'].includes(e.key)) return;
@@ -247,7 +270,7 @@ export default function DesignEditor({ design, onChange, images, logoUrl, onExpo
   };
 
   return (
-    <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', xl: 'minmax(0, 1fr) 260px' }, alignItems: 'start' }}>
+    <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: wide ? { xs: '1fr', md: 'minmax(0, 1fr) 260px' } : { xs: '1fr', xl: 'minmax(0, 1fr) 260px' }, alignItems: 'start' }}>
       <Stack spacing={1.5} sx={{ minWidth: 0 }}>
         {/* Pagine */}
         <Stack direction="row" spacing={0.75} sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 1 }}>
