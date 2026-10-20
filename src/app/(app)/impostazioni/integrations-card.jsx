@@ -139,6 +139,18 @@ const GROUPS = [
     fields: [{ name: 'anthropicApiKey', label: 'Chiave API Anthropic', secret: true }],
   },
   {
+    key: 'gemini',
+    title: 'Google AI (immagini create e modificate nello Studio)',
+    icon: 'solar:gallery-wide-bold-duotone',
+    where:
+      'aistudio.google.com → Get API key, su un progetto Google Cloud dedicato (non «4Target Calendario») con la fatturazione attiva. Il modello vuoto usa gemini-nano-banana-2.1. La spesa rientra nel tetto «Immagini AI» di Consumi AI.',
+    callback: null,
+    fields: [
+      { name: 'geminiApiKey', label: 'Chiave API Gemini', secret: true },
+      { name: 'geminiImageModel', label: 'Modello immagini (facoltativo)' },
+    ],
+  },
+  {
     key: 'google',
     title: 'Google (Search Console, Analytics, scheda Google, Google Ads, YouTube, PageSpeed)',
     icon: 'socials:google',

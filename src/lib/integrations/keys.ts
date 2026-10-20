@@ -53,9 +53,13 @@ export type IntegrationKeys = {
   pinterestAppSecret: string;
   /** «true» = chiede a Google anche il caricamento su YouTube (Shorts): da attivare dopo la verifica Google. */
   googleYoutubeUpload: string;
+  /** Google AI Studio (Gemini API): immagini create o modificate dall'AI nello Studio. Progetto Google dedicato. */
+  geminiApiKey: string;
+  /** Modello Gemini per le immagini (vuoto = predefinito). */
+  geminiImageModel: string;
 };
 
-export const SECRET_FIELDS = ["metaAppSecret", "metaSystemUserToken", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret", "instagramAppSecret", "googleAdsDeveloperToken", "linkedinClientSecret", "threadsAppSecret", "pinterestAppSecret"] as const;
+export const SECRET_FIELDS = ["metaAppSecret", "metaSystemUserToken", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret", "instagramAppSecret", "googleAdsDeveloperToken", "linkedinClientSecret", "threadsAppSecret", "pinterestAppSecret", "geminiApiKey"] as const;
 const ENV: Record<keyof IntegrationKeys, string> = {
   metaAppId: "META_APP_ID",
   metaAppSecret: "META_APP_SECRET",
@@ -84,6 +88,8 @@ const ENV: Record<keyof IntegrationKeys, string> = {
   pinterestAppId: "PINTEREST_APP_ID",
   pinterestAppSecret: "PINTEREST_APP_SECRET",
   googleYoutubeUpload: "GOOGLE_YOUTUBE_UPLOAD",
+  geminiApiKey: "GEMINI_API_KEY",
+  geminiImageModel: "GEMINI_IMAGE_MODEL",
 };
 export const FIELDS = Object.keys(ENV) as (keyof IntegrationKeys)[];
 
