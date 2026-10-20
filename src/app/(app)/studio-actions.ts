@@ -5,21 +5,22 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { db } from "@/db";
-import { editorialItems, editorialPlans, mediaAssets, publications } from "@/db/schema";
+import { clients, editorialItems, editorialPlans, mediaAssets, publications } from "@/db/schema";
 import { BudgetError } from "@/lib/ai/budget";
 import { isAiConfigured } from "@/lib/ai/claude";
 import { ImageGenError, isImageAiConfigured } from "@/lib/ai/image-gen";
 import { studioTurn } from "@/lib/ai/studio-agent";
 import { audit } from "@/lib/audit";
-import { requireClientAccess, requireWriter } from "@/lib/auth";
+import { requireClientAccess, requireWriter, userCanPublish } from "@/lib/auth";
 import { featureOn } from "@/lib/features-data";
 import { removeMediaFile } from "@/lib/media";
 import { syncPendingPublications } from "@/lib/publishing/sync";
-import { planFor } from "@/lib/quick-post";
+import { initialStatus, planFor } from "@/lib/quick-post";
 import { placeAsBackground, sanitizeDesign } from "@/lib/studio/design";
 import { ASPECT_RATIOS, aspectForSize, type AspectRatio } from "@/lib/studio/image-tools";
 import { createStudioImage } from "@/lib/studio/studio-images";
 import { applyOps, describeChanges, EMPTY_STATE, StudioStateSchema, type StudioState } from "@/lib/studio/state";
+import { schedulePublication } from "./publish-actions";
 import { addMessage, addVersion, clientBrand, clientPlatforms, currentVersion, mediaOf, messagesOf, versionState } from "@/lib/studio/studio-data";
 
 // 2Target Studio: la scheda del post è il progetto; chat e versioni si appoggiano a essa.
@@ -250,4 +251,40 @@ export async function generateStudioImage(input: { itemId: number; prompt: strin
     console.error("[studio] immagine non riuscita", e);
     return { error: "L'immagine non si è potuta creare: riprova tra poco" };
   }
+}
+
+const Publish = z.object({
+  itemId: z.number().int().positive(),
+  channelIds: z.array(z.number().int().positive()).min(1, "Scegli almeno un profilo").max(20),
+  when: z.enum(["ora", "data"]),
+  scheduledAt: z.string().datetime().optional(),
+});
+
+/**
+ * Ultimo passo dello Studio: data e ora, stato secondo le regole del cliente e programmazione sui profili scelti.
+ * Esce subito chi può pubblicare; va in «Da approvare» se il cliente approva via link o chi lavora non è abilitato.
+ */
+export async function publishFromStudio(input: z.infer<typeof Publish>) {
+  const p = Publish.safeParse(input);
+  if (!p.success) return { error: p.error.issues[0]?.message ?? "Dati non validi" };
+  const ctx = await itemFor(p.data.itemId);
+  if ("error" in ctx) return { error: ctx.error };
+  const { me, item } = ctx;
+  const at = p.data.when === "ora" ? new Date() : p.data.scheduledAt ? new Date(p.data.scheduledAt) : null;
+  if (!at) return { error: "Scegli data e ora" };
+  if (p.data.when === "data" && at.getTime() < Date.now() + 60_000) return { error: "La data è già passata: scegline una futura o usa «Pubblica ora»" };
+
+  const [client] = await db.select({ approvalEnabled: clients.approvalEnabled }).from(clients).where(eq(clients.id, item.clientId));
+  const [row] = await db.select({ status: editorialItems.status }).from(editorialItems).where(eq(editorialItems.id, item.id));
+  // Già approvato (dal cliente o da un collega) resta approvato: non si rimanda in approvazione
+  const status = row?.status === "approvato" ? "approvato" : initialStatus({ canPublish: await userCanPublish(me), approvalEnabled: !!client?.approvalEnabled });
+  await db.update(editorialItems).set({ scheduledAt: at, status }).where(eq(editorialItems.id, item.id));
+  await audit({ userId: me.id, category: "contenuti", action: "studio.pubblica", description: `Dallo Studio: ${status === "approvato" ? (p.data.when === "ora" ? "pubblicazione immediata" : "programmata") : "mandata in approvazione"}`, clientId: item.clientId, target: `pubblicazione:${item.id}` });
+  revalidatePath(path(item.id));
+  revalidatePath(`/clienti/${item.clientId}/piano`);
+  if (status !== "approvato") return { ok: true, pending: true };
+
+  const r = await schedulePublication(item.id, p.data.channelIds, p.data.when === "ora" ? "ora" : "programmata");
+  revalidatePath(path(item.id));
+  return "error" in r ? { error: r.error } : { ok: true, pending: false, dryRun: r.dryRun };
 }
