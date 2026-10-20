@@ -19,6 +19,11 @@ describe("toStudioOps", () => {
   it("scarta un JSON rotto", () => {
     expect(toStudioOps([{ op: "grafica", designJson: "{non json" }]).rejected).toBe(true);
   });
+  it("converte il montaggio da JSON e scarta quello non valido", () => {
+    const video = { size: "storia", clips: [{ id: "c1", mediaId: 4, start: 0, end: 3 }], texts: [], music: null, originalVolume: 1 };
+    expect(toStudioOps([{ op: "video", videoJson: JSON.stringify(video) }]).ops).toEqual([{ op: "video", video }]);
+    expect(toStudioOps([{ op: "video", videoJson: '{"clips":[]}' }]).rejected).toBe(true);
+  });
   it("separa le richieste di immagine, con al massimo 3 riferimenti e 2 immagini per turno", () => {
     const img = { op: "immagine" as const, prompt: "vase on a table", referenceMediaIds: [1, 1, 2, 3, 4], page: 1 };
     const r = toStudioOps([img, img, img]);

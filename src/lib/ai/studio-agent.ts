@@ -3,7 +3,8 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 
 import { platformName } from "@/lib/platforms";
-import { AiOpSchema, DESIGN_FORMAT, MAX_IMAGES_PER_TURN, toStudioOps, type ImageRequestOp } from "@/lib/studio/ai-ops";
+import { AiOpSchema, DESIGN_FORMAT, MAX_IMAGES_PER_TURN, toStudioOps, VIDEO_FORMAT, type ImageRequestOp } from "@/lib/studio/ai-ops";
+import { VIDEO_LIMITS } from "@/lib/studio/video";
 import { DESIGN_FONTS, DESIGN_SIZES, type BrandColors } from "@/lib/studio/design";
 import type { StudioOp, StudioState } from "@/lib/studio/state";
 import { assertBudget } from "./budget";
@@ -52,7 +53,16 @@ Regole:
   Lunghezza adatta alle piattaforme (LinkedIn più articolato, Instagram e Facebook più brevi, Threads massimo 500 caratteri).
 - Non inventare prezzi, date, promozioni o dati che non sono nella richiesta, nella chat o nel contesto del cliente.
 - Se la richiesta è ambigua o mancano dati indispensabili, non fare operazioni: chiedi in una frase cosa ti serve.
-- Il montaggio video non è ancora disponibile nello Studio: se lo chiedono, dillo e prepara intanto testo e grafica.
+
+Montaggio video (operazione «video», sostituisce l'intero montaggio; «video_rimuovi» lo toglie):
+- Crealo quando lo chiedono o quando il post è un reel o una storia e nel materiale ci sono video.
+- Usa solo i video elencati (mediaId), con start ed end dentro la loro durata. Clip di almeno 0,5 s; totale al
+  massimo ${VIDEO_LIMITS.maxTotalSec} s (per un reel di solito 10-30 s). Non vedi le immagini dei video: se non sai
+  quali sono i momenti migliori, usa pezzi brevi e regolari e dillo, così il consulente li sistema.
+- Scritte brevi (massimo 8 parole), leggibili: un titolo nei primi 2 secondi e un invito all'azione alla fine.
+  Bianche con riquadro scuro se il video è chiaro o non lo conosci.
+- Musica solo da un audio del materiale (mediaId); senza audio nel materiale lascia music a null.
+- Con la musica, originalVolume basso (0-0,3) se i video non hanno parlato importante.
 
 Grafica (operazione «grafica», sostituisce l'intera grafica; «grafica_rimuovi» la toglie):
 - Creala quando la chiedono, per un carosello di slide con testo, o quando non ci sono foto e il post ne ha bisogno.
@@ -74,7 +84,10 @@ Con page > 0 l'immagine diventa lo sfondo di quella pagina della grafica: crea o
 Massimo ${MAX_IMAGES_PER_TURN} immagini per risposta.
 
 Formato JSON della grafica (campo designJson):
-${DESIGN_FORMAT}`;
+${DESIGN_FORMAT}
+
+Formato JSON del montaggio (campo videoJson):
+${VIDEO_FORMAT}`;
 
 function describeMedia(media: StudioTurnInput["media"]) {
   if (!media.length) return "Nessun file caricato.";
@@ -124,6 +137,6 @@ export async function studioTurn(o: StudioTurnInput): Promise<StudioTurn & { cos
   });
   const turn = TurnSchema.parse(JSON.parse(r.text));
   const { ops, images, rejected } = toStudioOps(turn.ops);
-  const reply = rejected ? `${turn.reply}\n\n(La grafica che ho preparato non era valida e non l'ho applicata: chiedimela di nuovo.)` : turn.reply;
+  const reply = rejected ? `${turn.reply}\n\n(La grafica o il montaggio che ho preparato non erano validi e non li ho applicati: chiedimeli di nuovo.)` : turn.reply;
   return { reply, summary: turn.summary, ops, images: o.imagesAvailable ? images : [], costEur: r.costEur };
 }
