@@ -32,16 +32,39 @@ import { Iconify } from 'src/components/iconify';
 
 import { PostPreview } from '../pubblicazioni/[id]/post-preview';
 import { upload, videoSize, prepareImage } from '../pubblicazioni/media-upload';
-import { mediaState, postTargets, writeCaption, createQuickPost, finishQuickPost } from '../create-post-actions';
+import { mediaState, postTargets, writeCaption, createBlankItem, createQuickPost, finishQuickPost } from '../create-post-actions';
 
 // ----------------------------------------------------------------------
-// «Crea post»: tre passi al posto della scheda completa.
+// «Crea post»: prima si sceglie il cliente e il modo (Semplice, Avanzato, Con l'AI), poi:
+// Semplice = tre passi al posto della scheda completa.
 //   1. Dove: cliente e profili collegati (già spuntati)
 //   2. Cosa: testo (anche scritto dall'AI) e foto/video, con l'anteprima accanto
 //   3. Quando: subito o in una data, con gli orari migliori del cliente
 // Il formato si deduce dai file; i dettagli (script, sponsorizzata…) restano nella scheda completa.
 
 const STEPS = ['Dove', 'Cosa', 'Quando'];
+
+const MODES = [
+  { value: 'semplice', title: 'Semplice', icon: 'solar:bolt-bold-duotone', text: 'Ho già foto o video. Tre passi: dove, cosa, quando.' },
+  { value: 'avanzato', title: 'Avanzato', icon: 'solar:document-text-bold-duotone', text: 'Scheda completa: piano editoriale, script, sponsorizzata, coautori.' },
+];
+
+// L'ultimo modo usato resta evidenziato la volta dopo (solo una comodità: senza memoria si parte da «Semplice»)
+const MODE_KEY = 'crea-post:modo';
+const readMode = () => {
+  try {
+    return localStorage.getItem(MODE_KEY) ?? 'semplice';
+  } catch {
+    return 'semplice';
+  }
+};
+const rememberMode = (m) => {
+  try {
+    localStorage.setItem(MODE_KEY, m);
+  } catch {
+    // memoria del browser non disponibile: nessun problema
+  }
+};
 const ACCEPT = 'image/jpeg,image/png,image/webp,video/mp4,video/quicktime';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -83,6 +106,8 @@ function CreatePostDialog({ clients, onClose }) {
   const [clientId, setClientId] = useState(clients.some((c) => c.id === fromPath) ? fromPath : clients.length === 1 ? clients[0].id : '');
   const [targets, setTargets] = useState(null);
   const [chosen, setChosen] = useState([]);
+  const [screen, setScreen] = useState('modo'); // 'modo', poi 'semplice'
+  const [lastMode] = useState(readMode);
   const [step, setStep] = useState(0);
   const [caption, setCaption] = useState('');
   const [hashtags, setHashtags] = useState('');
@@ -140,6 +165,18 @@ function CreatePostDialog({ clients, onClose }) {
       setHashtags(r.hashtags);
       toast.success('Testo pronto: rileggilo e correggilo se serve');
     });
+
+  const chooseMode = (m) => {
+    if (!clientId) return toast.info('Scegli prima il cliente');
+    rememberMode(m);
+    if (m === 'semplice') return setScreen('semplice');
+    start(async () => {
+      const r = await createBlankItem({ clientId });
+      if (r.error) return toast.error(r.error);
+      onClose();
+      router.push(`/pubblicazioni/${r.itemId}`);
+    });
+  };
 
   // Cosa manca per andare avanti, detto in parole semplici
   const missing =
@@ -219,6 +256,9 @@ function CreatePostDialog({ clients, onClose }) {
     <Dialog open onClose={busy ? undefined : onClose} fullWidth maxWidth="md">
       <DialogTitle>Crea post</DialogTitle>
       <DialogContent>
+        {screen === 'modo' && <ModeChooser clients={clients} clientId={clientId} onClient={setClientId} lastMode={lastMode} busy={busy} onChoose={chooseMode} />}
+
+        {screen === 'semplice' && <>
         <Stepper activeStep={step} sx={{ mb: 3 }}>
           {STEPS.map((s) => (
             <Step key={s}>
@@ -390,6 +430,8 @@ function CreatePostDialog({ clients, onClose }) {
           </Stack>
         )}
 
+        </>}
+
         {progress && (
           <Box sx={{ mt: 3 }}>
             <Typography variant="body2" sx={{ mb: 1 }}>
@@ -399,9 +441,16 @@ function CreatePostDialog({ clients, onClose }) {
           </Box>
         )}
       </DialogContent>
+      {screen === 'modo' ? (
+        <DialogActions>
+          <Button color="inherit" onClick={onClose} disabled={busy}>
+            Annulla
+          </Button>
+        </DialogActions>
+      ) : (
       <DialogActions sx={{ justifyContent: 'space-between' }}>
-        <Button color="inherit" onClick={step === 0 ? onClose : () => setStep(step - 1)} disabled={busy}>
-          {step === 0 ? 'Annulla' : 'Indietro'}
+        <Button color="inherit" onClick={step === 0 ? () => setScreen('modo') : () => setStep(step - 1)} disabled={busy}>
+          Indietro
         </Button>
         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
           {missing && (
@@ -420,6 +469,56 @@ function CreatePostDialog({ clients, onClose }) {
           )}
         </Stack>
       </DialogActions>
+      )}
     </Dialog>
+  );
+}
+
+/** Primo schermo: cliente e modo. L'ultimo modo usato è evidenziato. */
+function ModeChooser({ clients, clientId, onClient, lastMode, busy, onChoose }) {
+  return (
+    <Stack spacing={3} sx={{ pt: 1 }}>
+      <TextField select label="Cliente" value={clientId} onChange={(e) => onClient(Number(e.target.value))} fullWidth>
+        {clients.map((c) => (
+          <MenuItem key={c.id} value={c.id}>
+            {c.name}
+          </MenuItem>
+        ))}
+      </TextField>
+      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: `repeat(${MODES.length}, 1fr)` } }}>
+        {MODES.map((m) => (
+          <Box
+            key={m.value}
+            component="button"
+            type="button"
+            onClick={() => onChoose(m.value)}
+            disabled={busy}
+            sx={{
+              p: 2.5,
+              display: 'grid',
+              gap: 1,
+              alignContent: 'start',
+              textAlign: 'left',
+              font: 'inherit',
+              color: 'inherit',
+              cursor: 'pointer',
+              bgcolor: 'background.paper',
+              borderRadius: 1.5,
+              border: 2,
+              borderColor: m.value === lastMode ? 'primary.main' : 'divider',
+              '&:hover': { borderColor: 'primary.main' },
+              '&:focus-visible': { outline: 2, outlineColor: 'primary.main', outlineOffset: 2 },
+            }}
+          >
+            <Iconify icon={m.icon} width={28} sx={{ color: 'primary.main' }} />
+            <Typography variant="subtitle1">{m.title}</Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              {m.text}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+      {busy && <LinearProgress />}
+    </Stack>
   );
 }
