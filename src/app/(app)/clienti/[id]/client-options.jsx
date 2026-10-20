@@ -19,10 +19,9 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 
 import { RouterLink } from 'src/routes/components';
 
-import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
 
-import { previewReport, saveReportSettings, monthlyReportLinkAction } from '../../client-settings-actions';
+import { setApproval, previewReport, saveReportSettings, monthlyReportLinkAction } from '../../client-settings-actions';
 
 // ----------------------------------------------------------------------
 // Report mensile automatico al cliente e stato dell'approvazione via link.
@@ -30,6 +29,7 @@ import { previewReport, saveReportSettings, monthlyReportLinkAction } from '../.
 export function ClientOptions({ clientId, options, readOnly }) {
   const [monthly, setMonthly] = useState(options.reportMonthly);
   const [notify, setNotify] = useState(options.notifyPublished);
+  const [approval, setApprovalOn] = useState(options.approvalEnabled);
   const [email, setEmail] = useState(options.reportEmail ?? '');
   const [preview, setPreview] = useState(null);
   // Ultimi 6 mesi chiusi, dal più recente: il report si apre per il mese scelto
@@ -110,12 +110,30 @@ export function ClientOptions({ clientId, options, readOnly }) {
           <Button size="small" variant="outlined" onClick={openReport} disabled={busy}>Apri (PDF e video)</Button>
         </Stack>
         <Box sx={{ pt: 1, borderTop: 1, borderColor: 'divider' }}>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mt: 1 }}>
-            <Typography variant="body2" sx={{ flex: 1 }}>Approvazione via link</Typography>
-            <Label color={options.approvalEnabled ? 'success' : 'default'}>{options.approvalEnabled ? 'Attiva' : 'Spenta'}</Label>
-          </Stack>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-            Facoltativa. Si gestisce da <RouterLink href={`/clienti/${clientId}/piano`}>Piano editoriale → Approvazione cliente</RouterLink>.
+          <FormControlLabel
+            sx={{ mt: 1, mr: 0 }}
+            control={
+              <Switch
+                checked={approval}
+                disabled={readOnly || busy}
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  start(async () => {
+                    const r = await setApproval(clientId, on);
+                    if (r?.error) return toast.error(r.error);
+                    setApprovalOn(on);
+                    toast.success(on ? 'Da ora i post aspettano l’ok del cliente' : 'Da ora i post escono senza approvazione del cliente');
+                  });
+                }}
+              />
+            }
+            label={<Typography variant="body2">Approvazione del cliente obbligatoria</Typography>}
+          />
+          <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
+            {approval
+              ? 'Ogni post creato con «Crea post» o nello Studio aspetta l’ok del cliente dal link di approvazione; appena approvato esce da solo alla data e sui profili scelti.'
+              : 'Spenta: i post escono quando li programmi, senza passare dal cliente.'}{' '}
+            Link e invio al cliente da <RouterLink href={`/clienti/${clientId}/piano`}>Piano editoriale → Approvazione cliente</RouterLink>.
           </Typography>
         </Box>
       </Stack>
