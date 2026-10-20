@@ -869,10 +869,17 @@ export const mediaAssets = mysqlTable(
     /** Video: conversione per i social (in_lavorazione finché FFmpeg non ha finito). */
     processState: mysqlEnum("process_state", ["pronto", "in_lavorazione", "errore"]).notNull().default("pronto"),
     processNote: varchar("process_note", { length: 300 }),
+    /**
+     * Studio: materiale di lavoro del progetto (foto usate dentro la grafica, immagini AI). Il materiale ha item_id
+     * nullo, così non viene pubblicato né mandato in approvazione: escono solo i file della scheda.
+     */
+    studioItemId: int("studio_item_id").references(() => editorialItems.id, { onDelete: "cascade" }),
+    /** Da dove viene il file: caricato da chi lavora, grafica esportata dallo Studio, immagine generata dall'AI. */
+    origin: mysqlEnum("origin", ["caricato", "grafica", "ai"]).notNull().default("caricato"),
     createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: created(),
   },
-  (t) => [index("media_assets_item").on(t.itemId, t.position)],
+  (t) => [index("media_assets_item").on(t.itemId, t.position), index("media_assets_studio").on(t.studioItemId)],
 );
 
 /**
