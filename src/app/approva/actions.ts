@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { clients, editorialItems, itemFeedback } from "@/db/schema";
 import { approvalClientId } from "@/lib/approval";
 import { audit } from "@/lib/audit";
+import { releaseApproved } from "@/lib/publishing/release-approved";
 
 // Azione pubblica (nessun accesso): vale solo con un link firmato di un cliente che ha l'approvazione attiva,
 // e solo sui contenuti di quel cliente.
@@ -46,6 +47,8 @@ export async function sendFeedback(input: z.infer<typeof Input>) {
     clientId,
     target: `pubblicazione:${item.id}`,
   });
+  // Uscita chiesta prima dell'approvazione (Studio, Crea post): parte da sola alla data prevista
+  if (v.decision === "approvato") await releaseApproved(item.id, null);
   revalidatePath(`/pubblicazioni/${item.id}`);
   revalidatePath("/");
   return { ok: true };

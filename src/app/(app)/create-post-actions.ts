@@ -13,6 +13,7 @@ import { audit } from "@/lib/audit";
 import { requireClientAccess, requireWriter, userCanPublish } from "@/lib/auth";
 import { bestTimes } from "@/lib/best-times";
 import { connectionsOf, PUBLISHABLE, routeOf } from "@/lib/publishing/targets";
+import { rememberPendingRelease } from "@/lib/publishing/release-approved";
 import { inferFormat, initialStatus, planFor, titleFromCaption } from "@/lib/quick-post";
 import { schedulePublication } from "./publish-actions";
 
@@ -121,13 +122,17 @@ export async function mediaState(itemId: number) {
 
 /** Ultimo passo: programma sui profili scelti (le schede «da approvare» aspettano l'approvazione). */
 export async function finishQuickPost(input: { itemId: number; channelIds: number[]; when: "ora" | "data" }) {
-  await requireWriter();
+  const me = await requireWriter();
   const [item] = await db.select({ clientId: editorialItems.clientId, status: editorialItems.status, planId: editorialItems.planId }).from(editorialItems).where(eq(editorialItems.id, input.itemId));
   if (!item) return { error: "Pubblicazione non trovata" };
   await requireClientAccess(item.clientId);
   revalidatePath(`/clienti/${item.clientId}/piano`);
   revalidatePath("/");
-  if (item.status !== "approvato") return { ok: true, pending: true };
+  if (item.status !== "approvato") {
+    // All'approvazione il post uscirà da solo su questi profili, alla data scelta
+    await rememberPendingRelease(input.itemId, input.channelIds, me.id);
+    return { ok: true, pending: true };
+  }
   const r = await schedulePublication(input.itemId, input.channelIds, input.when === "ora" ? "ora" : "programmata");
   return "error" in r ? { error: r.error } : { ok: true, pending: false, dryRun: r.dryRun };
 }

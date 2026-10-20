@@ -20,6 +20,7 @@ import { placeAsBackground, sanitizeDesign } from "@/lib/studio/design";
 import { ASPECT_RATIOS, aspectForSize, type AspectRatio } from "@/lib/studio/image-tools";
 import { createStudioImage } from "@/lib/studio/studio-images";
 import { applyOps, describeChanges, EMPTY_STATE, StudioStateSchema, type StudioState } from "@/lib/studio/state";
+import { rememberPendingRelease } from "@/lib/publishing/release-approved";
 import { schedulePublication } from "./publish-actions";
 import { addMessage, addVersion, clientBrand, clientPlatforms, currentVersion, mediaOf, messagesOf, versionState } from "@/lib/studio/studio-data";
 
@@ -282,7 +283,11 @@ export async function publishFromStudio(input: z.infer<typeof Publish>) {
   await audit({ userId: me.id, category: "contenuti", action: "studio.pubblica", description: `Dallo Studio: ${status === "approvato" ? (p.data.when === "ora" ? "pubblicazione immediata" : "programmata") : "mandata in approvazione"}`, clientId: item.clientId, target: `pubblicazione:${item.id}` });
   revalidatePath(path(item.id));
   revalidatePath(`/clienti/${item.clientId}/piano`);
-  if (status !== "approvato") return { ok: true, pending: true };
+  if (status !== "approvato") {
+    // All'approvazione il post uscirà da solo su questi profili, alla data scelta
+    await rememberPendingRelease(item.id, p.data.channelIds, me.id);
+    return { ok: true, pending: true };
+  }
 
   const r = await schedulePublication(item.id, p.data.channelIds, p.data.when === "ora" ? "ora" : "programmata");
   revalidatePath(path(item.id));

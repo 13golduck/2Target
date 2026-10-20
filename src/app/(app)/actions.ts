@@ -14,6 +14,7 @@ import { audit, diff } from "@/lib/audit";
 import { ensureChannelsFromClient } from "@/lib/integrations/client-channels";
 import { parseCollaborators } from "@/lib/publishing/extras";
 import { syncPendingPublications } from "@/lib/publishing/sync";
+import { releaseApproved } from "@/lib/publishing/release-approved";
 import { isAiConfigured } from "@/lib/ai/claude";
 import { startFoundation } from "@/lib/ai/foundation-agent";
 
@@ -344,6 +345,8 @@ export async function saveItem(f: FormData) {
   };
   await db.update(s.editorialItems).set(values).where(eq(s.editorialItems.id, id));
   await syncPendingPublications(id, me.id);
+  // Approvata dal team: se c'era un'uscita in attesa (Studio, Crea post) si programma da sola
+  if (before && before.status !== "approvato" && newStatus === "approvato") await releaseApproved(id, me.id);
   await audit({
     userId: me.id,
     category: "contenuti",
