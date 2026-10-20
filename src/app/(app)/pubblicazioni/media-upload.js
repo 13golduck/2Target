@@ -29,9 +29,10 @@ export function videoSize(file) {
   });
 }
 
-export function upload(itemId, prepared, onProgress) {
+/** extra: parametri dello Studio (materiale=1 per il materiale di lavoro, origine=grafica per le pagine esportate). */
+export function upload(itemId, prepared, onProgress, extra = {}) {
   return new Promise((resolve, reject) => {
-    const q = new URLSearchParams({ scheda: itemId, nome: prepared.name });
+    const q = new URLSearchParams({ ...extra, scheda: itemId, nome: prepared.name });
     if (prepared.width) q.set('w', prepared.width);
     if (prepared.height) q.set('h', prepared.height);
     const xhr = new XMLHttpRequest();
