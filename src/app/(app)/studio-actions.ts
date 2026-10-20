@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { editorialItems, editorialPlans, mediaAssets, publications } from "@/db/schema";
 import { BudgetError } from "@/lib/ai/budget";
 import { isAiConfigured } from "@/lib/ai/claude";
+import { ImageGenError, isImageAiConfigured } from "@/lib/ai/image-gen";
 import { studioTurn } from "@/lib/ai/studio-agent";
 import { audit } from "@/lib/audit";
 import { requireClientAccess, requireWriter } from "@/lib/auth";
@@ -15,7 +16,9 @@ import { featureOn } from "@/lib/features-data";
 import { removeMediaFile } from "@/lib/media";
 import { syncPendingPublications } from "@/lib/publishing/sync";
 import { planFor } from "@/lib/quick-post";
-import { sanitizeDesign } from "@/lib/studio/design";
+import { placeAsBackground, sanitizeDesign } from "@/lib/studio/design";
+import { ASPECT_RATIOS, aspectForSize, type AspectRatio } from "@/lib/studio/image-tools";
+import { createStudioImage } from "@/lib/studio/studio-images";
 import { applyOps, describeChanges, EMPTY_STATE, StudioStateSchema, type StudioState } from "@/lib/studio/state";
 import { addMessage, addVersion, clientBrand, clientPlatforms, currentVersion, mediaOf, messagesOf, versionState } from "@/lib/studio/studio-data";
 
@@ -104,11 +107,28 @@ export async function sendStudioMessage(input: z.infer<typeof Send>) {
       platforms: await clientPlatforms(item.clientId),
       media: await mediaOf(item.id),
       brand: await clientBrand(item.clientId),
+      imagesAvailable: isImageAiConfigured(),
     });
-    const next = await safeState(item.id, applyOps(current.state, turn.ops));
+    let next = applyOps(current.state, turn.ops);
+    // Immagini chieste dall'AI: si creano dopo le altre modifiche, così possono andare nella grafica appena fatta
+    const notes: string[] = [];
+    let imagesCost = 0;
+    for (const req of turn.images) {
+      try {
+        const aspectRatio = req.page > 0 && next.design ? aspectForSize(next.design.size) : next.format === "storia" || next.format === "reel" ? "9:16" : "4:5";
+        const img = await createStudioImage({ itemId: item.id, clientId: item.clientId, userId: me.id, prompt: req.prompt, referenceIds: req.referenceMediaIds, aspectRatio });
+        imagesCost += img.costEur;
+        if (req.page > 0 && next.design) next = { ...next, design: placeAsBackground(next.design, req.page, img.mediaId) };
+      } catch (e) {
+        if (!(e instanceof ImageGenError || e instanceof BudgetError)) console.error("[studio] immagine non riuscita", e);
+        notes.push(e instanceof ImageGenError || e instanceof BudgetError ? e.message : "Un'immagine non si è potuta creare: riprova tra poco");
+      }
+    }
+    next = await safeState(item.id, next);
     const changed = describeChanges(current.state, next) !== "Nessuna modifica";
     const versionN = changed ? await addVersion({ itemId: item.id, author: "ai", userId: me.id, summary: turn.summary || describeChanges(current.state, next), state: next }) : undefined;
-    await addMessage({ itemId: item.id, role: "ai", text: turn.reply, userId: me.id, versionN, costEur: turn.costEur });
+    const reply = notes.length ? `${turn.reply}\n\n${notes.join("\n")}` : turn.reply;
+    await addMessage({ itemId: item.id, role: "ai", text: reply, userId: me.id, versionN, costEur: turn.costEur + imagesCost });
     revalidatePath(path(item.id));
     return { ok: true, versionN };
   } catch (e) {
@@ -205,4 +225,29 @@ export async function replaceDesignOutputs(input: z.infer<typeof Outputs>) {
   await audit({ userId: ctx.me.id, category: "contenuti", action: "studio.grafica_esportata", description: `Grafica esportata nel post (${mediaIds.length} ${mediaIds.length === 1 ? "pagina" : "pagine"})`, clientId: ctx.item.clientId, target: `pubblicazione:${itemId}` });
   revalidatePath(path(itemId));
   return { ok: true };
+}
+
+const ImageInput = z.object({
+  itemId: z.number().int().positive(),
+  prompt: z.string().trim().min(5, "Descrivi l'immagine in una frase").max(2000),
+  referenceIds: z.array(z.number().int().positive()).max(3, "Al massimo 3 foto di riferimento"),
+  aspectRatio: z.enum(ASPECT_RATIOS),
+});
+
+/** Immagine AI chiesta a mano dal materiale: nuova, oppure modifica di una o più foto del progetto. */
+export async function generateStudioImage(input: { itemId: number; prompt: string; referenceIds: number[]; aspectRatio: AspectRatio }) {
+  const p = ImageInput.safeParse(input);
+  if (!p.success) return { error: p.error.issues[0]?.message ?? "Dati non validi" };
+  const ctx = await itemFor(p.data.itemId);
+  if ("error" in ctx) return { error: ctx.error };
+  try {
+    const img = await createStudioImage({ itemId: ctx.item.id, clientId: ctx.item.clientId, userId: ctx.me.id, prompt: p.data.prompt, referenceIds: p.data.referenceIds, aspectRatio: p.data.aspectRatio });
+    await audit({ userId: ctx.me.id, category: "contenuti", action: "studio.immagine_ai", description: `Immagine AI ${img.edited ? "modificata da una foto" : "creata"} nello Studio`, clientId: ctx.item.clientId, target: `pubblicazione:${ctx.item.id}` });
+    revalidatePath(path(ctx.item.id));
+    return { ok: true, mediaId: img.mediaId, costEur: img.costEur };
+  } catch (e) {
+    if (e instanceof ImageGenError || e instanceof BudgetError) return { error: e.message };
+    console.error("[studio] immagine non riuscita", e);
+    return { error: "L'immagine non si è potuta creare: riprova tra poco" };
+  }
 }
