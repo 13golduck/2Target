@@ -302,6 +302,13 @@
       "when": 1792362460399,
       "tag": "0042_tour_benvenuto",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "5",
+      "when": 1792491829220,
+      "tag": "0043_studio",
+      "breakpoints": true
     }
   ]
 }

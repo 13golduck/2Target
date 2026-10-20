@@ -5,6 +5,7 @@ import type { CheckupReport } from "../lib/checkup-report";
 import type { CheckupFoundation } from "../lib/checkup-foundation";
 import type { TikTokOptions } from "../lib/publishing/tiktok-rules";
 import type { BrandKitData, CreativeBrief, DesignReview } from "../lib/design-types";
+import type { StudioState } from "../lib/studio/state";
 import { REASONING, REGISTERS } from "../lib/checkup-report";
 import {
   type AnyMySqlColumn,
@@ -872,6 +873,41 @@ export const mediaAssets = mysqlTable(
     createdAt: created(),
   },
   (t) => [index("media_assets_item").on(t.itemId, t.position)],
+);
+
+/**
+ * 2Target Studio: ogni versione del progetto di un post (testo, grafica, video), fatta dall'AI o da chi lavora.
+ * La versione più alta è quella in uso; tornare indietro crea una versione nuova (la storia non si riscrive).
+ */
+export const studioVersions = mysqlTable(
+  "studio_versions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    itemId: int("item_id").notNull().references(() => editorialItems.id, { onDelete: "cascade" }),
+    n: int("n").notNull(),
+    author: mysqlEnum("author", ["ai", "utente"]).notNull(),
+    userId: int("user_id").references(() => users.id, { onDelete: "set null" }),
+    summary: varchar("summary", { length: 255 }).notNull(),
+    state: json("state").$type<StudioState>().notNull(),
+    createdAt: created(),
+  },
+  (t) => [uniqueIndex("studio_versions_item_n").on(t.itemId, t.n)],
+);
+
+/** Chat dello Studio: richieste di chi lavora e risposte dell'AI, con la versione che hanno prodotto. */
+export const studioMessages = mysqlTable(
+  "studio_messages",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    itemId: int("item_id").notNull().references(() => editorialItems.id, { onDelete: "cascade" }),
+    role: mysqlEnum("role", ["utente", "ai"]).notNull(),
+    text: text("text").notNull(),
+    versionN: int("version_n"),
+    userId: int("user_id").references(() => users.id, { onDelete: "set null" }),
+    costEur: decimal("cost_eur", { precision: 10, scale: 4, mode: "number" }),
+    createdAt: created(),
+  },
+  (t) => [index("studio_messages_item").on(t.itemId, t.id)],
 );
 
 export const PUBLICATION_STATUSES = ["programmata", "in_corso", "pubblicata", "errore", "annullata"] as const;
