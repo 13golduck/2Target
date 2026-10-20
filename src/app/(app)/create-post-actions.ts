@@ -131,3 +131,27 @@ export async function finishQuickPost(input: { itemId: number; channelIds: numbe
   const r = await schedulePublication(input.itemId, input.channelIds, input.when === "ora" ? "ora" : "programmata");
   return "error" in r ? { error: r.error } : { ok: true, pending: false, dryRun: r.dryRun };
 }
+
+const Blank = z.object({ clientId: z.number().int().positive() });
+
+/**
+ * Modo «Avanzato»: una scheda vuota nel piano in corso, da completare nella pagina della pubblicazione.
+ * Niente data: la sceglie chi la compila (la scheda la salva da sola).
+ */
+export async function createBlankItem(input: z.infer<typeof Blank>) {
+  const me = await requireWriter();
+  const p = Blank.safeParse(input);
+  if (!p.success) return { error: "Scegli il cliente" };
+  await requireClientAccess(p.data.clientId);
+  const plans = await db.select({ id: editorialPlans.id, startsOn: editorialPlans.startsOn, endsOn: editorialPlans.endsOn }).from(editorialPlans).where(eq(editorialPlans.clientId, p.data.clientId));
+  const [r] = await db.insert(editorialItems).values({
+    clientId: p.data.clientId,
+    planId: planFor(plans, new Date()),
+    title: "Nuovo post",
+    platform: "instagram",
+    format: "post",
+    status: "bozza",
+  });
+  await audit({ userId: me.id, category: "contenuti", action: "pubblicazione.crea_avanzata", description: "Creata una scheda vuota con «Crea post» (modo avanzato)", clientId: p.data.clientId, target: `pubblicazione:${r.insertId}` });
+  return { ok: true, itemId: r.insertId };
+}
