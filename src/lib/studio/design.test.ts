@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { brandColors, DesignSchema, newId, sanitizeDesign, starterDesign, type Design } from "./design";
+import { brandColors, DesignSchema, newId, placeAsBackground, sanitizeDesign, starterDesign, type Design } from "./design";
 
 const colors = { background: "#FFFFFF", text: "#111111", accent: "#CDA434" };
 
@@ -62,5 +62,17 @@ describe("brandColors", () => {
 describe("newId", () => {
   it("trova il primo numero libero", () => {
     expect(newId("l", ["l1", "l2", "l4"])).toBe("l3");
+  });
+});
+
+describe("placeAsBackground", () => {
+  const d = starterDesign({ size: "storia", pages: 2, headline: "x", colors, hasLogo: false });
+  it("mette la foto a tutta pagina sotto agli altri livelli della pagina scelta", () => {
+    const out = placeAsBackground(d, 2, 42);
+    expect(out.pages[1].layers[0]).toMatchObject({ type: "immagine", mediaId: 42, x: 0, y: 0, width: 1080, height: 1920 });
+    expect(out.pages[0]).toEqual(d.pages[0]);
+  });
+  it("ignora una pagina che non esiste", () => {
+    expect(placeAsBackground(d, 5, 42)).toEqual(d);
   });
 });

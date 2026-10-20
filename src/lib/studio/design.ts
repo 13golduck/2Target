@@ -152,3 +152,18 @@ export function starterDesign(o: { size: DesignSize; pages: number; headline: st
   }));
   return { size: o.size, pages };
 }
+
+/** Mette l'immagine come sfondo a tutta pagina (sotto agli altri livelli) nella pagina indicata, se esiste. */
+export function placeAsBackground(design: Design, page: number, mediaId: number): Design {
+  const index = page - 1;
+  if (index < 0 || index >= design.pages.length) return design;
+  const { width, height } = DESIGN_SIZES[design.size];
+  return {
+    ...design,
+    pages: design.pages.map((p, i) => {
+      if (i !== index) return p;
+      const id = newId("l", p.layers.map((l) => l.id));
+      return { ...p, layers: [{ id, type: "immagine" as const, mediaId, fit: "riempi" as const, x: 0, y: 0, width, height, rotation: 0, opacity: 1 }, ...p.layers] };
+    }),
+  };
+}

@@ -3,7 +3,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 
 import { platformName } from "@/lib/platforms";
-import { AiOpSchema, DESIGN_FORMAT, toStudioOps } from "@/lib/studio/ai-ops";
+import { AiOpSchema, DESIGN_FORMAT, MAX_IMAGES_PER_TURN, toStudioOps, type ImageRequestOp } from "@/lib/studio/ai-ops";
 import { DESIGN_FONTS, DESIGN_SIZES, type BrandColors } from "@/lib/studio/design";
 import type { StudioOp, StudioState } from "@/lib/studio/state";
 import { assertBudget } from "./budget";
@@ -18,7 +18,7 @@ const TurnSchema = z.object({
   summary: z.string().describe("Riassunto della versione in massimo 8 parole, es. «Testo più breve, aggiunto invito»"),
   ops: z.array(AiOpSchema).describe("Modifiche al progetto, in ordine. Vuoto se servono chiarimenti"),
 });
-export type StudioTurn = { reply: string; summary: string; ops: StudioOp[] };
+export type StudioTurn = { reply: string; summary: string; ops: StudioOp[]; images: ImageRequestOp[] };
 
 
 
@@ -32,6 +32,8 @@ export type StudioTurnInput = {
   platforms: string[];
   media: { id: number; kind: "image" | "video"; inPost: boolean; fileName: string; width: number | null; height: number | null; durationSec: number | null }[];
   brand: { colors: BrandColors; hasLogo: boolean };
+  /** Le immagini AI sono configurate (chiave Google inserita). */
+  imagesAvailable: boolean;
 };
 
 // Stima prudente di un turno (Sonnet, contesto del cliente in cache): serve solo al controllo di spesa
@@ -63,6 +65,13 @@ Grafica (operazione «grafica», sostituisce l'intera grafica; «grafica_rimuovi
 - Foto: livello «immagine» con il mediaId di una foto del materiale (solo id elencati). Per una foto di sfondo a tutta pagina usa fit «riempi» e mettila come primo livello.
 - Logo: livello «logo» (solo se <brand> dice che il logo c'è), piccolo, in un angolo.
 - Pochi livelli, gerarchia chiara: un messaggio per slide. Mantieni gli id dei livelli che non cambi.
+
+Immagini AI (operazione «immagine»): solo se <immagini_ai> dice che sono disponibili, e solo se la richiesta lo giustifica
+(ogni immagine costa). Con referenceMediaIds modifichi una foto del cliente (cambia sfondo, luce, ambientazione, togli elementi)
+mantenendo fedele il prodotto o la persona; senza riferimenti crei un'immagine nuova. Il prompt va in inglese, preciso:
+soggetto, ambientazione, luce, stile fotografico, inquadratura; mai testo dentro l'immagine (i testi stanno nei livelli della grafica).
+Con page > 0 l'immagine diventa lo sfondo di quella pagina della grafica: crea o aggiorna prima la grafica nello stesso turno.
+Massimo ${MAX_IMAGES_PER_TURN} immagini per risposta.
 
 Formato JSON della grafica (campo designJson):
 ${DESIGN_FORMAT}`;
@@ -102,6 +111,7 @@ export async function studioTurn(o: StudioTurnInput): Promise<StudioTurn & { cos
           `<progetto>\n${JSON.stringify(o.state, null, 2)}\n</progetto>`,
           `<piattaforme>${where}</piattaforme>`,
           `<materiale>\n${describeMedia(o.media)}\n</materiale>`,
+          `<immagini_ai>${o.imagesAvailable ? "Disponibili." : "Non disponibili: non usare l'operazione «immagine»; se le chiedono, spiega che un amministratore deve inserire la chiave Google AI."}</immagini_ai>`,
           `<brand>Colori: sfondo ${o.brand.colors.background}, testo ${o.brand.colors.text}, accento ${o.brand.colors.accent}. Logo: ${o.brand.hasLogo ? "c'è" : "non c'è"}.</brand>`,
           history && `<chat_precedente>\n${history}\n</chat_precedente>`,
           `<richiesta>\n${o.request}\n</richiesta>`,
@@ -113,7 +123,7 @@ export async function studioTurn(o: StudioTurnInput): Promise<StudioTurn & { cos
     log: { step: "Studio: turno", clientId: o.clientId },
   });
   const turn = TurnSchema.parse(JSON.parse(r.text));
-  const { ops, rejected } = toStudioOps(turn.ops);
+  const { ops, images, rejected } = toStudioOps(turn.ops);
   const reply = rejected ? `${turn.reply}\n\n(La grafica che ho preparato non era valida e non l'ho applicata: chiedimela di nuovo.)` : turn.reply;
-  return { reply, summary: turn.summary, ops, costEur: r.costEur };
+  return { reply, summary: turn.summary, ops, images: o.imagesAvailable ? images : [], costEur: r.costEur };
 }

@@ -19,4 +19,11 @@ describe("toStudioOps", () => {
   it("scarta un JSON rotto", () => {
     expect(toStudioOps([{ op: "grafica", designJson: "{non json" }]).rejected).toBe(true);
   });
+  it("separa le richieste di immagine, con al massimo 3 riferimenti e 2 immagini per turno", () => {
+    const img = { op: "immagine" as const, prompt: "vase on a table", referenceMediaIds: [1, 1, 2, 3, 4], page: 1 };
+    const r = toStudioOps([img, img, img]);
+    expect(r.ops).toEqual([]);
+    expect(r.images).toHaveLength(2);
+    expect(r.images[0].referenceMediaIds).toEqual([1, 2, 3]);
+  });
 });
