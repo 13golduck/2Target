@@ -859,7 +859,8 @@ export const mediaAssets = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     clientId: int("client_id").notNull().references(() => clients.id, { onDelete: "cascade" }),
     itemId: int("item_id").references(() => editorialItems.id, { onDelete: "set null" }),
-    kind: mysqlEnum("kind", ["image", "video"]).notNull(),
+    /** «audio» solo per la musica del materiale dello Studio (non si pubblica da sola). */
+    kind: mysqlEnum("kind", ["image", "video", "audio"]).notNull(),
     mime: varchar("mime", { length: 60 }).notNull(),
     fileName: varchar("file_name", { length: 200 }).notNull(),
     /** Nome del file su disco (casuale). */
@@ -880,8 +881,8 @@ export const mediaAssets = mysqlTable(
      * nullo, così non viene pubblicato né mandato in approvazione: escono solo i file della scheda.
      */
     studioItemId: int("studio_item_id").references(() => editorialItems.id, { onDelete: "cascade" }),
-    /** Da dove viene il file: caricato da chi lavora, grafica esportata dallo Studio, immagine generata dall'AI. */
-    origin: mysqlEnum("origin", ["caricato", "grafica", "ai"]).notNull().default("caricato"),
+    /** Da dove viene il file: caricato, grafica esportata dallo Studio, immagine dell'AI, montaggio video dello Studio. */
+    origin: mysqlEnum("origin", ["caricato", "grafica", "ai", "video"]).notNull().default("caricato"),
     createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: created(),
   },

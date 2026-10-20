@@ -125,8 +125,11 @@ export async function processPublication(id: number) {
     const token = await publishToken(channel, route.route);
 
     const files = pub.mediaIds.length ? await db.select().from(mediaAssets).where(inArray(mediaAssets.id, pub.mediaIds)) : [];
-    const ordered = pub.mediaIds.map((mid) => files.find((f) => f.id === mid)).filter((f) => !!f);
-    if (ordered.length !== pub.mediaIds.length) throw new Error("Uno dei file da pubblicare è stato eliminato");
+    const found = pub.mediaIds.map((mid) => files.find((f) => f.id === mid)).filter((f) => !!f);
+    if (found.length !== pub.mediaIds.length) throw new Error("Uno dei file da pubblicare è stato eliminato");
+    // L'audio (musica dello Studio) non si pubblica da solo: entra solo dentro un montaggio video
+    if (found.some((f) => f.kind === "audio")) throw new Error("Un file audio non si pubblica da solo: usalo come musica di un video nello Studio");
+    const ordered = found.filter((f): f is typeof f & { kind: "image" | "video" } => f.kind !== "audio");
     if (ordered.some((f) => f.clientId !== pub.clientId)) throw new Error("File di un altro cliente: pubblicazione bloccata");
     const problem = checkPublishable(channel.platform, pub.format, ordered, pub.caption ?? "");
     if (problem) throw new Error(problem);

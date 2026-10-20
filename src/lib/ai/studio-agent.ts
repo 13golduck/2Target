@@ -30,7 +30,7 @@ export type StudioTurnInput = {
   /** Ultimi messaggi della chat, dal più vecchio. */
   history: { role: "utente" | "ai"; text: string }[];
   platforms: string[];
-  media: { id: number; kind: "image" | "video"; inPost: boolean; fileName: string; width: number | null; height: number | null; durationSec: number | null }[];
+  media: { id: number; kind: "image" | "video" | "audio"; inPost: boolean; fileName: string; width: number | null; height: number | null; durationSec: number | null }[];
   brand: { colors: BrandColors; hasLogo: boolean };
   /** Le immagini AI sono configurate (chiave Google inserita). */
   imagesAvailable: boolean;
@@ -82,7 +82,7 @@ function describeMedia(media: StudioTurnInput["media"]) {
     .map((m, i) => {
       const size = m.width && m.height ? ` ${m.width}×${m.height}` : "";
       const len = m.durationSec ? `, ${Math.round(m.durationSec)} s` : "";
-      return `${i + 1}. id ${m.id} · ${m.kind === "video" ? "Video" : "Foto"} «${m.fileName}»${size}${len} · ${m.inPost ? "nel post" : "materiale"}`;
+      return `${i + 1}. id ${m.id} · ${m.kind === "video" ? "Video" : m.kind === "audio" ? "Audio (musica)" : "Foto"} «${m.fileName}»${size}${len} · ${m.inPost ? "nel post" : "materiale"}`;
     })
     .join("\n");
 }
