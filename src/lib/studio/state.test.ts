@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { applyOps, describeChanges, EMPTY_STATE, LIMITS, normalizeHashtags, stateFromItem } from "./state";
+import { starterDesign } from "./design";
+import { applyOps, describeChanges, EMPTY_STATE, LIMITS, normalizeHashtags, stateFromItem, StudioStateSchema } from "./state";
 
 describe("normalizeHashtags", () => {
   it("aggiunge il # e toglie doppioni, virgole e spazi in più", () => {
@@ -32,14 +33,27 @@ describe("applyOps", () => {
 
 describe("describeChanges", () => {
   it("elenca i campi cambiati in italiano", () => {
-    expect(describeChanges(EMPTY_STATE, { ...EMPTY_STATE, caption: "x", hashtags: "#a" })).toBe("Cambiati testo e hashtag");
-    expect(describeChanges(EMPTY_STATE, { ...EMPTY_STATE, format: "reel" })).toBe("Cambiato formato");
+    expect(describeChanges(EMPTY_STATE, { ...EMPTY_STATE, caption: "x", hashtags: "#a" })).toBe("Modifiche a testo e hashtag");
+    expect(describeChanges(EMPTY_STATE, { ...EMPTY_STATE, format: "reel" })).toBe("Modifiche a formato");
     expect(describeChanges(EMPTY_STATE, EMPTY_STATE)).toBe("Nessuna modifica");
+  });
+});
+
+describe("grafica", () => {
+  const design = starterDesign({ size: "quadrato", pages: 1, headline: "Ciao", colors: { background: "#FFFFFF", text: "#000000", accent: "#CDA434" }, hasLogo: false });
+  it("si aggiunge e si toglie con le operazioni", () => {
+    const withDesign = applyOps(EMPTY_STATE, [{ op: "grafica", design }]);
+    expect(withDesign.design).toEqual(design);
+    expect(describeChanges(EMPTY_STATE, withDesign)).toBe("Modifiche a grafica");
+    expect(applyOps(withDesign, [{ op: "grafica_rimuovi" }]).design).toBeNull();
+  });
+  it("le versioni salvate prima della grafica si leggono ancora", () => {
+    expect(StudioStateSchema.parse({ title: "T", caption: "", hashtags: "", format: "post" }).design).toBeNull();
   });
 });
 
 describe("stateFromItem", () => {
   it("porta a «post» i formati che lo Studio non gestisce", () => {
-    expect(stateFromItem({ title: "T", caption: null, hashtags: null, format: "articolo" })).toEqual({ title: "T", caption: "", hashtags: "", format: "post" });
+    expect(stateFromItem({ title: "T", caption: null, hashtags: null, format: "articolo" })).toEqual({ title: "T", caption: "", hashtags: "", format: "post", design: null });
   });
 });
