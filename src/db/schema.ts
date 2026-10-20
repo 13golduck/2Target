@@ -637,6 +637,12 @@ export const editorialItems = mysqlTable(
     status: mysqlEnum("status", ITEM_STATUSES).notNull().default("bozza"),
     internalNotes: text("internal_notes"),
     publishedUrl: varchar("published_url", { length: 500 }),
+    /**
+     * Uscita in attesa di approvazione (Studio, Crea post): profili scelti e chi l'ha chiesta. Quando il post viene
+     * approvato si programma da solo su questi profili, alla data della scheda; poi i campi si svuotano.
+     */
+    pendingChannelIds: json("pending_channel_ids").$type<number[]>(),
+    pendingBy: int("pending_by").references((): AnyMySqlColumn => users.id, { onDelete: "set null" }),
     externalPostId: varchar("external_post_id", { length: 120 }),
     createdAt: created(),
     updatedAt: updated(),
