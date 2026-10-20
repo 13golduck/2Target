@@ -330,6 +330,7 @@ export async function deleteMedia(id: number) {
   const me = await requireWriter();
   const [m] = await db.select().from(mediaAssets).where(eq(mediaAssets.id, id));
   if (!m) return { ok: true };
+  await requireClientAccess(m.clientId);
   const busy = m.itemId
     ? await db.select({ mediaIds: publications.mediaIds }).from(publications).where(and(eq(publications.itemId, m.itemId), eq(publications.status, "in_corso")))
     : [];
@@ -345,6 +346,9 @@ export async function deleteMedia(id: number) {
 /** Nuovo ordine dei file (carosello). */
 export async function reorderMedia(itemId: number, ids: number[]) {
   const me = await requireWriter();
+  const [item] = await db.select({ clientId: editorialItems.clientId }).from(editorialItems).where(eq(editorialItems.id, itemId));
+  if (!item) return { error: "Scheda non trovata" };
+  await requireClientAccess(item.clientId);
   for (const [i, id] of ids.entries()) await db.update(mediaAssets).set({ position: i }).where(and(eq(mediaAssets.id, id), eq(mediaAssets.itemId, itemId)));
   await syncPendingPublications(itemId, me.id);
   revalidatePath(path(itemId));
