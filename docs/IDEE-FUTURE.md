@@ -15,6 +15,18 @@ misurazione (KPI, lead, SEO) → report al cliente.
 - LinkedIn: richiesta e approvazione della Community Management API (vedi docs/COLLEGAMENTI-API.md, 2d).
 - «Riprova» TikTok con la possibilità di cambiare le impostazioni (oggi: annulla e riprogramma).
 
+## Studio (creazione dei post con l'AI)
+- **Video nello Studio:** montaggio con il motore FilmCraft (web), tagli proposti dall'AI dai video caricati,
+  scritte e sottotitoli, esportazione nel browser con riserva sul server (ffmpeg).
+- **Musica da librerie con licenza:** brani da librerie riconosciute che gestiscono i diritti (anche verso SIAE),
+  oltre al caricamento di file propri; prima la verifica di API e licenze per l'uso sui social.
+- **Più chiavi e scelta del modello per le immagini AI:** poter inserire più chiavi o profili (es. Nano Banana 2 per
+  il lavoro quotidiano e Gemini 3 Pro Image per le immagini importanti) e scegliere il modello nella finestra
+  «Immagine AI» e in chat, con il costo stimato accanto a ciascuno. Oggi c'è una sola chiave Google e un solo
+  modello, impostato in Impostazioni → Integrazioni → «Google AI (immagini)».
+- **Altri fornitori di immagini:** OpenAI e Flux dietro la stessa interfaccia (`src/lib/ai/image-gen.ts`), quando
+  Golduck avrà creato i progetti dedicati e inserito le chiavi.
+
 ## Spunti futuri
 - **Craft Launcher** (https://github.com/storytold/craft-launcher): valutare l'integrazione della suite come
   alternativa ad Adobe per la produzione grafica, collegata al brief del Senior Graphic Designer AI e al brand kit.
@@ -22,6 +34,11 @@ misurazione (KPI, lead, SEO) → report al cliente.
   (montaggio, sottotitoli, voce, musica) da revisionare e pubblicare dal piano editoriale.
 
 ## Fatto
+- **2Target Studio: testo, grafica e immagini AI** (ottobre 2026). «Crea post» con tre modi (Semplice, Avanzato,
+  Con l'AI); lo Studio lavora a quattro mani con l'AI su una scheda del piano, con chat e versioni; editor grafico a
+  pagine e livelli (colori e logo del brand kit) con esportazione PNG nel post; immagini create o modificate con
+  Google Nano Banana 2, nel tetto mensile delle immagini AI. Codice: `src/lib/studio/`, `src/app/(app)/studio/`,
+  `src/lib/ai/studio-agent.ts`, `src/lib/ai/image-gen.ts`.
 - **Il check-up imposta il lavoro successivo** (ottobre 2026). Alla consegna 2Target prepara KPI con punto di partenza
   e obiettivo (collegati agli obiettivi per fase del funnel), canali da collegare, rubriche, prime idee e la bozza del
   primo mese di piano; buyer persona e obiettivi solo se mancano. Ogni proposta cita le evidenze del check-up
