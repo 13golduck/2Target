@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 
 import { db } from "@/db";
@@ -8,6 +8,7 @@ import { isImageAiConfigured } from "@/lib/ai/image-gen";
 import { budgetStatus } from "@/lib/ai/budget";
 import { requireClientAccess, requireWriter } from "@/lib/auth";
 import { featureOn } from "@/lib/features-data";
+import { toRomeInput } from "@/lib/format";
 import { previewMediaUrl } from "@/lib/media";
 import { clientBrand, clientPlatforms, currentVersion, mediaOf, messagesOf, versionsOf } from "@/lib/studio/studio-data";
 import { FeatureOff } from "src/components/feature-off";
@@ -39,12 +40,18 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
   const versions = await versionsOf(id);
   const media = await mediaOf(id);
   const budget = await budgetStatus();
+  const pubs = await db
+    .select({ id: s.publications.id, status: s.publications.status, scheduledAt: s.publications.scheduledAt, publishedAt: s.publications.publishedAt, permalink: s.publications.permalink, error: s.publications.error, platform: s.socialAccounts.platform, handle: s.socialAccounts.handle })
+    .from(s.publications)
+    .innerJoin(s.socialAccounts, eq(s.socialAccounts.id, s.publications.socialAccountId))
+    .where(eq(s.publications.itemId, id))
+    .orderBy(desc(s.publications.id));
   const brand = await clientBrand(item.clientId);
   const [palette] = await db.select({ data: s.brandKits.data }).from(s.brandKits).where(eq(s.brandKits.clientId, item.clientId));
 
   return (
     <StudioView
-      item={{ id: item.id, status: item.status }}
+      item={{ id: item.id, status: item.status, scheduledAt: toRomeInput(item.scheduledAt) }}
       client={{ ...client, logo: kit?.hasLogo ? `/api/logo/${client.id}?tipo=icona&v=${kit.at.getTime()}` : null }}
       brand={{ palette: palette?.data.palette ?? [], logoUrl: brand.logoUrl }}
       platforms={await clientPlatforms(item.clientId)}
@@ -53,6 +60,7 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
       versions={versions.map((v) => ({ ...v, createdAt: v.createdAt.toISOString() }))}
       messages={messages.map((m) => ({ id: m.id, role: m.role, text: m.text, versionN: m.versionN, costEur: m.costEur, createdAt: m.createdAt.toISOString() }))}
       media={media.map((m) => ({ ...m, url: previewMediaUrl(m.id) }))}
+      publications={pubs.map((p) => ({ ...p, scheduledAt: p.scheduledAt.toISOString(), publishedAt: p.publishedAt?.toISOString() ?? null }))}
       ai={{ configured: isAiConfigured(), images: isImageAiConfigured(), budgetWarning: budget.warning }}
     />
   );
