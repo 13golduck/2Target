@@ -77,18 +77,26 @@ export function ItemView({ saved, client, item, issues, series, personas, option
   const [scheduledAt, setScheduledAt] = useState(item.scheduledAt ?? '');
   const [shots, setShots] = useState(item.shotList.length ? item.shotList : [{ scena: '', fonte: 'cliente' }]);
 
-  // Cambiare lo stato salva subito la pubblicazione: «Approvato» deve valere senza ricordarsi di premere Salva
+  // Stato e data si salvano subito: il riquadro di pubblicazione usa i valori salvati, e una data
+  // cambiata ma non salvata lasciava attivo solo «Pubblica ora» (il post usciva subito)
   const formRef = useRef(null);
-  const saveAfterStatus = useRef(false);
+  // Contatore: ogni richiesta di salvataggio fa ripartire l'effetto anche se il valore non cambia
+  // (la data arriva già nello stato da onChange quando si esce dal campo)
+  const [saveRequest, setSaveRequest] = useState(0);
   const changeStatus = (next) => {
-    saveAfterStatus.current = true;
     setStatus(next);
+    setSaveRequest((n) => n + 1);
+  };
+  const saveDate = (value) => {
+    // Campo vuoto o incompleto: non si cancella la data da solo (resta il pulsante Salva)
+    if (!value || value === (item.scheduledAt ?? '')) return;
+    setScheduledAt(value);
+    setSaveRequest((n) => n + 1);
   };
   useEffect(() => {
-    if (!saveAfterStatus.current) return;
-    saveAfterStatus.current = false;
-    formRef.current?.requestSubmit();
-  }, [status]);
+    if (saveRequest) formRef.current?.requestSubmit();
+  }, [saveRequest]);
+  const dateUnsaved = !!scheduledAt && scheduledAt !== (item.scheduledAt ?? '');
 
   const notified = useRef(false);
   useEffect(() => {
@@ -110,7 +118,7 @@ export function ItemView({ saved, client, item, issues, series, personas, option
     d.setHours(slot.hour, 0, 0, 0);
     while (d.getDay() !== slot.day || d < new Date()) d.setDate(d.getDate() + 1);
     const pad = (n) => String(n).padStart(2, '0');
-    setScheduledAt(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`);
+    saveDate(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`);
   };
 
   const TABS = [
@@ -401,6 +409,8 @@ export function ItemView({ saved, client, item, issues, series, personas, option
                     label="Data e ora (ora italiana)"
                     value={scheduledAt}
                     onChange={(e) => setScheduledAt(e.target.value)}
+                    onBlur={(e) => saveDate(e.target.value)}
+                    helperText="Si salva da sola quando esci dal campo"
                     slotProps={{ inputLabel: { shrink: true } }}
                     fullWidth
                   />
@@ -499,7 +509,7 @@ export function ItemView({ saved, client, item, issues, series, personas, option
 
       {/* Pubblicazione sui profili del cliente: fuori dal modulo della scheda (ha i suoi pulsanti) */}
       <Box sx={{ mt: 3 }}>
-        <PublishPanel item={item} client={client} {...publishing} />
+        <PublishPanel item={item} client={client} dateUnsaved={dateUnsaved} {...publishing} />
       </Box>
 
       {/* Sponsorizzate: post già pubblicati e campagne nuove dalla scheda */}

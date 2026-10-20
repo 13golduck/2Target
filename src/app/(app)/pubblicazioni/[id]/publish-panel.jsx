@@ -62,7 +62,7 @@ function ChannelAvatar({ channel, size = 36 }) {
   );
 }
 
-export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, scheduledFuture, channels, media, publications, preselect }) {
+export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, scheduledFuture, channels, media, publications, preselect, dateUnsaved }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   // Post veloce da Canali: il profilo scelto arriva già selezionato
@@ -129,6 +129,11 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
             <Box component="span" sx={{ display: 'block', mt: 1 }}>
               TikTok: visibilità <b>{{ PUBLIC_TO_EVERYONE: 'tutti', MUTUAL_FOLLOW_FRIENDS: 'amici', FOLLOWER_OF_CREATOR: 'follower', SELF_ONLY: 'solo io' }[tiktok.privacyLevel] ?? tiktok.privacyLevel}</b>
               {tiktok.disclose ? ` · contenuto commerciale (${[tiktok.brandOrganic && 'il tuo brand', tiktok.brandContent && 'sponsorizzato'].filter(Boolean).join(' e ')})` : ''}
+            </Box>
+          )}
+          {mode === 'ora' && future && (
+            <Box component="span" sx={{ display: 'block', mt: 1, color: 'warning.dark' }}>
+              La scheda è programmata per il {fmtDateTime(when)}: con «Pubblica ora» esce adesso, non a quell&apos;ora.
             </Box>
           )}
           {dryRun && (
@@ -339,17 +344,28 @@ export function PublishPanel({ item, client, canPublish, dryRun, scheduledAt, sc
                 <Button
                   variant="contained"
                   size="large"
-                  disabled={!selected.length || !future || pending || blocked}
+                  disabled={!selected.length || !future || pending || blocked || dateUnsaved}
                   loading={pending}
                   onClick={() => go('programmata')}
                   startIcon={<Iconify icon="solar:calendar-date-bold" />}
                 >
                   {when ? `Programma per ${fmtDateTime(when)}` : 'Imposta data e ora nella scheda'}
                 </Button>
-                <Button variant="outlined" color="inherit" disabled={!selected.length || pending || blocked} onClick={() => go('ora')} startIcon={<Iconify icon="custom:send-fill" />}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center' }}>
+                  Usa la data e l&apos;ora della scheda (riquadro Pianificazione)
+                </Typography>
+                <Button variant="outlined" color="inherit" disabled={!selected.length || pending || blocked || dateUnsaved} onClick={() => go('ora')} startIcon={<Iconify icon="custom:send-fill" />}>
                   Pubblica ora
                 </Button>
-                {when && !future && (
+                <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center' }}>
+                  Esce adesso, qualunque data abbia la scheda
+                </Typography>
+                {dateUnsaved && (
+                  <Typography variant="caption" sx={{ color: 'info.main' }}>
+                    Salvo la nuova data della scheda…
+                  </Typography>
+                )}
+                {when && !future && !dateUnsaved && (
                   <Typography variant="caption" sx={{ color: 'warning.dark' }}>
                     La data della scheda è passata: aggiornala per programmare, oppure pubblica ora.
                   </Typography>
