@@ -1,10 +1,11 @@
 import "server-only";
-import { and, asc, desc, eq, inArray, max, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, max, or, sql } from "drizzle-orm";
 
 import { db } from "@/db";
-import { editorialItems, mediaAssets, PLATFORMS, socialAccounts, studioMessages, studioVersions } from "@/db/schema";
+import { brandKits, editorialItems, mediaAssets, PLATFORMS, socialAccounts, studioMessages, studioVersions } from "@/db/schema";
 import { syncPendingPublications } from "@/lib/publishing/sync";
 import { PUBLISHABLE } from "@/lib/publishing/targets";
+import { brandColors } from "./design";
 import { stateFromItem, StudioStateSchema, type StudioState } from "./state";
 
 // Lettura e scrittura del progetto dello Studio. Le versioni si numerano dentro una transazione con la scheda
@@ -88,4 +89,15 @@ export async function mediaOf(itemId: number) {
 export async function clientPlatforms(clientId: number) {
   const rows = await db.selectDistinct({ platform: socialAccounts.platform }).from(socialAccounts).where(and(eq(socialAccounts.clientId, clientId), inArray(socialAccounts.platform, [...PUBLISHABLE])));
   return rows.map((r) => r.platform as string).filter((p): p is (typeof PLATFORMS)[number] => (PLATFORMS as readonly string[]).includes(p));
+}
+
+/** Colori del brand kit e presenza del logo, per le grafiche. */
+export async function clientBrand(clientId: number) {
+  const [kit] = await db.select({ data: brandKits.data, hasLogo: sql<number>`${brandKits.logo} is not null`, at: brandKits.updatedAt }).from(brandKits).where(eq(brandKits.clientId, clientId));
+  return {
+    colors: brandColors(kit?.data.palette),
+    hasLogo: !!kit?.hasLogo,
+    // Logo intero (non l'icona quadrata): si disegna nella grafica
+    logoUrl: kit?.hasLogo ? `/api/logo/${clientId}?v=${kit.at.getTime()}` : null,
+  };
 }

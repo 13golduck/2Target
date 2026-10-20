@@ -17,7 +17,7 @@ import { syncPendingPublications } from "@/lib/publishing/sync";
 import { planFor } from "@/lib/quick-post";
 import { sanitizeDesign } from "@/lib/studio/design";
 import { applyOps, describeChanges, EMPTY_STATE, StudioStateSchema, type StudioState } from "@/lib/studio/state";
-import { addMessage, addVersion, clientPlatforms, currentVersion, mediaOf, messagesOf, versionState } from "@/lib/studio/studio-data";
+import { addMessage, addVersion, clientBrand, clientPlatforms, currentVersion, mediaOf, messagesOf, versionState } from "@/lib/studio/studio-data";
 
 // 2Target Studio: la scheda del post è il progetto; chat e versioni si appoggiano a essa.
 // Ogni azione verifica chi scrive, l'accesso al cliente e che lo Studio sia acceso per quel cliente.
@@ -103,6 +103,7 @@ export async function sendStudioMessage(input: z.infer<typeof Send>) {
       history: (p.data.text ? history : history.slice(0, -1)).map((m) => ({ role: m.role, text: m.text })),
       platforms: await clientPlatforms(item.clientId),
       media: await mediaOf(item.id),
+      brand: await clientBrand(item.clientId),
     });
     const next = await safeState(item.id, applyOps(current.state, turn.ops));
     const changed = describeChanges(current.state, next) !== "Nessuna modifica";

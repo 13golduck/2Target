@@ -3,6 +3,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 
 import { platformName } from "@/lib/platforms";
+import { DESIGN_FONTS, DESIGN_SIZES, type BrandColors } from "@/lib/studio/design";
 import { StudioOpSchema, type StudioState } from "@/lib/studio/state";
 import { assertBudget } from "./budget";
 import { callClaude, MODELS } from "./claude";
@@ -25,11 +26,12 @@ export type StudioTurnInput = {
   /** Ultimi messaggi della chat, dal più vecchio. */
   history: { role: "utente" | "ai"; text: string }[];
   platforms: string[];
-  media: { kind: "image" | "video"; fileName: string; width: number | null; height: number | null; durationSec: number | null }[];
+  media: { id: number; kind: "image" | "video"; inPost: boolean; fileName: string; width: number | null; height: number | null; durationSec: number | null }[];
+  brand: { colors: BrandColors; hasLogo: boolean };
 };
 
 // Stima prudente di un turno (Sonnet, contesto del cliente in cache): serve solo al controllo di spesa
-const TURN_ESTIMATE_USD = 0.06;
+const TURN_ESTIMATE_USD = 0.08;
 const HISTORY_TURNS = 12;
 
 const SYSTEM = `Sei il social media manager e copywriter di Golduck dentro 2Target Studio.
@@ -44,7 +46,19 @@ Regole:
   Lunghezza adatta alle piattaforme (LinkedIn più articolato, Instagram e Facebook più brevi, Threads massimo 500 caratteri).
 - Non inventare prezzi, date, promozioni o dati che non sono nella richiesta, nella chat o nel contesto del cliente.
 - Se la richiesta è ambigua o mancano dati indispensabili, non fare operazioni: chiedi in una frase cosa ti serve.
-- Grafica e montaggio video non sono ancora disponibili nello Studio: se li chiedono, dillo e prepara intanto il testo.`;
+- Il montaggio video non è ancora disponibile nello Studio: se lo chiedono, dillo e prepara intanto testo e grafica.
+
+Grafica (operazione «grafica», sostituisce l'intera grafica; «grafica_rimuovi» la toglie):
+- Creala quando la chiedono, per un carosello di slide con testo, o quando non ci sono foto e il post ne ha bisogno.
+  Se il consulente ha caricato foto pronte e chiede solo il testo, non creare una grafica.
+- Misure: ${Object.entries(DESIGN_SIZES).map(([k, v]) => `«${k}» ${v.width}×${v.height}`).join(", ")}. Coordinate in pixel della misura finale, origine in alto a sinistra.
+- Margini almeno 8% della larghezza; testi dentro i margini; corpo minimo 40 px per il testo, 70 px o più per i titoli.
+  Una riga contiene circa larghezza/(corpo×0,55) caratteri: dimensiona l'altezza del riquadro di testo di conseguenza.
+- Font disponibili: ${DESIGN_FONTS.join(", ")}. Al massimo due font per grafica.
+- Usa i colori del cliente indicati in <brand>; contrasto forte tra testo e sfondo (se il testo sta su una foto, dagli un riquadro "background").
+- Foto: livello «immagine» con il mediaId di una foto del materiale (solo id elencati). Per una foto di sfondo a tutta pagina usa fit «riempi» e mettila come primo livello.
+- Logo: livello «logo» (solo se <brand> dice che il logo c'è), piccolo, in un angolo.
+- Pochi livelli, gerarchia chiara: un messaggio per slide. Mantieni gli id dei livelli che non cambi.`;
 
 function describeMedia(media: StudioTurnInput["media"]) {
   if (!media.length) return "Nessun file caricato.";
@@ -52,7 +66,7 @@ function describeMedia(media: StudioTurnInput["media"]) {
     .map((m, i) => {
       const size = m.width && m.height ? ` ${m.width}×${m.height}` : "";
       const len = m.durationSec ? `, ${Math.round(m.durationSec)} s` : "";
-      return `${i + 1}. ${m.kind === "video" ? "Video" : "Foto"} «${m.fileName}»${size}${len}`;
+      return `${i + 1}. id ${m.id} · ${m.kind === "video" ? "Video" : "Foto"} «${m.fileName}»${size}${len} · ${m.inPost ? "nel post" : "materiale"}`;
     })
     .join("\n");
 }
@@ -72,7 +86,7 @@ export async function studioTurn(o: StudioTurnInput): Promise<StudioTurn & { cos
       { type: "text", text: ctx.text, cache_control: { type: "ephemeral", ttl: "1h" } },
     ],
     effort: "low",
-    maxTokens: 4_000,
+    maxTokens: 12_000,
     outputFormat: betaZodOutputFormat(TurnSchema),
     messages: [
       {
@@ -81,6 +95,7 @@ export async function studioTurn(o: StudioTurnInput): Promise<StudioTurn & { cos
           `<progetto>\n${JSON.stringify(o.state, null, 2)}\n</progetto>`,
           `<piattaforme>${where}</piattaforme>`,
           `<materiale>\n${describeMedia(o.media)}\n</materiale>`,
+          `<brand>Colori: sfondo ${o.brand.colors.background}, testo ${o.brand.colors.text}, accento ${o.brand.colors.accent}. Logo: ${o.brand.hasLogo ? "c'è" : "non c'è"}.</brand>`,
           history && `<chat_precedente>\n${history}\n</chat_precedente>`,
           `<richiesta>\n${o.request}\n</richiesta>`,
         ]
