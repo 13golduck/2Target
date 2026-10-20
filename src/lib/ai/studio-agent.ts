@@ -3,8 +3,9 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 
 import { platformName } from "@/lib/platforms";
+import { AiOpSchema, DESIGN_FORMAT, toStudioOps } from "@/lib/studio/ai-ops";
 import { DESIGN_FONTS, DESIGN_SIZES, type BrandColors } from "@/lib/studio/design";
-import { StudioOpSchema, type StudioState } from "@/lib/studio/state";
+import type { StudioOp, StudioState } from "@/lib/studio/state";
 import { assertBudget } from "./budget";
 import { callClaude, MODELS } from "./claude";
 import { clientContext } from "./designer";
@@ -15,9 +16,12 @@ import { clientContext } from "./designer";
 const TurnSchema = z.object({
   reply: z.string().describe("Risposta breve a chi lavora, in italiano: cosa hai fatto o cosa ti serve sapere. Massimo 3 frasi"),
   summary: z.string().describe("Riassunto della versione in massimo 8 parole, es. «Testo più breve, aggiunto invito»"),
-  ops: z.array(StudioOpSchema).describe("Modifiche al progetto, in ordine. Vuoto se servono chiarimenti"),
+  ops: z.array(AiOpSchema).describe("Modifiche al progetto, in ordine. Vuoto se servono chiarimenti"),
 });
-export type StudioTurn = z.infer<typeof TurnSchema>;
+export type StudioTurn = { reply: string; summary: string; ops: StudioOp[] };
+
+
+
 
 export type StudioTurnInput = {
   clientId: number;
@@ -58,7 +62,10 @@ Grafica (operazione «grafica», sostituisce l'intera grafica; «grafica_rimuovi
 - Usa i colori del cliente indicati in <brand>; contrasto forte tra testo e sfondo (se il testo sta su una foto, dagli un riquadro "background").
 - Foto: livello «immagine» con il mediaId di una foto del materiale (solo id elencati). Per una foto di sfondo a tutta pagina usa fit «riempi» e mettila come primo livello.
 - Logo: livello «logo» (solo se <brand> dice che il logo c'è), piccolo, in un angolo.
-- Pochi livelli, gerarchia chiara: un messaggio per slide. Mantieni gli id dei livelli che non cambi.`;
+- Pochi livelli, gerarchia chiara: un messaggio per slide. Mantieni gli id dei livelli che non cambi.
+
+Formato JSON della grafica (campo designJson):
+${DESIGN_FORMAT}`;
 
 function describeMedia(media: StudioTurnInput["media"]) {
   if (!media.length) return "Nessun file caricato.";
@@ -105,5 +112,8 @@ export async function studioTurn(o: StudioTurnInput): Promise<StudioTurn & { cos
     ],
     log: { step: "Studio: turno", clientId: o.clientId },
   });
-  return { ...TurnSchema.parse(JSON.parse(r.text)), costEur: r.costEur };
+  const turn = TurnSchema.parse(JSON.parse(r.text));
+  const { ops, rejected } = toStudioOps(turn.ops);
+  const reply = rejected ? `${turn.reply}\n\n(La grafica che ho preparato non era valida e non l'ho applicata: chiedimela di nuovo.)` : turn.reply;
+  return { reply, summary: turn.summary, ops, costEur: r.costEur };
 }
