@@ -3,7 +3,7 @@
 // in generale è spenta per tutti; per cliente si può solo spegnere ciò che in generale è acceso.
 // Il cuore dell'app (Panoramica, Piano editoriale, KPI, Canali) è sempre acceso. Funzioni pure.
 
-export type FeatureKey = "checkup" | "brand" | "concorrenti" | "idee" | "lead" | "seo" | "profili" | "calendario" | "sponsorizzate" | "consumi_ai";
+export type FeatureKey = "studio" | "checkup" | "brand" | "concorrenti" | "idee" | "lead" | "seo" | "profili" | "calendario" | "sponsorizzate" | "consumi_ai";
 
 export type Feature = {
   key: FeatureKey;
@@ -18,6 +18,7 @@ export type Feature = {
 };
 
 export const FEATURES: Feature[] = [
+  { key: "studio", label: "Studio con l'AI", description: "In «Crea post», il modo in cui l'AI prepara testo, grafica e video e tu li correggi", perClient: true },
   { key: "checkup", label: "Check-up", description: "Analisi iniziale del cliente con l'AI: punti di forza, concorrenti, obiettivi", tab: "/checkup", perClient: true },
   { key: "brand", label: "Brand e studio grafico", description: "Logo, colori, brief grafici e revisione delle grafiche", tab: "/brand", perClient: true },
   { key: "concorrenti", label: "Concorrenti", description: "Confronto con i concorrenti su Instagram", tab: "/concorrenti", perClient: true },

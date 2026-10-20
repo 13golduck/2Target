@@ -83,6 +83,8 @@ export interface CallOptions {
 
 export interface CallResult {
   text: string;
+  /** Costo della chiamata in euro (lo stesso registrato in Consumi AI). */
+  costEur: number;
   sources: { url: string; title?: string }[];
   message: Anthropic.Beta.BetaMessage;
 }
@@ -208,5 +210,5 @@ export async function callClaude(o: CallOptions): Promise<CallResult> {
   if (!final) throw new Error("Nessuna risposta dall'AI");
   if (final.stop_reason === "refusal") throw new Error("L'AI ha rifiutato questa richiesta: riformula le informazioni e riprova.");
   if (final.stop_reason === "max_tokens") throw new Error("Risposta troppo lunga e interrotta: riprova.");
-  return { text: texts.join(""), sources: [...sources].map(([url, title]) => ({ url, title })), message: final };
+  return { text: texts.join(""), costEur, sources: [...sources].map(([url, title]) => ({ url, title })), message: final };
 }
