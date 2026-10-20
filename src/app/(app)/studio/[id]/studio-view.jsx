@@ -31,6 +31,9 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { useRouter } from 'src/routes/hooks';
 import { formatName, PLATFORM_INFO } from 'src/lib/platforms';
 import { brandColors, DESIGN_SIZES, starterDesign } from 'src/lib/studio/design';
+import { starterVideo } from 'src/lib/studio/video';
+
+import { AutoRefresh } from 'src/components/auto-refresh';
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import { Label } from 'src/components/label';
@@ -44,6 +47,7 @@ import { saveStudioEdit, moveStudioMedia, publishFromStudio, sendStudioMessage, 
 
 // L'editor usa il canvas del browser: si carica solo lato client
 const DesignEditor = dynamic(() => import('./design-editor'), { ssr: false, loading: () => <LinearProgress /> });
+const VideoEditor = dynamic(() => import('./video-editor'), { ssr: false, loading: () => <LinearProgress /> });
 
 // ----------------------------------------------------------------------
 // 2Target Studio: chat con l'AI a sinistra, progetto al centro, versioni a destra.
@@ -56,7 +60,13 @@ const time = (iso) => new Date(iso).toLocaleString('it-IT', { day: 'numeric', mo
 
 // Le chiavi si mettono in ordine: il server restituisce la grafica con un ordine diverso da quello del browser
 const canonical = (v) => (Array.isArray(v) ? v.map(canonical) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical(v[k])])) : v);
-const sameState = (a, b) => a.title === b.title && a.caption === b.caption && a.hashtags === b.hashtags && a.format === b.format && JSON.stringify(canonical(a.design)) === JSON.stringify(canonical(b.design));
+const sameState = (a, b) =>
+  a.title === b.title &&
+  a.caption === b.caption &&
+  a.hashtags === b.hashtags &&
+  a.format === b.format &&
+  JSON.stringify(canonical(a.design)) === JSON.stringify(canonical(b.design)) &&
+  JSON.stringify(canonical(a.video)) === JSON.stringify(canonical(b.video));
 
 /** Impronta breve della grafica: finisce nel nome dei file esportati, così si sa se l'esportazione è aggiornata. */
 function designTag(design) {
@@ -68,7 +78,7 @@ function designTag(design) {
 
 const STEPS = [
   { key: 'contenuto', label: 'Contenuto', hint: 'Testo, hashtag e file' },
-  { key: 'grafica', label: 'Grafica', hint: 'Facoltativa' },
+  { key: 'grafica', label: 'Grafica o video', hint: 'Facoltativo' },
   { key: 'quando', label: 'Quando e dove', hint: 'Profili, data e ora' },
   { key: 'uscite', label: 'Uscite', hint: 'Stato sui social' },
 ];
@@ -121,9 +131,17 @@ export function StudioView({ item, client, brand, platforms, state, versionN, ve
   const exported = !!state.design && postMedia.some((m) => m.origin === 'grafica' && m.fileName.includes(designTag(state.design)) && m.fileName.endsWith('.jpg'));
   const aspect = draft.design ? { quadrato: '1:1', verticale: '4:5', storia: '9:16' }[draft.design.size] : draft.format === 'storia' || draft.format === 'reel' ? '9:16' : '4:5';
 
+  // Montaggio: il file del post nato dall'ultimo «Crea il video» (pronto, in lavorazione o non riuscito)
+  const videos = media.filter((m) => m.kind === 'video' && m.origin !== 'video');
+  const tracks = media.filter((m) => m.kind === 'audio');
+  const videoOutput = postMedia.find((m) => m.origin === 'video');
+  const videoBusy = videoOutput?.processState === 'in_lavorazione';
+  const videoExported = !!state.video && videoOutput?.processState === 'pronto' && videoOutput.fileName.includes(designTag(state.video));
+  const [visual, setVisual] = useState(() => (draft.video ? 'video' : draft.design ? 'grafica' : videos.length && ['reel', 'storia'].includes(draft.format) ? 'video' : 'grafica'));
+
   const done = {
     contenuto: !!state.caption.trim() || postMedia.length > 0,
-    grafica: state.design ? exported : null,
+    grafica: state.video ? videoExported : state.design ? exported : null,
     quando: publications.some((p) => ACTIVE.includes(p.status)),
     uscite: publications.some((p) => p.status === 'pubblicata'),
   };
@@ -156,12 +174,51 @@ export function StudioView({ item, client, brand, platforms, state, versionN, ve
   const [exportFn, setExportFn] = useState(null);
   const registerExport = useCallback((fn) => setExportFn(() => fn), []);
 
+  const [rendering, startRender] = useTransition();
+  const exportVideo = () =>
+    startRender(async () => {
+      if (dirty && !(await saveDraft())) return;
+      try {
+        // Le scritte si disegnano qui e il server le sovrappone: nel video escono come nell'anteprima
+        const { drawTextOverlay, overlayBlob } = await import('./text-overlay');
+        const form = new FormData();
+        form.set('tag', designTag(draft.video));
+        for (const t of draft.video.texts) form.set(`overlay_${t.id}`, await overlayBlob(await drawTextOverlay(t, draft.video.size)), `${t.id}.png`);
+        const res = await fetch(`/api/studio/video?scheda=${item.id}`, { method: 'POST', body: form });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error ?? `Montaggio non avviato (${res.status})`);
+        toast.success('Montaggio avviato: il video sarà pronto tra poco');
+      } catch (e) {
+        toast.error(e.message);
+      }
+      router.refresh();
+    });
+
+  const [uploadingMusic, startMusic] = useTransition();
+  const uploadMusic = (file) =>
+    new Promise((resolve) =>
+      startMusic(async () => {
+        try {
+          await upload(item.id, { blob: file, type: file.type || 'audio/mpeg', name: file.name }, () => undefined, { materiale: '1' });
+          toast.success('Musica caricata: sceglila nel menu «Musica»');
+        } catch (e) {
+          toast.error(e.message);
+        }
+        router.refresh();
+        resolve();
+      })
+    );
+
   // Il pulsante principale dice sempre qual è il prossimo passo
   const next = dirty
     ? { label: 'Salva le modifiche', icon: 'eva:checkmark-fill', onClick: save }
     : step === 'contenuto'
-      ? { label: 'Avanti: grafica', icon: 'eva:arrow-forward-fill', onClick: () => setStep('grafica') }
-      : step === 'grafica' && draft.design && !exported
+      ? { label: 'Avanti: grafica o video', icon: 'eva:arrow-forward-fill', onClick: () => setStep('grafica') }
+      : step === 'grafica' && visual === 'video' && videoBusy
+        ? { label: 'Montaggio in corso…', icon: 'solar:videocamera-record-bold', onClick: () => undefined, loading: true }
+      : step === 'grafica' && visual === 'video' && draft.video && !videoExported
+        ? { label: 'Crea il video', icon: 'solar:videocamera-record-bold', onClick: exportVideo, loading: rendering }
+      : step === 'grafica' && visual === 'grafica' && draft.design && !exported
         ? { label: 'Esporta nel post', icon: 'solar:export-bold', onClick: () => exportFn?.(), loading: exporting }
         : step === 'grafica'
           ? { label: 'Avanti: quando e dove', icon: 'eva:arrow-forward-fill', onClick: () => setStep('quando') }
@@ -182,6 +239,9 @@ export function StudioView({ item, client, brand, platforms, state, versionN, ve
 
   return (
     <DashboardContent maxWidth="xl" sx={{ pb: 2 }}>
+      {/* Mentre il server compone il video lo Studio si aggiorna da solo (al massimo 15 minuti) */}
+      <AutoRefresh active={videoBusy} everyMs={4000} maxMs={15 * 60_000} />
+
       {/* Intestazione: titolo, versioni e il prossimo passo sempre nello stesso posto */}
       <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mb: 1.5, flexWrap: 'wrap', rowGap: 1 }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -237,7 +297,7 @@ export function StudioView({ item, client, brand, platforms, state, versionN, ve
       <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', lg: '300px minmax(0, 1fr) 340px' }, '& > *': { minWidth: 0, height: COLUMN_HEIGHT, minHeight: { lg: 520 } } }}>
         <StudioChat item={item} messages={messages} aiReady={ai.configured} dirty={dirty} saveDraft={saveDraft} />
 
-        <Card sx={{ overflowY: 'auto', gridColumn: step === 'grafica' && draft.design ? { lg: 'span 2' } : undefined }}>
+        <Card sx={{ overflowY: 'auto', gridColumn: step === 'grafica' && (visual === 'video' ? draft.video : draft.design) ? { lg: 'span 2' } : undefined }}>
           <Box sx={{ p: 2.5 }}>
             {step === 'contenuto' && (
               <Stack spacing={2}>
@@ -267,7 +327,38 @@ export function StudioView({ item, client, brand, platforms, state, versionN, ve
               </Stack>
             )}
 
-            {step === 'grafica' &&
+            {step === 'grafica' && (
+              <ToggleButtonGroup exclusive size="small" value={visual} onChange={(_, v) => v && setVisual(v)} sx={{ mb: 2 }}>
+                <ToggleButton value="grafica">
+                  <Iconify icon="solar:pallete-2-bold" width={18} sx={{ mr: 0.75 }} />
+                  Grafica
+                </ToggleButton>
+                <ToggleButton value="video">
+                  <Iconify icon="solar:videocamera-record-bold" width={18} sx={{ mr: 0.75 }} />
+                  Video
+                </ToggleButton>
+              </ToggleButtonGroup>
+            )}
+
+            {step === 'grafica' && visual === 'video' && (
+              <VideoStep
+                draft={draft}
+                state={state}
+                dirty={dirty}
+                videos={videos}
+                tracks={tracks}
+                output={videoOutput}
+                exported={videoExported}
+                // Un montaggio si pubblica come reel (o storia, se già scelta)
+                onChange={(video) => setDraft({ ...draft, video, format: video && !['reel', 'storia'].includes(draft.format) ? 'reel' : draft.format })}
+                onUploadMusic={uploadMusic}
+                uploadingMusic={uploadingMusic}
+                onSkip={() => setStep('quando')}
+                material={<StudioMaterial itemId={item.id} media={media} toMaterial={!!draft.video} imagesAvailable={ai.images} defaultAspect={aspect} />}
+              />
+            )}
+
+            {step === 'grafica' && visual === 'grafica' &&
               (draft.design ? (
                 <Stack spacing={1.5}>
                   {state.design && !dirty && (
@@ -302,7 +393,17 @@ export function StudioView({ item, client, brand, platforms, state, versionN, ve
                 clientId={client.id}
                 hasMedia={postMedia.length > 0}
                 hasImage={postMedia.some((m) => m.kind === 'image')}
-                blocker={dirty ? 'Salva prima le modifiche (pulsante in alto).' : state.design && !exported ? 'La grafica non è ancora nel post: esportala prima di programmare.' : null}
+                blocker={
+                  dirty
+                    ? 'Salva prima le modifiche (pulsante in alto).'
+                    : videoBusy
+                      ? 'Il montaggio del video è in corso: aspetta che finisca.'
+                      : state.video && !videoExported
+                        ? 'Il video non è ancora nel post: crealo prima di programmare.'
+                        : state.design && !state.video && !exported
+                          ? 'La grafica non è ancora nel post: esportala prima di programmare.'
+                          : null
+                }
                 onGraphic={() => setStep('grafica')}
                 onDone={() => setStep('uscite')}
               />
@@ -312,7 +413,7 @@ export function StudioView({ item, client, brand, platforms, state, versionN, ve
           </Box>
         </Card>
 
-        {!(step === 'grafica' && draft.design) && <Box sx={{ overflowY: 'auto' }}>{preview}</Box>}
+        {!(step === 'grafica' && (visual === 'video' ? draft.video : draft.design)) && <Box sx={{ overflowY: 'auto' }}>{preview}</Box>}
       </Box>
     </DashboardContent>
   );
@@ -728,13 +829,21 @@ function StudioMaterial({ itemId, media, toMaterial, imagesAvailable, defaultAsp
             <Box key={m.id} sx={{ width: 84, display: 'grid', gap: 0.5, justifyItems: 'center' }}>
               <Tooltip title={m.fileName}>
                 <Box sx={{ width: 72, height: 72, borderRadius: 1, overflow: 'hidden', bgcolor: 'background.neutral', opacity: m.inPost ? 1 : 0.7, outline: m.inPost ? 2 : 0, outlineColor: 'primary.main' }}>
-                  {m.kind === 'video' ? <Box component="video" src={m.url} muted sx={{ width: 1, height: 1, objectFit: 'cover' }} /> : <Box component="img" src={m.url} alt="" sx={{ width: 1, height: 1, objectFit: 'cover' }} />}
+                  {m.kind === 'video' ? (
+                    <Box component="video" src={m.url} muted sx={{ width: 1, height: 1, objectFit: 'cover' }} />
+                  ) : m.kind === 'audio' ? (
+                    <Box sx={{ width: 1, height: 1, display: 'grid', placeItems: 'center' }}>
+                      <Iconify icon="solar:music-note-bold" width={28} sx={{ color: 'text.secondary' }} />
+                    </Box>
+                  ) : (
+                    <Box component="img" src={m.url} alt="" sx={{ width: 1, height: 1, objectFit: 'cover' }} />
+                  )}
                 </Box>
               </Tooltip>
               <Tooltip title={m.inPost ? 'Esce con il post: tocca per spostarlo nel materiale' : 'Solo materiale di lavoro: tocca per farlo uscire con il post'}>
                 <Box component="span">
                   <Label component="button" type="button" onClick={() => move(m)} disabled={moving} color={m.inPost ? 'primary' : 'default'} variant="soft" sx={{ cursor: 'pointer', border: 0 }}>
-                    {m.origin === 'grafica' ? 'Grafica' : m.inPost ? 'Nel post' : m.origin === 'ai' ? 'Immagine AI' : 'Materiale'}
+                    {m.origin === 'grafica' ? 'Grafica' : m.origin === 'video' ? 'Montaggio' : m.inPost ? 'Nel post' : m.kind === 'audio' ? 'Musica' : m.origin === 'ai' ? 'Immagine AI' : 'Materiale'}
                   </Label>
                 </Box>
               </Tooltip>
@@ -859,6 +968,59 @@ function NewDesign({ format, onCreate }) {
       <Button variant="contained" onClick={() => onCreate(size, pages)} startIcon={<Iconify icon="solar:pallete-2-bold" />} sx={{ alignSelf: 'flex-start' }}>
         Crea grafica
       </Button>
+    </Stack>
+  );
+}
+
+// ----------------------------------------------------------------------
+
+/** Passo «Video»: montaggio dei video del progetto, con lo stato dell'ultimo video creato. */
+function VideoStep({ draft, state, dirty, videos, tracks, output, exported, onChange, onUploadMusic, uploadingMusic, onSkip, material }) {
+  if (!draft.video) {
+    const starter = starterVideo(videos, draft.format === 'post' ? 'verticale' : 'storia');
+    return (
+      <Stack spacing={2.5}>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          Monta i video del progetto: scegli i pezzi migliori, aggiungi scritte e musica, e 2Target crea il video verticale pronto per i social. Oppure chiedilo all&apos;AI in chat, es. «fai un reel di 15 secondi con i momenti migliori».
+        </Typography>
+        {starter ? (
+          <Button variant="contained" onClick={() => onChange(starter)} startIcon={<Iconify icon="solar:videocamera-record-bold" />} sx={{ alignSelf: 'flex-start' }}>
+            Crea un montaggio con {videos.length === 1 ? 'il video caricato' : `i ${videos.length} video caricati`}
+          </Button>
+        ) : (
+          <Alert severity="info">Carica prima uno o più video qui sotto: il montaggio parte da quelli.</Alert>
+        )}
+        {material}
+        <Divider />
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+          <Typography variant="body2" sx={{ color: 'text.secondary', flex: 1 }}>
+            Il video è già pronto così com&apos;è? Non serve montarlo: si pubblica il file del post.
+          </Typography>
+          <Button variant="outlined" onClick={onSkip}>
+            Salta
+          </Button>
+        </Stack>
+      </Stack>
+    );
+  }
+  return (
+    <Stack spacing={1.5}>
+      {state.video && !dirty && (
+        <Alert severity={output?.processState === 'errore' ? 'error' : exported ? 'success' : output?.processState === 'in_lavorazione' ? 'info' : 'warning'} sx={{ py: 0 }}>
+          {output?.processState === 'errore'
+            ? `${output.processNote ?? 'Montaggio non riuscito'}: premi di nuovo «Crea il video».`
+            : exported
+              ? 'Il video è nel post: è quello che verrà pubblicato.'
+              : output?.processState === 'in_lavorazione'
+                ? 'Montaggio in corso sul server: di solito bastano pochi secondi per ogni secondo di video.'
+                : 'Il video non è ancora nel post: premi «Crea il video» in alto.'}
+        </Alert>
+      )}
+      <VideoEditor video={draft.video} onChange={onChange} videos={videos} tracks={tracks} onUploadMusic={onUploadMusic} uploading={uploadingMusic} />
+      <Button color="inherit" size="small" onClick={() => onChange(null)} sx={{ alignSelf: 'flex-start' }} startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}>
+        Togli il montaggio
+      </Button>
+      {material}
     </Stack>
   );
 }
