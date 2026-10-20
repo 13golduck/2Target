@@ -14,10 +14,14 @@ export const MEDIA_LIMITS = {
   image: 8 * 1024 * 1024, // Instagram: JPEG fino a 8 MB
   // Plesk (nginx) di solito accetta caricamenti fino a 128 MB
   video: 100 * 1024 * 1024,
+  // Musica di sottofondo per i montaggi dello Studio
+  audio: 30 * 1024 * 1024,
 };
 
 export const IMAGE_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png" };
 export const VIDEO_TYPES: Record<string, string> = { "video/mp4": "mp4", "video/quicktime": "mov" };
+/** Solo materiale dello Studio: la musica non si pubblica da sola. */
+export const AUDIO_TYPES: Record<string, string> = { "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "m4a" };
 
 export function mediaDir() {
   return process.env.MEDIA_DIR || path.resolve(process.cwd(), "..", "private", "2target-media");
@@ -31,7 +35,7 @@ export async function ensureMediaDir() {
 export const newStorageKey = (ext: string) => `${randomBytes(18).toString("base64url")}.${ext}`;
 
 export const mediaPath = (storageKey: string) => {
-  if (!/^[\w-]+\.(jpg|png|mp4|mov)$/.test(storageKey)) throw new Error("Nome file non valido");
+  if (!/^[\w-]+\.(jpg|png|mp4|mov|mp3|m4a)$/.test(storageKey)) throw new Error("Nome file non valido");
   return path.join(mediaDir(), storageKey);
 };
 
