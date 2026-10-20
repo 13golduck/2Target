@@ -16,10 +16,16 @@ misurazione (KPI, lead, SEO) → report al cliente.
 - «Riprova» TikTok con la possibilità di cambiare le impostazioni (oggi: annulla e riprogramma).
 
 ## Studio (creazione dei post con l'AI)
-- **Video nello Studio:** montaggio con il motore FilmCraft (web), tagli proposti dall'AI dai video caricati,
-  scritte e sottotitoli, esportazione nel browser con riserva sul server (ffmpeg).
-- **Musica da librerie con licenza:** brani da librerie riconosciute che gestiscono i diritti (anche verso SIAE),
-  oltre al caricamento di file propri; prima la verifica di API e licenze per l'uso sui social.
+- **Musica da librerie con licenza (ricerca del 21/10/2026):** oggi si caricano brani propri (MP3, M4A). Candidata
+  principale **Epidemic Sound** (Partner API pubblica con prova gratuita per prototipi, licenza Business che copre il
+  lavoro per i clienti e le sponsorizzate online, catalogo senza collecting quindi senza SIAE, safelisting contro i
+  reclami). Da chiedere al commerciale: prezzo del contratto Partner API e limite di 1 canale «safelisted» per
+  piattaforma (con molti clienti può servire Enterprise). Alternative: Artlist o Soundstripe (API Enterprise su
+  preventivo); gratuita: Jamendo (CC BY con attribuzione, licenza a pagamento per le sponsorizzate). Pixabay non ha
+  un'API per la musica; la libreria di Instagram/TikTok non è usabile da strumenti esterni. Prima di scegliere,
+  conferma legale sulla posizione SIAE per i cataloghi senza collecting.
+- **«Apri in FilmCraft» per i ritocchi avanzati:** il motore web di FilmCraft (provato il 20/10) come editor avanzato
+  sul montaggio dello Studio, quando sarà più maturo (oggi alpha e lento a esportare nel browser).
 - **Più chiavi e scelta del modello per le immagini AI:** poter inserire più chiavi o profili (es. Nano Banana 2 per
   il lavoro quotidiano e Gemini 3 Pro Image per le immagini importanti) e scegliere il modello nella finestra
   «Immagine AI» e in chat, con il costo stimato accanto a ciascuno. Oggi c'è una sola chiave Google e un solo
@@ -34,6 +40,13 @@ misurazione (KPI, lead, SEO) → report al cliente.
   (montaggio, sottotitoli, voce, musica) da revisionare e pubblicare dal piano editoriale.
 
 ## Fatto
+- **2Target Studio: video** (ottobre 2026). Montaggio di clip con inizio e fine, scritte a tempo (disegnate nel browser,
+  uguali all'anteprima), musica caricata e volumi; il server compone con FFmpeg un MP4 1080×1920 adatto ai social.
+  L'AI propone il montaggio dai video del progetto. Il post esce con l'ultima cosa esportata (grafica o video).
+  Codice: `src/lib/studio/video.ts`, `src/lib/studio/video-render.ts`, `src/app/api/studio/video/`.
+- **Approvazione del cliente obbligatoria e uscita automatica** (ottobre 2026). Interruttore nella panoramica del
+  cliente; Studio e Crea post ricordano profili e data, e il post si programma da solo all'approvazione (del cliente
+  dal link o del team). Codice: `src/lib/publishing/release-approved.ts`.
 - **2Target Studio: testo, grafica e immagini AI** (ottobre 2026). «Crea post» con tre modi (Semplice, Avanzato,
   Con l'AI); lo Studio lavora a quattro mani con l'AI su una scheda del piano, con chat e versioni; editor grafico a
   pagine e livelli (colori e logo del brand kit) con esportazione JPEG nel post; immagini create o modificate con
