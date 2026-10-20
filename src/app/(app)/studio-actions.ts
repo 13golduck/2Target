@@ -1,25 +1,35 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, notInArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { db } from "@/db";
-import { editorialItems, editorialPlans } from "@/db/schema";
+import { editorialItems, editorialPlans, mediaAssets, publications } from "@/db/schema";
 import { BudgetError } from "@/lib/ai/budget";
 import { isAiConfigured } from "@/lib/ai/claude";
 import { studioTurn } from "@/lib/ai/studio-agent";
 import { audit } from "@/lib/audit";
 import { requireClientAccess, requireWriter } from "@/lib/auth";
 import { featureOn } from "@/lib/features-data";
+import { removeMediaFile } from "@/lib/media";
+import { syncPendingPublications } from "@/lib/publishing/sync";
 import { planFor } from "@/lib/quick-post";
-import { applyOps, describeChanges, EMPTY_STATE, StudioStateSchema } from "@/lib/studio/state";
+import { sanitizeDesign } from "@/lib/studio/design";
+import { applyOps, describeChanges, EMPTY_STATE, StudioStateSchema, type StudioState } from "@/lib/studio/state";
 import { addMessage, addVersion, clientPlatforms, currentVersion, mediaOf, messagesOf, versionState } from "@/lib/studio/studio-data";
 
 // 2Target Studio: la scheda del post è il progetto; chat e versioni si appoggiano a essa.
 // Ogni azione verifica chi scrive, l'accesso al cliente e che lo Studio sia acceso per quel cliente.
 
 const path = (itemId: number) => `/studio/${itemId}`;
+
+/** La grafica può usare solo le foto di questo progetto (gli id arrivano dal browser o dall'AI). */
+async function safeState(itemId: number, state: StudioState): Promise<StudioState> {
+  if (!state.design) return state;
+  const images = (await mediaOf(itemId)).filter((m) => m.kind === "image").map((m) => m.id);
+  return { ...state, design: sanitizeDesign(state.design, images) };
+}
 
 async function itemFor(itemId: number) {
   const me = await requireWriter();
@@ -94,7 +104,7 @@ export async function sendStudioMessage(input: z.infer<typeof Send>) {
       platforms: await clientPlatforms(item.clientId),
       media: await mediaOf(item.id),
     });
-    const next = applyOps(current.state, turn.ops);
+    const next = await safeState(item.id, applyOps(current.state, turn.ops));
     const changed = describeChanges(current.state, next) !== "Nessuna modifica";
     const versionN = changed ? await addVersion({ itemId: item.id, author: "ai", userId: me.id, summary: turn.summary || describeChanges(current.state, next), state: next }) : undefined;
     await addMessage({ itemId: item.id, role: "ai", text: turn.reply, userId: me.id, versionN, costEur: turn.costEur });
@@ -117,9 +127,10 @@ export async function saveStudioEdit(input: z.infer<typeof Edit>) {
   const ctx = await itemFor(p.data.itemId);
   if ("error" in ctx) return { error: ctx.error };
   const current = await currentVersion(ctx.item.id);
-  const summary = describeChanges(current.state, p.data.state);
+  const state = await safeState(ctx.item.id, p.data.state);
+  const summary = describeChanges(current.state, state);
   if (summary === "Nessuna modifica") return { ok: true, versionN: current.n };
-  const versionN = await addVersion({ itemId: ctx.item.id, author: "utente", userId: ctx.me.id, summary, state: p.data.state });
+  const versionN = await addVersion({ itemId: ctx.item.id, author: "utente", userId: ctx.me.id, summary, state });
   revalidatePath(path(ctx.item.id));
   return { ok: true, versionN };
 }
@@ -137,4 +148,60 @@ export async function restoreStudioVersion(input: z.infer<typeof Restore>) {
   const versionN = await addVersion({ itemId: ctx.item.id, author: "utente", userId: ctx.me.id, summary: `Tornato alla versione ${p.data.n}`, state });
   revalidatePath(path(ctx.item.id));
   return { ok: true, versionN };
+}
+
+const Move = z.object({ itemId: z.number().int().positive(), mediaId: z.number().int().positive(), toPost: z.boolean() });
+
+/** Sposta un file tra il post (si pubblica) e il materiale di lavoro (resta nello Studio). */
+export async function moveStudioMedia(input: z.infer<typeof Move>) {
+  const p = Move.safeParse(input);
+  if (!p.success) return { error: "Dati non validi" };
+  const ctx = await itemFor(p.data.itemId);
+  if ("error" in ctx) return { error: ctx.error };
+  const { itemId, mediaId, toPost } = p.data;
+  const [m] = await db.select({ itemId: mediaAssets.itemId, studioItemId: mediaAssets.studioItemId }).from(mediaAssets).where(eq(mediaAssets.id, mediaId));
+  if (!m || (m.itemId !== itemId && m.studioItemId !== itemId)) return { error: "File non trovato in questo progetto" };
+  await db
+    .update(mediaAssets)
+    .set(toPost ? { itemId, studioItemId: null } : { itemId: null, studioItemId: itemId })
+    .where(eq(mediaAssets.id, mediaId));
+  await syncPendingPublications(itemId, ctx.me.id);
+  revalidatePath(path(itemId));
+  return { ok: true };
+}
+
+const Outputs = z.object({ itemId: z.number().int().positive(), mediaIds: z.array(z.number().int().positive()).min(1).max(10) });
+
+/**
+ * Dopo l'esportazione della grafica: le pagine appena caricate diventano i file del post, nell'ordine dato.
+ * Le esportazioni precedenti si eliminano; le foto usate dentro la grafica passano nel materiale
+ * (altrimenti uscirebbero due volte, da sole e dentro la grafica).
+ */
+export async function replaceDesignOutputs(input: z.infer<typeof Outputs>) {
+  const p = Outputs.safeParse(input);
+  if (!p.success) return { error: "Esportazione non valida" };
+  const ctx = await itemFor(p.data.itemId);
+  if ("error" in ctx) return { error: ctx.error };
+  const { itemId, mediaIds } = p.data;
+
+  // Mentre un'uscita è in corso i suoi file non si toccano
+  const sending = await db.select({ id: publications.id }).from(publications).where(and(eq(publications.itemId, itemId), eq(publications.status, "in_corso")));
+  if (sending.length) return { error: "Il post si sta pubblicando proprio ora: riprova tra un minuto" };
+
+  const fresh = await db.select({ id: mediaAssets.id }).from(mediaAssets).where(and(inArray(mediaAssets.id, mediaIds), eq(mediaAssets.itemId, itemId), eq(mediaAssets.origin, "grafica")));
+  if (fresh.length !== mediaIds.length) return { error: "Alcune pagine esportate non sono state trovate: riprova l'esportazione" };
+
+  const old = await db.select().from(mediaAssets).where(and(eq(mediaAssets.itemId, itemId), eq(mediaAssets.origin, "grafica"), notInArray(mediaAssets.id, mediaIds)));
+  if (old.length) await db.delete(mediaAssets).where(inArray(mediaAssets.id, old.map((m) => m.id)));
+  for (const m of old) await removeMediaFile(m.storageKey);
+
+  const { state } = await currentVersion(itemId);
+  const used = [...new Set((state.design?.pages ?? []).flatMap((pg) => pg.layers.flatMap((l) => (l.type === "immagine" ? [l.mediaId] : []))))];
+  if (used.length) await db.update(mediaAssets).set({ itemId: null, studioItemId: itemId }).where(and(inArray(mediaAssets.id, used), eq(mediaAssets.itemId, itemId)));
+
+  for (const [i, id] of mediaIds.entries()) await db.update(mediaAssets).set({ position: i }).where(eq(mediaAssets.id, id));
+  await syncPendingPublications(itemId, ctx.me.id);
+  await audit({ userId: ctx.me.id, category: "contenuti", action: "studio.grafica_esportata", description: `Grafica esportata nel post (${mediaIds.length} ${mediaIds.length === 1 ? "pagina" : "pagine"})`, clientId: ctx.item.clientId, target: `pubblicazione:${itemId}` });
+  revalidatePath(path(itemId));
+  return { ok: true };
 }

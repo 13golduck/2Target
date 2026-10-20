@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, inArray, max } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, max, or } from "drizzle-orm";
 
 import { db } from "@/db";
 import { editorialItems, mediaAssets, PLATFORMS, socialAccounts, studioMessages, studioVersions } from "@/db/schema";
@@ -64,12 +64,24 @@ export async function versionState(itemId: number, n: number) {
   return v ? StudioStateSchema.parse(v.state) : null;
 }
 
+/** File del progetto: quelli del post (inPost) e il materiale di lavoro dello Studio. */
 export async function mediaOf(itemId: number) {
-  return db
-    .select({ id: mediaAssets.id, kind: mediaAssets.kind, fileName: mediaAssets.fileName, width: mediaAssets.width, height: mediaAssets.height, durationSec: mediaAssets.durationSec, processState: mediaAssets.processState })
+  const rows = await db
+    .select({
+      id: mediaAssets.id,
+      itemId: mediaAssets.itemId,
+      kind: mediaAssets.kind,
+      origin: mediaAssets.origin,
+      fileName: mediaAssets.fileName,
+      width: mediaAssets.width,
+      height: mediaAssets.height,
+      durationSec: mediaAssets.durationSec,
+      processState: mediaAssets.processState,
+    })
     .from(mediaAssets)
-    .where(eq(mediaAssets.itemId, itemId))
-    .orderBy(asc(mediaAssets.position));
+    .where(or(eq(mediaAssets.itemId, itemId), eq(mediaAssets.studioItemId, itemId)))
+    .orderBy(asc(mediaAssets.position), asc(mediaAssets.id));
+  return rows.map(({ itemId: owner, ...m }) => ({ ...m, inPost: owner === itemId }));
 }
 
 /** Piattaforme su cui il cliente ha profili per pubblicare (per il tono e la lunghezza del testo). */

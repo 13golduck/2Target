@@ -14,6 +14,7 @@ import { ensureMediaDir, IMAGE_TYPES, MEDIA_LIMITS, mediaPath, newStorageKey, re
 // Caricamento di una foto o di un video per una scheda del piano. Il file arriva "grezzo" nel corpo della richiesta
 // (niente moduli: i video possono essere grandi) e si scrive su disco a pezzi, con limite di dimensione.
 //   POST /api/media/carica?scheda=<id>&nome=<nome file>&w=<larghezza>&h=<altezza>   Content-Type: image/jpeg | video/mp4 …
+// Dallo Studio: &materiale=1 (materiale di lavoro, non pubblicato) oppure &origine=grafica (pagina esportata).
 
 export const maxDuration = 300;
 
@@ -62,9 +63,14 @@ export async function POST(request: Request) {
   };
   const [{ last }] = await db.select({ last: max(mediaAssets.position) }).from(mediaAssets).where(and(eq(mediaAssets.itemId, itemId)));
   const fileName = (url.searchParams.get("nome") ?? "file").slice(0, 200);
+  const material = url.searchParams.get("materiale") === "1";
+  const origin = url.searchParams.get("origine") === "grafica" && kind === "image" ? "grafica" : "caricato";
   const [r] = await db.insert(mediaAssets).values({
     clientId: item.clientId,
-    itemId,
+    // Il materiale dello Studio non sta sulla scheda: così non viene pubblicato né mandato in approvazione
+    itemId: material ? null : itemId,
+    studioItemId: material ? itemId : null,
+    origin,
     kind,
     mime,
     fileName,
@@ -78,7 +84,7 @@ export async function POST(request: Request) {
     createdBy: me.id,
   });
   await audit({ userId: me.id, category: "contenuti", action: "media.caricato", description: `Caricato ${kind === "image" ? "l'immagine" : "il video"} «${fileName}» (${(size / 1024 / 1024).toFixed(1)} MB)`, clientId: item.clientId, target: `pubblicazione:${itemId}` });
-  await syncPendingPublications(itemId, me.id);
+  if (!material) await syncPendingPublications(itemId, me.id);
   // Controllo e conversione del video in sottofondo: la risposta al browser non aspetta FFmpeg
   if (kind === "video") void prepareVideoAsset(r.insertId);
   return Response.json({ ok: true, id: r.insertId, processing: kind === "video" });
