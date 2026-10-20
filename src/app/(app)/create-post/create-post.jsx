@@ -32,6 +32,7 @@ import { Iconify } from 'src/components/iconify';
 
 import { PostPreview } from '../pubblicazioni/[id]/post-preview';
 import { upload, videoSize, prepareImage } from '../pubblicazioni/media-upload';
+import { createStudioProject } from '../studio-actions';
 import { mediaState, postTargets, writeCaption, createBlankItem, createQuickPost, finishQuickPost } from '../create-post-actions';
 
 // ----------------------------------------------------------------------
@@ -47,6 +48,7 @@ const STEPS = ['Dove', 'Cosa', 'Quando'];
 const MODES = [
   { value: 'semplice', title: 'Semplice', icon: 'solar:bolt-bold-duotone', text: 'Ho già foto o video. Tre passi: dove, cosa, quando.' },
   { value: 'avanzato', title: 'Avanzato', icon: 'solar:document-text-bold-duotone', text: 'Scheda completa: piano editoriale, script, sponsorizzata, coautori.' },
+  { value: 'ai', title: "Con l'AI", icon: 'solar:atom-bold-duotone', text: "Descrivi l'idea: l'AI prepara il post e lo correggete insieme nello Studio." },
 ];
 
 // L'ultimo modo usato resta evidenziato la volta dopo (solo una comodità: senza memoria si parte da «Semplice»)
@@ -106,7 +108,8 @@ function CreatePostDialog({ clients, onClose }) {
   const [clientId, setClientId] = useState(clients.some((c) => c.id === fromPath) ? fromPath : clients.length === 1 ? clients[0].id : '');
   const [targets, setTargets] = useState(null);
   const [chosen, setChosen] = useState([]);
-  const [screen, setScreen] = useState('modo'); // 'modo', poi 'semplice'
+  const [screen, setScreen] = useState('modo'); // 'modo', poi 'semplice' o 'ai'
+  const [brief, setBrief] = useState('');
   const [lastMode] = useState(readMode);
   const [step, setStep] = useState(0);
   const [caption, setCaption] = useState('');
@@ -169,7 +172,7 @@ function CreatePostDialog({ clients, onClose }) {
   const chooseMode = (m) => {
     if (!clientId) return toast.info('Scegli prima il cliente');
     rememberMode(m);
-    if (m === 'semplice') return setScreen('semplice');
+    if (m === 'semplice' || m === 'ai') return setScreen(m);
     start(async () => {
       const r = await createBlankItem({ clientId });
       if (r.error) return toast.error(r.error);
@@ -177,6 +180,14 @@ function CreatePostDialog({ clients, onClose }) {
       router.push(`/pubblicazioni/${r.itemId}`);
     });
   };
+
+  const openStudio = () =>
+    start(async () => {
+      const r = await createStudioProject({ clientId, brief });
+      if (r.error) return toast.error(r.error);
+      onClose();
+      router.push(`/studio/${r.itemId}`);
+    });
 
   // Cosa manca per andare avanti, detto in parole semplici
   const missing =
@@ -257,6 +268,26 @@ function CreatePostDialog({ clients, onClose }) {
       <DialogTitle>Crea post</DialogTitle>
       <DialogContent>
         {screen === 'modo' && <ModeChooser clients={clients} clientId={clientId} onClient={setClientId} lastMode={lastMode} busy={busy} onChoose={chooseMode} />}
+
+        {screen === 'ai' && (
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Scrivi cosa ti serve per <b>{client?.name}</b>. Nello Studio l&apos;AI prepara titolo, testo, hashtag e formato; poi correggi a mano o chiedi modifiche in chat. Foto e video li carichi lì.
+            </Typography>
+            <TextField
+              label="Cosa ti serve?"
+              placeholder="es. post per la promo di ottobre: -20% sui trattamenti viso fino al 31, tono caldo, invito a prenotare"
+              value={brief}
+              onChange={(e) => setBrief(e.target.value)}
+              multiline
+              minRows={4}
+              slotProps={{ htmlInput: { maxLength: 2000 } }}
+              autoFocus
+              fullWidth
+            />
+            {busy && <LinearProgress />}
+          </Stack>
+        )}
 
         {screen === 'semplice' && <>
         <Stepper activeStep={step} sx={{ mb: 3 }}>
@@ -447,6 +478,15 @@ function CreatePostDialog({ clients, onClose }) {
             Annulla
           </Button>
         </DialogActions>
+      ) : screen === 'ai' ? (
+        <DialogActions sx={{ justifyContent: 'space-between' }}>
+          <Button color="inherit" onClick={() => setScreen('modo')} disabled={busy}>
+            Indietro
+          </Button>
+          <Button variant="contained" onClick={openStudio} loading={busy} disabled={brief.trim().length < 5} startIcon={<Iconify icon="solar:atom-bold-duotone" />}>
+            Apri lo Studio
+          </Button>
+        </DialogActions>
       ) : (
       <DialogActions sx={{ justifyContent: 'space-between' }}>
         <Button color="inherit" onClick={step === 0 ? () => setScreen('modo') : () => setStep(step - 1)} disabled={busy}>
@@ -476,6 +516,8 @@ function CreatePostDialog({ clients, onClose }) {
 
 /** Primo schermo: cliente e modo. L'ultimo modo usato è evidenziato. */
 function ModeChooser({ clients, clientId, onClient, lastMode, busy, onChoose }) {
+  const studioOn = clients.find((c) => c.id === clientId)?.studio !== false;
+  const modes = MODES.filter((m) => m.value !== 'ai' || studioOn);
   return (
     <Stack spacing={3} sx={{ pt: 1 }}>
       <TextField select label="Cliente" value={clientId} onChange={(e) => onClient(Number(e.target.value))} fullWidth>
@@ -485,8 +527,8 @@ function ModeChooser({ clients, clientId, onClient, lastMode, busy, onChoose }) 
           </MenuItem>
         ))}
       </TextField>
-      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: `repeat(${MODES.length}, 1fr)` } }}>
-        {MODES.map((m) => (
+      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', sm: `repeat(${modes.length}, 1fr)` } }}>
+        {modes.map((m) => (
           <Box
             key={m.value}
             component="button"

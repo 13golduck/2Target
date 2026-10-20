@@ -106,7 +106,7 @@ export default async function AppLayout({ children }) {
   return (
     <DashboardLayout
       navData={navData}
-      headerAction={viewer ? null : <CreatePostButton clients={list.map((c) => ({ id: c.id, name: c.name, logo: c.logoAt ? `/api/logo/${c.id}?tipo=icona&v=${c.logoAt.getTime()}` : null }))} />} user={{ name: user.name, role: ROLE_LABELS[user.role] ?? user.role }} logoutAction={logout}>
+      headerAction={viewer ? null : <CreatePostButton clients={list.map((c) => ({ id: c.id, name: c.name, studio: on("studio", c), logo: c.logoAt ? `/api/logo/${c.id}?tipo=icona&v=${c.logoAt.getTime()}` : null }))} />} user={{ name: user.name, role: ROLE_LABELS[user.role] ?? user.role }} logoutAction={logout}>
       <ErrorReporter />
       <ConfirmHost />
       <Suspense fallback={null}>
