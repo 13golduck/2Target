@@ -36,7 +36,7 @@ misurazione (KPI, lead, SEO) → report al cliente.
 ## Fatto
 - **2Target Studio: testo, grafica e immagini AI** (ottobre 2026). «Crea post» con tre modi (Semplice, Avanzato,
   Con l'AI); lo Studio lavora a quattro mani con l'AI su una scheda del piano, con chat e versioni; editor grafico a
-  pagine e livelli (colori e logo del brand kit) con esportazione PNG nel post; immagini create o modificate con
+  pagine e livelli (colori e logo del brand kit) con esportazione JPEG nel post; immagini create o modificate con
   Google Nano Banana 2, nel tetto mensile delle immagini AI. Codice: `src/lib/studio/`, `src/app/(app)/studio/`,
   `src/lib/ai/studio-agent.ts`, `src/lib/ai/image-gen.ts`.
 - **Il check-up imposta il lavoro successivo** (ottobre 2026). Alla consegna 2Target prepara KPI con punto di partenza
