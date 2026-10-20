@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useRef, useState, useEffect, useTransition } from 'react';
 
 import Box from '@mui/material/Box';
@@ -18,6 +19,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 
 import { useRouter } from 'src/routes/hooks';
 import { formatName } from 'src/lib/platforms';
+import { brandColors, DESIGN_SIZES, starterDesign } from 'src/lib/studio/design';
 import { DashboardContent } from 'src/layouts/dashboard';
 
 import { Label } from 'src/components/label';
@@ -27,7 +29,10 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { PostPreview } from '../../pubblicazioni/[id]/post-preview';
 import { upload, videoSize, prepareImage } from '../../pubblicazioni/media-upload';
-import { saveStudioEdit, sendStudioMessage, restoreStudioVersion } from '../../studio-actions';
+import { saveStudioEdit, moveStudioMedia, sendStudioMessage, restoreStudioVersion, replaceDesignOutputs } from '../../studio-actions';
+
+// L'editor usa il canvas del browser: si carica solo lato client
+const DesignEditor = dynamic(() => import('./design-editor'), { ssr: false, loading: () => <LinearProgress /> });
 
 // ----------------------------------------------------------------------
 // 2Target Studio: chat con l'AI a sinistra, progetto al centro, versioni a destra.
@@ -37,9 +42,20 @@ const FORMATS = ['post', 'carosello', 'reel', 'storia'];
 const ACCEPT = 'image/jpeg,image/png,image/webp,video/mp4,video/quicktime';
 const eur = (n) => `${n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 const time = (iso) => new Date(iso).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
-const sameState = (a, b) => a.title === b.title && a.caption === b.caption && a.hashtags === b.hashtags && a.format === b.format;
 
-export function StudioView({ item, client, platforms, state, versionN, versions, messages, media, ai }) {
+// Le chiavi si mettono in ordine: il server restituisce la grafica con un ordine diverso da quello del browser
+const canonical = (v) => (Array.isArray(v) ? v.map(canonical) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical(v[k])])) : v);
+const sameState = (a, b) => a.title === b.title && a.caption === b.caption && a.hashtags === b.hashtags && a.format === b.format && JSON.stringify(canonical(a.design)) === JSON.stringify(canonical(b.design));
+
+/** Impronta breve della grafica: finisce nel nome dei file esportati, così si sa se l'esportazione è aggiornata. */
+function designTag(design) {
+  const text = JSON.stringify(canonical(design));
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
+
+export function StudioView({ item, client, brand, platforms, state, versionN, versions, messages, media, ai }) {
   const router = useRouter();
   const [draft, setDraft] = useState(state);
   const [tab, setTab] = useState('testo');
@@ -77,6 +93,34 @@ export function StudioView({ item, client, platforms, state, versionN, versions,
     });
 
   const totalCost = messages.reduce((sum, m) => sum + (m.costEur ?? 0), 0);
+  const postMedia = media.filter((m) => m.inPost);
+  const images = media.filter((m) => m.kind === 'image' && m.origin !== 'grafica');
+  // L'esportazione è aggiornata se nel post ci sono le immagini della grafica salvata
+  const exported = !!state.design && postMedia.some((m) => m.origin === 'grafica' && m.fileName.includes(designTag(state.design)));
+
+  const createDesign = (size, pages) =>
+    setDraft({ ...draft, design: starterDesign({ size, pages, headline: draft.title, colors: brandColors(brand.palette), hasLogo: !!brand.logoUrl }) });
+
+  const [exporting, startExport] = useTransition();
+  const exportDesign = (blobs, { width, height }) =>
+    startExport(async () => {
+      // Si esporta la grafica salvata: prima le modifiche diventano una versione
+      if (dirty && !(await saveDraft())) return;
+      const tag = designTag(draft.design);
+      try {
+        const ids = [];
+        for (const [i, blob] of blobs.entries()) {
+          const r = await upload(item.id, { blob, type: 'image/png', name: `grafica-${tag}-${i + 1}.png`, width, height }, () => undefined, { origine: 'grafica' });
+          ids.push(r.id);
+        }
+        const r = await replaceDesignOutputs({ itemId: item.id, mediaIds: ids });
+        if (r.error) throw new Error(r.error);
+        toast.success(blobs.length === 1 ? 'Grafica esportata nel post' : `${blobs.length} immagini esportate nel post`);
+      } catch (e) {
+        toast.error(e.message);
+      }
+      router.refresh();
+    });
 
   return (
     <DashboardContent maxWidth="xl">
@@ -117,11 +161,30 @@ export function StudioView({ item, client, platforms, state, versionN, versions,
         <Card sx={{ minWidth: 0 }}>
           <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ px: 2, borderBottom: 1, borderColor: 'divider' }}>
             <Tab value="testo" label="Testo" icon={<Iconify icon="solar:pen-bold" width={18} />} iconPosition="start" />
-            <Tab value="grafica" label="Grafica" disabled icon={<Iconify icon="solar:pallete-2-bold" width={18} />} iconPosition="start" />
+            <Tab value="grafica" label="Grafica" icon={<Iconify icon="solar:pallete-2-bold" width={18} />} iconPosition="start" />
             <Tab value="video" label="Video" disabled icon={<Iconify icon="solar:videocamera-record-bold" width={18} />} iconPosition="start" />
           </Tabs>
+          {tab === 'grafica' && (
+            <Box sx={{ p: 3 }}>
+              {draft.design ? (
+                <Stack spacing={2}>
+                  {state.design && !dirty && (
+                    <Alert severity={exported ? 'success' : 'warning'}>
+                      {exported ? 'La grafica è nel post: è quella che verrà pubblicata.' : 'La grafica non è ancora nel post (o è cambiata dopo l\'ultima esportazione): premi «Esporta nel post».'}
+                    </Alert>
+                  )}
+                  <DesignEditor design={draft.design} onChange={(design) => setDraft({ ...draft, design })} images={images} logoUrl={brand.logoUrl} onExport={exportDesign} exporting={exporting} />
+                  <Button color="inherit" size="small" onClick={() => setDraft({ ...draft, design: null })} sx={{ alignSelf: 'flex-start' }} startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}>
+                    Togli la grafica
+                  </Button>
+                </Stack>
+              ) : (
+                <NewDesign format={draft.format} onCreate={createDesign} />
+              )}
+            </Box>
+          )}
           {/* Anteprima accanto ai campi solo quando la colonna è larga (a tutta pagina); con le tre colonne va sotto */}
-          <Box sx={{ p: 3, display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) 300px', lg: '1fr' }, alignItems: 'start', '& > :last-child': { width: 1, maxWidth: 380, justifySelf: 'center' } }}>
+          <Box sx={{ p: 3, display: tab === 'testo' ? 'grid' : 'none', gap: 3, gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) 300px', lg: '1fr' }, alignItems: 'start', '& > :last-child': { width: 1, maxWidth: 380, justifySelf: 'center' } }}>
             <Stack spacing={2}>
               <TextField label="Titolo interno" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} slotProps={{ htmlInput: { maxLength: 120 } }} size="small" fullWidth />
               <TextField
@@ -142,17 +205,6 @@ export function StudioView({ item, client, platforms, state, versionN, versions,
                   </MenuItem>
                 ))}
               </TextField>
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                <Button variant="contained" onClick={save} disabled={!dirty || busy} loading={busy}>
-                  Salva come versione
-                </Button>
-                {dirty && (
-                  <Button color="inherit" onClick={() => setDraft(state)} disabled={busy}>
-                    Annulla le modifiche
-                  </Button>
-                )}
-              </Stack>
-              <StudioMaterial itemId={item.id} media={media} />
             </Stack>
             <PostPreview
               clientName={client.name}
@@ -161,10 +213,23 @@ export function StudioView({ item, client, platforms, state, versionN, versions,
               platform={platforms[0] ?? 'instagram'}
               caption={draft.caption}
               hashtags={draft.hashtags}
-              media={media.map((m) => ({ id: m.id, kind: m.kind, url: m.url }))}
-              emptyText="Carica foto o video in «Materiale»"
+              media={postMedia.map((m) => ({ id: m.id, kind: m.kind, url: m.url }))}
+              emptyText="Carica foto o video qui sotto, oppure esporta la grafica"
             />
           </Box>
+          <Stack spacing={2} sx={{ px: 3, pb: 3 }}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <Button variant="contained" onClick={save} disabled={!dirty || busy} loading={busy}>
+                Salva come versione
+              </Button>
+              {dirty && (
+                <Button color="inherit" onClick={() => setDraft(state)} disabled={busy}>
+                  Annulla le modifiche
+                </Button>
+              )}
+            </Stack>
+            <StudioMaterial itemId={item.id} media={media} toMaterial={!!draft.design} />
+          </Stack>
         </Card>
 
         <Card>
@@ -298,16 +363,25 @@ function StudioChat({ item, messages, aiReady, dirty, saveDraft }) {
 
 // ----------------------------------------------------------------------
 
-function StudioMaterial({ itemId, media }) {
+function StudioMaterial({ itemId, media, toMaterial }) {
   const router = useRouter();
   const [progress, setProgress] = useState(null);
+  const [moving, startMove] = useTransition();
+
+  const move = (m) =>
+    startMove(async () => {
+      const r = await moveStudioMedia({ itemId, mediaId: m.id, toPost: !m.inPost });
+      if (r.error) toast.error(r.error);
+      router.refresh();
+    });
 
   const onFiles = async (files) => {
     for (const [i, file] of [...files].entries()) {
       try {
         setProgress(`Carico ${file.name} (${i + 1}/${files.length})…`);
         const prepared = file.type.startsWith('image/') ? await prepareImage(file) : { blob: file, type: file.type, name: file.name, ...(await videoSize(file)) };
-        await upload(itemId, prepared, () => undefined);
+        // Con una grafica, le foto nuove servono a comporla: vanno nel materiale, non direttamente nel post
+        await upload(itemId, prepared, () => undefined, toMaterial ? { materiale: '1' } : {});
       } catch (e) {
         toast.error(e.message);
       }
@@ -320,7 +394,7 @@ function StudioMaterial({ itemId, media }) {
     <Box sx={{ p: 2, borderRadius: 1.5, border: '1px dashed', borderColor: 'divider' }}>
       <Stack direction="row" sx={{ alignItems: 'center', mb: 1 }}>
         <Typography variant="subtitle2" sx={{ flex: 1 }}>
-          Materiale {media.length > 0 && `(${media.length})`}
+          File {media.length > 0 && `(${media.length})`}
         </Typography>
         <Button component="label" size="small" variant="outlined" startIcon={<Iconify icon="eva:cloud-upload-fill" />} disabled={!!progress}>
           Carica foto o video
@@ -331,18 +405,55 @@ function StudioMaterial({ itemId, media }) {
       {media.length ? (
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
           {media.map((m) => (
-            <Tooltip key={m.id} title={m.fileName}>
-              <Box sx={{ width: 64, height: 64, borderRadius: 1, overflow: 'hidden', bgcolor: 'background.neutral' }}>
-                {m.kind === 'video' ? <Box component="video" src={m.url} muted sx={{ width: 1, height: 1, objectFit: 'cover' }} /> : <Box component="img" src={m.url} alt="" sx={{ width: 1, height: 1, objectFit: 'cover' }} />}
-              </Box>
-            </Tooltip>
+            <Box key={m.id} sx={{ width: 84, display: 'grid', gap: 0.5, justifyItems: 'center' }}>
+              <Tooltip title={m.fileName}>
+                <Box sx={{ width: 72, height: 72, borderRadius: 1, overflow: 'hidden', bgcolor: 'background.neutral', opacity: m.inPost ? 1 : 0.7, outline: m.inPost ? 2 : 0, outlineColor: 'primary.main' }}>
+                  {m.kind === 'video' ? <Box component="video" src={m.url} muted sx={{ width: 1, height: 1, objectFit: 'cover' }} /> : <Box component="img" src={m.url} alt="" sx={{ width: 1, height: 1, objectFit: 'cover' }} />}
+                </Box>
+              </Tooltip>
+              <Tooltip title={m.inPost ? 'Esce con il post: tocca per spostarlo nel materiale' : 'Solo materiale di lavoro: tocca per farlo uscire con il post'}>
+                <Box component="span">
+                  <Label component="button" type="button" onClick={() => move(m)} disabled={moving} color={m.inPost ? 'primary' : 'default'} variant="soft" sx={{ cursor: 'pointer', border: 0 }}>
+                    {m.origin === 'grafica' ? 'Grafica' : m.inPost ? 'Nel post' : 'Materiale'}
+                  </Label>
+                </Box>
+              </Tooltip>
+            </Box>
           ))}
         </Stack>
       ) : (
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          L&apos;AI vede i file caricati (tipo, misure, durata) e ne tiene conto per formato e testo.
+          L&apos;AI vede i file caricati (tipo, misure, durata) e li usa per formato, testo e grafica. I file «Nel post» escono con il post; il «Materiale» serve solo a comporre la grafica.
         </Typography>
       )}
     </Box>
+  );
+}
+
+// ----------------------------------------------------------------------
+
+/** Nessuna grafica ancora: si sceglie la misura (e le pagine per un carosello), oppure la si chiede all'AI. */
+function NewDesign({ format, onCreate }) {
+  const [size, setSize] = useState(format === 'storia' || format === 'reel' ? 'storia' : 'verticale');
+  const [pages, setPages] = useState(format === 'carosello' ? 3 : 1);
+  return (
+    <Stack spacing={2} sx={{ maxWidth: 480 }}>
+      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+        Crea una grafica con i colori e il logo del cliente, poi modificala qui. Oppure chiedila all&apos;AI in chat, es. «fai un carosello di 4 slide con i punti del testo».
+      </Typography>
+      <Stack direction="row" spacing={1.5}>
+        <TextField select label="Misura" size="small" value={size} onChange={(e) => setSize(e.target.value)} sx={{ minWidth: 200 }}>
+          {Object.entries(DESIGN_SIZES).map(([k, v]) => (
+            <MenuItem key={k} value={k}>
+              {v.label}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField type="number" label="Pagine" size="small" value={pages} onChange={(e) => setPages(Math.min(10, Math.max(1, Number(e.target.value) || 1)))} slotProps={{ htmlInput: { min: 1, max: 10 } }} sx={{ width: 100 }} />
+      </Stack>
+      <Button variant="contained" onClick={() => onCreate(size, pages)} startIcon={<Iconify icon="solar:pallete-2-bold" />} sx={{ alignSelf: 'flex-start' }}>
+        Crea grafica
+      </Button>
+    </Stack>
   );
 }

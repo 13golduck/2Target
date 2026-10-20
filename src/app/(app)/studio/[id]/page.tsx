@@ -8,7 +8,7 @@ import { budgetStatus } from "@/lib/ai/budget";
 import { requireClientAccess, requireWriter } from "@/lib/auth";
 import { featureOn } from "@/lib/features-data";
 import { previewMediaUrl } from "@/lib/media";
-import { clientPlatforms, currentVersion, mediaOf, messagesOf, versionsOf } from "@/lib/studio/studio-data";
+import { clientBrand, clientPlatforms, currentVersion, mediaOf, messagesOf, versionsOf } from "@/lib/studio/studio-data";
 import { FeatureOff } from "src/components/feature-off";
 import { StudioView } from "./studio-view";
 
@@ -38,11 +38,14 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
   const versions = await versionsOf(id);
   const media = await mediaOf(id);
   const budget = await budgetStatus();
+  const brand = await clientBrand(item.clientId);
+  const [palette] = await db.select({ data: s.brandKits.data }).from(s.brandKits).where(eq(s.brandKits.clientId, item.clientId));
 
   return (
     <StudioView
       item={{ id: item.id, status: item.status }}
       client={{ ...client, logo: kit?.hasLogo ? `/api/logo/${client.id}?tipo=icona&v=${kit.at.getTime()}` : null }}
+      brand={{ palette: palette?.data.palette ?? [], logoUrl: brand.logoUrl }}
       platforms={await clientPlatforms(item.clientId)}
       state={current.state}
       versionN={current.n}
