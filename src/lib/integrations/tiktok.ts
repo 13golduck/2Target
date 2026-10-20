@@ -12,6 +12,23 @@ export const API = "https://open.tiktokapis.com/v2";
 
 type TikTokError = { error?: { code?: string; message?: string; log_id?: string }; error_description?: string };
 
+/**
+ * Errori di TikTok spiegati in italiano: il messaggio originale è spesso un generico «leggi le linee guida».
+ * Fonte: documentazione Content Posting API (codici di errore), ottobre 2026.
+ */
+const ERROR_TEXT: Record<string, string> = {
+  unaudited_client_can_only_post_to_private_accounts:
+    "finché TikTok non approva l'app si può pubblicare solo su account TikTok privati. Sul telefono del cliente: TikTok → Profilo → ☰ → Impostazioni e privacy → Privacy → «Account privato», poi riprova",
+  privacy_level_option_mismatch: "la visibilità scelta non è tra quelle consentite dall'account: scegline un'altra",
+  spam_risk_too_many_posts: "troppi post oggi su questo account: riprova domani",
+  spam_risk_too_many_pending_share: "ci sono troppi invii in attesa su questo account: riprova tra qualche ora",
+  spam_risk_user_banned_from_posting: "l'account non può pubblicare al momento",
+  url_ownership_unverified: "il dominio da cui TikTok scarica il video non è verificato nell'app TikTok",
+  reached_active_user_cap: "l'app ha raggiunto il limite di utenti attivi consentito prima dell'approvazione",
+  scope_not_authorized: "manca il permesso di pubblicare: ricollega l'account TikTok da Canali",
+  access_token_invalid: "accesso scaduto: ricollega l'account TikTok da Canali",
+};
+
 /** Chiamata alle API TikTok: gli errori arrivano come { error: { code, message } } anche con HTTP 200. */
 export async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { ...init, cache: "no-store", signal: AbortSignal.timeout(30_000) });
@@ -20,7 +37,8 @@ export async function call<T>(url: string, init?: RequestInit): Promise<T> {
   if (!res.ok || (err?.code && err.code !== "ok")) {
     const code = err?.code ?? `HTTP ${res.status}`;
     const expired = res.status === 401 || ["access_token_invalid", "invalid_grant", "scope_not_authorized"].includes(code);
-    throw new ApiError(`TikTok: ${err?.message || code}${err?.log_id ? ` (log ${err.log_id})` : ""}`, res.status, expired);
+    const known = ERROR_TEXT[code];
+    throw new ApiError(`TikTok: ${known ?? err?.message ?? code}${known ? "" : ` [${code}]`}${err?.log_id ? ` (log ${err.log_id})` : ""}`, res.status, expired);
   }
   return body;
 }
