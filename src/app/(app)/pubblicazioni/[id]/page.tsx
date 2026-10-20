@@ -17,6 +17,7 @@ import { toPlanItem } from "@/lib/plan-adapter";
 import { isAiConfigured } from "@/lib/ai/claude";
 import { clientAdsExposure } from "@/lib/ads/ads";
 import { bestTimes } from "@/lib/best-times";
+import { featureOn } from "@/lib/features-data";
 import { ItemView } from "./item-view";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -60,6 +61,7 @@ export default async function ItemPage({ params, searchParams }: { params: Promi
   return (
     <ItemView
       saved={!!salvato}
+      studioOn={await featureOn("studio", item.clientId)}
       client={{ ...client, logo: kit?.hasLogo ? `/api/logo/${client.id}?tipo=icona&v=${kit.at.getTime()}` : null }}
       item={{
         ...item,

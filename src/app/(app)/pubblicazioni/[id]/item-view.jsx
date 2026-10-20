@@ -65,7 +65,7 @@ const ISSUE_TAB = [
 ];
 const tabOf = (message) => ISSUE_TAB.find(([re]) => re.test(message))?.[1] ?? null;
 
-export function ItemView({ saved, client, item, issues, series, personas, options, design, publishing, sponsoring, bestTimes, feedback }) {
+export function ItemView({ saved, studioOn, client, item, issues, series, personas, options, design, publishing, sponsoring, bestTimes, feedback }) {
   const [tab, setTab] = useState('testo');
   const [status, setStatus] = useState(item.status);
   const [isPaid, setIsPaid] = useState(item.isPaid);
@@ -145,6 +145,11 @@ export function ItemView({ saved, client, item, issues, series, personas, option
           ]}
           action={
             <Stack direction="row" spacing={1}>
+              {studioOn && (
+                <Button href={`/studio/${item.id}`} color="inherit" variant="outlined" startIcon={<Iconify icon="solar:atom-bold-duotone" />}>
+                  Apri nello Studio
+                </Button>
+              )}
               <Button
                 type="submit"
                 formAction={deleteItem}
