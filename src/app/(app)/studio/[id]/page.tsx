@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/db";
 import * as s from "@/db/schema";
 import { isAiConfigured } from "@/lib/ai/claude";
+import { isImageAiConfigured } from "@/lib/ai/image-gen";
 import { budgetStatus } from "@/lib/ai/budget";
 import { requireClientAccess, requireWriter } from "@/lib/auth";
 import { featureOn } from "@/lib/features-data";
@@ -52,7 +53,7 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
       versions={versions.map((v) => ({ ...v, createdAt: v.createdAt.toISOString() }))}
       messages={messages.map((m) => ({ id: m.id, role: m.role, text: m.text, versionN: m.versionN, costEur: m.costEur, createdAt: m.createdAt.toISOString() }))}
       media={media.map((m) => ({ ...m, url: previewMediaUrl(m.id) }))}
-      ai={{ configured: isAiConfigured(), budgetWarning: budget.warning }}
+      ai={{ configured: isAiConfigured(), images: isImageAiConfigured(), budgetWarning: budget.warning }}
     />
   );
 }

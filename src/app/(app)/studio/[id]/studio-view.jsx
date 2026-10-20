@@ -10,6 +10,11 @@ import Tabs from '@mui/material/Tabs';
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import Checkbox from '@mui/material/Checkbox';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
@@ -29,7 +34,7 @@ import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { PostPreview } from '../../pubblicazioni/[id]/post-preview';
 import { upload, videoSize, prepareImage } from '../../pubblicazioni/media-upload';
-import { saveStudioEdit, moveStudioMedia, sendStudioMessage, restoreStudioVersion, replaceDesignOutputs } from '../../studio-actions';
+import { saveStudioEdit, moveStudioMedia, sendStudioMessage, generateStudioImage, restoreStudioVersion, replaceDesignOutputs } from '../../studio-actions';
 
 // L'editor usa il canvas del browser: si carica solo lato client
 const DesignEditor = dynamic(() => import('./design-editor'), { ssr: false, loading: () => <LinearProgress /> });
@@ -228,7 +233,7 @@ export function StudioView({ item, client, brand, platforms, state, versionN, ve
                 </Button>
               )}
             </Stack>
-            <StudioMaterial itemId={item.id} media={media} toMaterial={!!draft.design} />
+            <StudioMaterial itemId={item.id} media={media} toMaterial={!!draft.design} imagesAvailable={ai.images} defaultAspect={draft.design ? { quadrato: '1:1', verticale: '4:5', storia: '9:16' }[draft.design.size] : draft.format === 'storia' || draft.format === 'reel' ? '9:16' : '4:5'} />
           </Stack>
         </Card>
 
@@ -363,9 +368,10 @@ function StudioChat({ item, messages, aiReady, dirty, saveDraft }) {
 
 // ----------------------------------------------------------------------
 
-function StudioMaterial({ itemId, media, toMaterial }) {
+function StudioMaterial({ itemId, media, toMaterial, imagesAvailable, defaultAspect }) {
   const router = useRouter();
   const [progress, setProgress] = useState(null);
+  const [imageDialog, setImageDialog] = useState(false);
   const [moving, startMove] = useTransition();
 
   const move = (m) =>
@@ -396,6 +402,13 @@ function StudioMaterial({ itemId, media, toMaterial }) {
         <Typography variant="subtitle2" sx={{ flex: 1 }}>
           File {media.length > 0 && `(${media.length})`}
         </Typography>
+        <Tooltip title={imagesAvailable ? 'Crea un\'immagine nuova o modifica una foto del progetto' : 'Serve la chiave Google AI in Impostazioni → Integrazioni'}>
+          <span>
+            <Button size="small" variant="outlined" color="inherit" onClick={() => setImageDialog(true)} disabled={!imagesAvailable} startIcon={<Iconify icon="solar:magic-stick-3-bold" />} sx={{ mr: 1 }}>
+              Immagine AI
+            </Button>
+          </span>
+        </Tooltip>
         <Button component="label" size="small" variant="outlined" startIcon={<Iconify icon="eva:cloud-upload-fill" />} disabled={!!progress}>
           Carica foto o video
           <input hidden type="file" multiple accept={ACCEPT} onChange={(e) => e.target.files?.length && onFiles(e.target.files).finally(() => (e.target.value = ''))} />
@@ -414,7 +427,7 @@ function StudioMaterial({ itemId, media, toMaterial }) {
               <Tooltip title={m.inPost ? 'Esce con il post: tocca per spostarlo nel materiale' : 'Solo materiale di lavoro: tocca per farlo uscire con il post'}>
                 <Box component="span">
                   <Label component="button" type="button" onClick={() => move(m)} disabled={moving} color={m.inPost ? 'primary' : 'default'} variant="soft" sx={{ cursor: 'pointer', border: 0 }}>
-                    {m.origin === 'grafica' ? 'Grafica' : m.inPost ? 'Nel post' : 'Materiale'}
+                    {m.origin === 'grafica' ? 'Grafica' : m.inPost ? 'Nel post' : m.origin === 'ai' ? 'Immagine AI' : 'Materiale'}
                   </Label>
                 </Box>
               </Tooltip>
@@ -426,7 +439,92 @@ function StudioMaterial({ itemId, media, toMaterial }) {
           L&apos;AI vede i file caricati (tipo, misure, durata) e li usa per formato, testo e grafica. I file «Nel post» escono con il post; il «Materiale» serve solo a comporre la grafica.
         </Typography>
       )}
+      {imageDialog && <AiImageDialog itemId={itemId} photos={media.filter((m) => m.kind === 'image')} defaultAspect={defaultAspect} onClose={() => setImageDialog(false)} />}
     </Box>
+  );
+}
+
+// ----------------------------------------------------------------------
+
+const ASPECTS = [
+  ['4:5', 'Verticale 4:5'],
+  ['1:1', 'Quadrata 1:1'],
+  ['9:16', 'Storia o reel 9:16'],
+  ['16:9', 'Orizzontale 16:9'],
+];
+const MAX_REFERENCES = 3;
+
+/** Immagine AI: nuova da una descrizione, oppure modifica di fino a 3 foto del progetto. Finisce nel materiale. */
+function AiImageDialog({ itemId, photos, defaultAspect, onClose }) {
+  const router = useRouter();
+  const [prompt, setPrompt] = useState('');
+  const [refs, setRefs] = useState([]);
+  const [aspect, setAspect] = useState(defaultAspect);
+  const [busy, start] = useTransition();
+
+  const toggle = (id) => setRefs((r) => (r.includes(id) ? r.filter((x) => x !== id) : r.length < MAX_REFERENCES ? [...r, id] : r));
+  const submit = () =>
+    start(async () => {
+      const r = await generateStudioImage({ itemId, prompt, referenceIds: refs, aspectRatio: aspect });
+      if (r.error) return toast.error(r.error);
+      toast.success(`Immagine pronta nel materiale (${eur(r.costEur)})`);
+      onClose();
+      router.refresh();
+    });
+
+  return (
+    <Dialog open onClose={busy ? undefined : onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Immagine AI</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <TextField
+            label={refs.length ? 'Cosa cambiare nelle foto scelte' : 'Cosa deve mostrare'}
+            placeholder={refs.length ? 'es. metti il vaso su un tavolo di legno chiaro, luce calda del mattino, sfondo sfocato' : 'es. vasi in ceramica artigianale su una mensola, luce naturale, stile fotografico editoriale'}
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            multiline
+            minRows={3}
+            slotProps={{ htmlInput: { maxLength: 2000 } }}
+            autoFocus
+            fullWidth
+          />
+          {photos.length > 0 && (
+            <Box>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                Foto da modificare o da usare come riferimento (facoltative, al massimo {MAX_REFERENCES}): il prodotto resta fedele all&apos;originale.
+              </Typography>
+              <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap', rowGap: 1 }}>
+                {photos.map((m) => (
+                  <Box key={m.id} component="label" sx={{ position: 'relative', width: 72, height: 72, borderRadius: 1, overflow: 'hidden', cursor: 'pointer', outline: refs.includes(m.id) ? 3 : 0, outlineColor: 'primary.main' }}>
+                    <Box component="img" src={m.url} alt={m.fileName} sx={{ width: 1, height: 1, objectFit: 'cover' }} />
+                    <Checkbox checked={refs.includes(m.id)} onChange={() => toggle(m.id)} size="small" sx={{ position: 'absolute', top: -4, right: -4, color: 'common.white' }} slotProps={{ input: { 'aria-label': `Usa «${m.fileName}»` } }} />
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
+          )}
+          <TextField select label="Proporzione" size="small" value={aspect} onChange={(e) => setAspect(e.target.value)} sx={{ maxWidth: 240 }}>
+            {ASPECTS.map(([v, l]) => (
+              <MenuItem key={v} value={v}>
+                {l}
+              </MenuItem>
+            ))}
+          </TextField>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            Costa pochi centesimi (circa 0,05 $ a listino) e rientra nel tetto mensile delle immagini AI. L&apos;immagine finisce nel materiale: usala nella grafica o spostala nel post.
+          </Typography>
+          {busy && <LinearProgress />}
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button color="inherit" onClick={onClose} disabled={busy}>
+          Annulla
+        </Button>
+        <Button variant="contained" onClick={submit} loading={busy} disabled={prompt.trim().length < 5} startIcon={<Iconify icon="solar:magic-stick-3-bold" />}>
+          {refs.length ? 'Modifica' : 'Crea'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
