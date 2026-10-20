@@ -5,7 +5,7 @@ import { pipeline } from "node:stream/promises";
 
 import { db } from "@/db";
 import { editorialItems, mediaAssets } from "@/db/schema";
-import { requireWriter } from "@/lib/auth";
+import { requireClientAccess, requireWriter } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import { prepareVideoAsset } from "@/lib/media-video";
 import { syncPendingPublications } from "@/lib/publishing/sync";
@@ -23,6 +23,8 @@ export async function POST(request: Request) {
   const itemId = Number(url.searchParams.get("scheda"));
   const [item] = await db.select({ id: editorialItems.id, clientId: editorialItems.clientId }).from(editorialItems).where(eq(editorialItems.id, itemId));
   if (!item) return Response.json({ error: "Scheda non trovata" }, { status: 404 });
+  // Si carica solo sulle schede dei clienti che si possono vedere
+  await requireClientAccess(item.clientId);
 
   const mime = (request.headers.get("content-type") ?? "").split(";")[0].trim();
   const kind = IMAGE_TYPES[mime] ? "image" : VIDEO_TYPES[mime] ? "video" : null;
