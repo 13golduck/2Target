@@ -152,6 +152,7 @@ export async function updateLimits(f: FormData) {
     warnPct: Math.min(1, num(f, "warnPct", DEFAULT_LIMITS.warnPct * 100) / 100),
     checkupEur: num(f, "checkupEur", DEFAULT_LIMITS.checkupEur),
     clientMonthlyEur: num(f, "clientMonthlyEur", DEFAULT_LIMITS.clientMonthlyEur),
+    imagesMonthlyEur: num(f, "imagesMonthlyEur", DEFAULT_LIMITS.imagesMonthlyEur),
     maxConcurrent: Math.max(1, Math.round(num(f, "maxConcurrent", DEFAULT_LIMITS.maxConcurrent))),
     maxCheckupsPerDay: Math.max(1, Math.round(num(f, "maxCheckupsPerDay", DEFAULT_LIMITS.maxCheckupsPerDay))),
     // Ricarico sul listino Anthropic: almeno 1 (nessun ricarico), al massimo 10

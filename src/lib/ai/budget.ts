@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, like, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import { aiRuns, appSettings } from "@/db/schema";
@@ -16,6 +16,7 @@ export interface AiLimits {
   warnPct: number; // soglia di avviso (es. 0.8)
   checkupEur: number; // tetto per singolo check-up (€)
   clientMonthlyEur: number; // tetto mensile per cliente (€, 0 = nessuno)
+  imagesMonthlyEur: number; // tetto mensile per le immagini create o modificate dall'AI (€, dentro il budget del mese)
   maxConcurrent: number; // lavori AI contemporanei
   maxCheckupsPerDay: number; // nuovi check-up AI al giorno
   markup: number; // ricarico sul listino Anthropic (1,8 = +80%)
@@ -27,6 +28,7 @@ export const DEFAULT_LIMITS: AiLimits = {
   warnPct: 0.8,
   checkupEur: 15,
   clientMonthlyEur: 25,
+  imagesMonthlyEur: 20,
   maxConcurrent: 2,
   maxCheckupsPerDay: 10,
   markup: 1.8,
@@ -113,6 +115,10 @@ export const monthSpend = () => spent(and(gte(aiRuns.createdAt, monthStart())));
 export const clientMonthSpend = (clientId: number) => spent(and(eq(aiRuns.clientId, clientId), gte(aiRuns.createdAt, monthStart())));
 export const checkupSpend = (checkupId: number) => spent(and(eq(aiRuns.checkupId, checkupId)));
 
+/** Le immagini AI si registrano con un passo che inizia così: il tetto delle immagini somma solo quelle. */
+export const IMAGE_STEP_PREFIX = "Immagine AI";
+export const imageMonthSpend = () => spent(and(like(aiRuns.step, `${IMAGE_STEP_PREFIX}%`), gte(aiRuns.createdAt, monthStart())));
+
 /** Stima prudente del costo di una fase in dollari di listino (si converte in euro con usdToBilledEur). */
 export const PHASE_ESTIMATE_USD: Record<string, { opus: number; sonnet: number }> = {
   ricognizione: { opus: 1.2, sonnet: 0.6 },
@@ -125,7 +131,7 @@ export const PHASE_ESTIMATE_USD: Record<string, { opus: number; sonnet: number }
 const fmt = (n: number) => `${n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 
 /** Regola di blocco (pura, testata): restituisce il motivo del blocco o null. */
-export function budgetViolation(l: AiLimits, spent: { month: number; client?: number; checkup?: number }, est = 0): string | null {
+export function budgetViolation(l: AiLimits, spent: { month: number; client?: number; checkup?: number; images?: number }, est = 0): string | null {
   // Bloccato se il tetto è già raggiunto, oppure se la stima della fase lo farebbe superare
   const over = (used: number, cap: number) => used >= cap || used + est > cap;
   if (!l.enabled) return "L'AI è disattivata dalle impostazioni (Consumi AI).";
@@ -134,6 +140,9 @@ export function budgetViolation(l: AiLimits, spent: { month: number; client?: nu
   }
   if (spent.client != null && l.clientMonthlyEur > 0 && over(spent.client, l.clientMonthlyEur)) {
     return `Tetto mensile per questo cliente raggiunto: ${fmt(spent.client)} su ${fmt(l.clientMonthlyEur)}.`;
+  }
+  if (spent.images != null && over(spent.images, l.imagesMonthlyEur)) {
+    return `Tetto mensile delle immagini AI raggiunto: spesi ${fmt(spent.images)} su ${fmt(l.imagesMonthlyEur)}. Un amministratore può alzarlo in Impostazioni → Limiti AI.`;
   }
   if (spent.checkup != null && over(spent.checkup, l.checkupEur)) {
     return `Tetto per singolo check-up raggiunto: ${fmt(spent.checkup)} su ${fmt(l.checkupEur)}. Un amministratore può alzarlo in Consumi AI.`;
@@ -145,7 +154,7 @@ export function budgetViolation(l: AiLimits, spent: { month: number; client?: nu
  * Lancia BudgetError se l'operazione non va fatta. Si chiama prima di ogni fase
  * (con la stima) e prima di ogni singola chiamata (stima 0: controlla i tetti già raggiunti).
  */
-export async function assertBudget(o: { clientId?: number; checkupId?: number; estimateUsd?: number }) {
+export async function assertBudget(o: { clientId?: number; checkupId?: number; estimateUsd?: number; images?: boolean }) {
   const l = await getLimits();
   const message = budgetViolation(
     l,
@@ -153,6 +162,7 @@ export async function assertBudget(o: { clientId?: number; checkupId?: number; e
       month: await monthSpend(),
       client: o.clientId ? await clientMonthSpend(o.clientId) : undefined,
       checkup: o.checkupId ? await checkupSpend(o.checkupId) : undefined,
+      images: o.images ? await imageMonthSpend() : undefined,
     },
     o.estimateUsd ? await usdToBilledEur(o.estimateUsd) : 0,
   );

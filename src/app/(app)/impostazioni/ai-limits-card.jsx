@@ -50,6 +50,7 @@ export function AiLimitsCard({ limits, fx }) {
               ['warnPct', 'Avviso al', Math.round(limits.warnPct * 100), '%', 'Banner di avviso in Consumi AI'],
               ['checkupEur', 'Tetto per check-up', limits.checkupEur, '€', 'Comprese ricerche e revisioni'],
               ['clientMonthlyEur', 'Tetto mensile per cliente', limits.clientMonthlyEur, '€', '0 = nessun tetto'],
+              ['imagesMonthlyEur', 'Tetto mensile immagini AI', limits.imagesMonthlyEur, '€', 'Immagini create o modificate nello Studio (circa 0,03 $ l’una a listino)'],
               ['maxConcurrent', 'Lavori AI contemporanei', limits.maxConcurrent, '', 'Evita picchi di spesa'],
               ['maxCheckupsPerDay', 'Check-up AI al giorno', limits.maxCheckupsPerDay, '', 'Su tutti i clienti'],
               ['markup', 'Ricarico sul listino Anthropic', String(limits.markup).replace('.', ','), '×', 'Costo = listino in $ al cambio BCE × ricarico (1,8 = +80%)'],
