@@ -883,6 +883,13 @@ export const mediaAssets = mysqlTable(
     studioItemId: int("studio_item_id").references(() => editorialItems.id, { onDelete: "cascade" }),
     /** Da dove viene il file: caricato, grafica esportata dallo Studio, immagine dell'AI, montaggio video dello Studio. */
     origin: mysqlEnum("origin", ["caricato", "grafica", "ai", "video"]).notNull().default("caricato"),
+    /**
+     * Musica da una libreria (Openverse, Jamendo…): licenza (es. «cc0», «by»), crediti da citare nel post quando la
+     * licenza li chiede, e pagina d'origine del brano. Vuoti per i file caricati da chi lavora.
+     */
+    license: varchar("license", { length: 20 }),
+    credit: varchar("credit", { length: 500 }),
+    sourceUrl: varchar("source_url", { length: 500 }),
     createdBy: int("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: created(),
   },
