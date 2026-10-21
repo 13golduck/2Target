@@ -8,8 +8,10 @@ import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
 import Switch from '@mui/material/Switch';
-import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
 import TextField from '@mui/material/TextField';
 import CardHeader from '@mui/material/CardHeader';
@@ -37,6 +39,7 @@ const SOURCE = {
 const GROUPS = [
   {
     key: 'meta',
+    category: 'social',
     title: 'Meta (Facebook e Instagram)',
     icon: 'socials:facebook',
     where: 'Meta for Developers → app 2Target → Impostazioni app → Di base; la configurazione in Facebook Login for Business → Configurazioni.',
@@ -57,6 +60,7 @@ const GROUPS = [
   },
   {
     key: 'linkedin',
+    category: 'social',
     title: 'LinkedIn (pagine aziendali dei clienti)',
     icon: 'socials:linkedin',
     where:
@@ -70,6 +74,7 @@ const GROUPS = [
   },
   {
     key: 'tiktok',
+    category: 'social',
     title: 'TikTok (profilo, video, statistiche e pubblicazione)',
     icon: 'socials:tiktok',
     where:
@@ -83,6 +88,7 @@ const GROUPS = [
   },
   {
     key: 'instagram',
+    category: 'social',
     title: 'Instagram senza Facebook (login Instagram)',
     icon: 'socials:instagram',
     where:
@@ -95,6 +101,7 @@ const GROUPS = [
   },
   {
     key: 'threads',
+    category: 'social',
     title: 'Threads (profilo, statistiche e pubblicazione)',
     icon: 'socials:threads',
     where:
@@ -107,6 +114,7 @@ const GROUPS = [
   },
   {
     key: 'pinterest',
+    category: 'social',
     title: 'Pinterest (bacheche, statistiche e pin)',
     icon: 'socials:pinterest',
     where:
@@ -119,6 +127,7 @@ const GROUPS = [
   },
   {
     key: 'microsoft',
+    category: 'accesso',
     title: 'Microsoft 365 (accesso con l’account Golduck)',
     icon: 'socials:microsoft',
     where:
@@ -132,6 +141,7 @@ const GROUPS = [
   },
   {
     key: 'anthropic',
+    category: 'ai',
     title: 'Anthropic (AI dei check-up e dello studio grafico)',
     icon: 'solar:atom-bold-duotone',
     where: 'console.anthropic.com → organizzazione Golduck → API Keys.',
@@ -140,6 +150,7 @@ const GROUPS = [
   },
   {
     key: 'gemini',
+    category: 'ai',
     title: 'Google AI (immagini create e modificate nello Studio)',
     icon: 'solar:gallery-wide-bold-duotone',
     where:
@@ -152,6 +163,7 @@ const GROUPS = [
   },
   {
     key: 'google',
+    category: 'google',
     title: 'Google (Search Console, Analytics, scheda Google, Google Ads, YouTube, PageSpeed)',
     icon: 'socials:google',
     where:
@@ -175,6 +187,31 @@ const GROUPS = [
     ],
   },
 ];
+
+const CATEGORIES = [
+  { key: 'social', title: 'Social', hint: 'App di Golduck su Meta, TikTok, LinkedIn, Threads, Pinterest' },
+  { key: 'google', title: 'Google', hint: 'Search Console, Analytics, scheda Google, Ads, YouTube' },
+  { key: 'ai', title: 'Intelligenza artificiale', hint: 'Testi, check-up e immagini' },
+  { key: 'accesso', title: 'Accesso del team', hint: 'Entrare con l’account Golduck' },
+];
+
+// Campi che possono restare vuoti senza che il servizio risulti incompleto
+const isOptional = (f) => /facoltativ/i.test(f.label);
+
+/** Stato di un servizio: configurato se tutti i campi obbligatori hanno un valore (in 2Target o da Plesk). */
+function groupState(gr, status) {
+  const required = gr.fields.filter((f) => !isOptional(f));
+  const set = required.filter((f) => status[f.name] && status[f.name].source !== 'mancante').length;
+  if (set === required.length) return { label: 'Configurata', color: 'success' };
+  if (set > 0) return { label: 'Incompleta', color: 'warning' };
+  return { label: 'Da configurare', color: 'default' };
+}
+
+/** Riepilogo per il menu delle Impostazioni: quante integrazioni sono configurate. */
+export function integrationsSummary(status) {
+  const done = GROUPS.filter((gr) => groupState(gr, status).label === 'Configurata').length;
+  return { done, total: GROUPS.length };
+}
 
 function Field({ f, st, clear, onClear }) {
   const source = SOURCE[st.source];
@@ -277,55 +314,77 @@ export function IntegrationsCard({ status, appUrl }) {
             Vale solo per questo indirizzo: una copia di 2Target su un altro indirizzo resta sempre in simulazione.
           </Box>
         </Alert>
-        <Stack spacing={3} divider={<Divider flexItem />}>
-          {GROUPS.map((gr) => (
-            <Box key={gr.key}>
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.5 }}>
-                <Iconify icon={gr.icon} width={20} />
-                <Typography variant="subtitle1">{gr.title}</Typography>
-              </Stack>
-              <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mb: 2 }}>
-                Dove si trovano: {gr.where}
+        {/* Un gruppo per categoria; ogni servizio è una riga chiusa con il suo stato. I campi restano nel modulo anche chiusi */}
+        <Stack spacing={3}>
+          {CATEGORIES.map((cat) => (
+            <Box key={cat.key}>
+              <Typography variant="overline" sx={{ color: 'text.secondary' }}>
+                {cat.title}
               </Typography>
-              <Grid container spacing={2}>
-                {gr.fields.map((f) => (
-                  <Grid key={f.name} size={{ xs: 12, md: 4 }}>
-                    <Field
-                      f={f}
-                      st={status[f.name]}
-                      clear={cleared.includes(f.name)}
-                      onClear={() => setCleared((c) => (c.includes(f.name) ? c.filter((x) => x !== f.name) : [...c, f.name]))}
-                    />
+              <Typography variant="caption" sx={{ display: 'block', color: 'text.disabled', mb: 1 }}>
+                {cat.hint}
+              </Typography>
+              {GROUPS.filter((gr) => gr.category === cat.key).map((gr) => {
+                const state = groupState(gr, status);
+                return (
+                  <Accordion key={gr.key} id={`integrazione-${gr.key}`} disableGutters variant="outlined" sx={{ '&:not(:last-of-type)': { borderBottom: 0 }, '&::before': { display: 'none' } }}>
+                    <AccordionSummary expandIcon={<Iconify icon="eva:arrow-ios-downward-fill" />} sx={{ '& .MuiAccordionSummary-content': { minWidth: 0 } }}>
+                      <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', flex: 1, minWidth: 0, pr: 1 }}>
+                        <Iconify icon={gr.icon} width={22} />
+                        <Typography variant="subtitle2" sx={{ flex: 1, minWidth: 0 }} noWrap>
+                          {gr.title}
+                        </Typography>
+                        <Label color={state.color}>{state.label}</Label>
+                      </Stack>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                  <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mb: 2 }}>
+                    Dove si trovano: {gr.where}
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {gr.fields.map((f) => (
+                      <Grid key={f.name} size={{ xs: 12, md: 4 }}>
+                        <Field
+                          f={f}
+                          st={status[f.name]}
+                          clear={cleared.includes(f.name)}
+                          onClear={() => setCleared((c) => (c.includes(f.name) ? c.filter((x) => x !== f.name) : [...c, f.name]))}
+                        />
+                      </Grid>
+                    ))}
                   </Grid>
-                ))}
-              </Grid>
-              {gr.callback && (
-                <TextField
-                  label="Indirizzo di ritorno da registrare nell'app"
-                  value={`${appUrl}${gr.callback}`}
-                  size="small"
-                  fullWidth
-                  sx={{ mt: 2 }}
-                  slotProps={{
-                    input: {
-                      readOnly: true,
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <Tooltip title="Copia">
-                            <IconButton size="small" onClick={() => copy(`${appUrl}${gr.callback}`)}>
-                              <Iconify icon="solar:copy-bold" width={18} />
-                            </IconButton>
-                          </Tooltip>
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                />
-              )}
+                  {gr.callback && (
+                    <TextField
+                      label="Indirizzo di ritorno da registrare nell'app"
+                      value={`${appUrl}${gr.callback}`}
+                      size="small"
+                      fullWidth
+                      sx={{ mt: 2 }}
+                      slotProps={{
+                        input: {
+                          readOnly: true,
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <Tooltip title="Copia">
+                                <IconButton size="small" onClick={() => copy(`${appUrl}${gr.callback}`)}>
+                                  <Iconify icon="solar:copy-bold" width={18} />
+                                </IconButton>
+                              </Tooltip>
+                            </InputAdornment>
+                          ),
+                        },
+                      }}
+                    />
+                  )}
+                    </AccordionDetails>
+                  </Accordion>
+                );
+              })}
             </Box>
           ))}
         </Stack>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 3, alignItems: { sm: 'center' } }}>
+        {/* Salvataggio sempre a portata di mano, anche con un servizio aperto in fondo */}
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 3, alignItems: { sm: 'center' }, position: 'sticky', bottom: 0, py: 1.5, bgcolor: 'background.paper', zIndex: 1 }}>
           <Typography variant="caption" sx={{ color: 'text.secondary', flex: 1 }}>
             Le chiavi segrete sono cifrate e non vengono più mostrate. Ogni modifica finisce nell&apos;audit trail (solo i nomi dei campi). Le variabili su
             Plesk restano valide come riserva.
