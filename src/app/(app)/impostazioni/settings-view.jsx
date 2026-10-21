@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -9,6 +9,8 @@ import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemButton from '@mui/material/ListItemButton';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import CardHeader from '@mui/material/CardHeader';
@@ -19,12 +21,13 @@ import { DashboardContent } from 'src/layouts/dashboard';
 
 import { Label } from 'src/components/label';
 import { toast } from 'src/components/snackbar';
+import { Iconify } from 'src/components/iconify';
 import { CustomBreadcrumbs } from 'src/components/custom-breadcrumbs';
 
 import { MethodCard } from './method-card';
 import { AiLimitsCard } from './ai-limits-card';
 import { SystemCard } from './system-card';
-import { IntegrationsCard } from './integrations-card';
+import { IntegrationsCard, integrationsSummary } from './integrations-card';
 import { FeatureSwitches } from '../feature-switches';
 import { saveMail, testMail, saveFeatures, lockSettings } from './actions';
 
@@ -67,6 +70,16 @@ const HELP = {
   smtp: <>Server, porta, utente e password li trovi nelle istruzioni del tuo provider di posta (porta 587 con STARTTLS oppure 465 con TLS).</>,
 };
 
+// Una sezione alla volta, scelta dal menu a sinistra (o dall'indirizzo, es. /impostazioni#integrazioni)
+const SECTIONS = [
+  { key: 'stato', label: 'Stato e backup', icon: 'solar:heart-pulse-bold' },
+  { key: 'integrazioni', label: 'Integrazioni', icon: 'eva:link-2-fill' },
+  { key: 'email', label: 'Invio email', icon: 'solar:letter-bold' },
+  { key: 'ai', label: 'AI e spesa', icon: 'solar:atom-bold-duotone' },
+  { key: 'funzioni', label: 'Funzioni', icon: 'solar:widget-5-bold' },
+  { key: 'metodo', label: 'Metodo di lavoro', icon: 'solar:book-bookmark-bold' },
+];
+
 export function SettingsView({ mail, lastTest, limits, fx, method, planMethod, firstAccess, integrations, system, features }) {
   const [preset, setPreset] = useState(mail.preset ?? (mail.provider === 'smtp' ? 'smtp' : 'microsoft'));
   const [host, setHost] = useState(mail.host);
@@ -98,6 +111,22 @@ export function SettingsView({ mail, lastTest, limits, fx, method, planMethod, f
         ? <Label color="error">Ultima prova non riuscita</Label>
         : <Label color="warning">Salvato, da provare</Label>;
 
+  // Sezione dall'indirizzo (#integrazioni, #funzioni…): i collegamenti esistenti nell'app continuano a funzionare
+  const [section, setSection] = useState(firstAccess ? 'email' : 'stato');
+  useEffect(() => {
+    const fromHash = window.location.hash.replace('#', '');
+    if (SECTIONS.some((x) => x.key === fromHash)) setSection(fromHash); // eslint-disable-line react-hooks/set-state-in-effect -- l'indirizzo si legge solo nel browser
+  }, []);
+  const open = (key) => {
+    setSection(key);
+    window.history.replaceState(null, '', `#${key}`);
+  };
+  const integrationCount = integrations ? integrationsSummary(integrations.status) : null;
+  const badges = {
+    integrazioni: integrationCount && <Label color={integrationCount.done === integrationCount.total ? 'success' : 'default'}>{`${integrationCount.done}/${integrationCount.total}`}</Label>,
+    email: status,
+  };
+
   const secretHelp = (has) => (has ? 'Già salvata: lascia vuoto per non cambiarla' : 'Si salva cifrata e non viene più mostrata');
 
   return (
@@ -120,196 +149,234 @@ export function SettingsView({ mail, lastTest, limits, fx, method, planMethod, f
         </Alert>
       )}
 
-      {system && (
-        <Box sx={{ mb: 3 }}>
-          <SystemCard checks={system.checks} backups={system.backups} backupDir={system.backupDir} />
-        </Box>
-      )}
+      <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', md: '270px minmax(0, 1fr)' }, alignItems: 'start' }}>
+        <Card sx={{ p: 1, position: { md: 'sticky' }, top: { md: 88 } }} component="nav" aria-label="Sezioni delle Impostazioni">
+          {SECTIONS.map((x) => (
+            <ListItemButton
+              key={x.key}
+              selected={section === x.key}
+              onClick={() => open(x.key)}
+              sx={{ borderRadius: 1, gap: 1.5, whiteSpace: 'nowrap', '&.Mui-selected': { color: 'primary.main', bgcolor: 'action.selected' } }}
+            >
+              <Iconify icon={x.icon} width={22} />
+              <ListItemText primary={x.label} slotProps={{ primary: { variant: 'body2', fontWeight: section === x.key ? 600 : 400 } }} />
+              {badges[x.key]}
+            </ListItemButton>
+          ))}
+        </Card>
 
-      {features && (
-        <Box sx={{ mb: 3 }}>
-          <FeatureSwitches
-            id="funzioni"
-            title="Funzioni"
-            subheader="Spegni quello che non usi: sparisce dai menu di tutti. Si può riaccendere quando serve, senza perdere dati."
-            features={features}
-            onSave={saveFeatures}
-          />
-        </Box>
-      )}
-
-      <Card>
-        <CardHeader
-          title="Invio email"
-          subheader="Serve per i codici di accesso. Le password e i segreti si salvano cifrati."
-          action={status}
-        />
-        <Box
-          component="form"
-          action={(fd) =>
-            start(async () => {
-              const r = await saveMail(fd);
-              if (r?.error) toast.error(r.error);
-              else {
-                setSavedNow(r.savedAt);
-                setResult(null);
-                toast.success('Impostazioni salvate');
-              }
-            })
-          }
-          sx={{ p: 3 }}
-        >
-          <Stack spacing={2.5} sx={{ maxWidth: 640 }}>
-            <TextField select name="preset" label="Servizio di posta" value={preset} onChange={(e) => choose(e.target.value)}>
-              {Object.entries(PRESETS).map(([value, p]) => (
-                <MenuItem key={value} value={value}>
-                  {p.label}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <TextField
-                name="from"
-                label="Casella mittente"
-                placeholder={preset.startsWith('google') ? 'developer@golduck.eu' : 'noreply@golduck.it'}
-                defaultValue={mail.from}
-                helperText={provider === 'smtp' && preset !== 'google-relay' ? "Se vuota si usa l'utente" : undefined}
-                fullWidth
-                required={provider === 'microsoft' || preset === 'google-relay'}
-              />
-              <TextField name="fromName" label="Nome visualizzato" defaultValue={mail.fromName} fullWidth />
-            </Stack>
-
-            {provider === 'microsoft' ? (
-              <>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Da <Link href="https://entra.microsoft.com" target="_blank" rel="noopener">Microsoft Entra</Link> → Registrazioni app:
-                  ID tenant (directory), ID applicazione (client) e un segreto client. L&apos;app deve avere il permesso{' '}
-                  <b>Mail.Send</b> (applicazione) con consenso dell&apos;amministratore. La casella mittente deve esistere in Microsoft 365.
-                </Typography>
-                <TextField name="tenantId" label="ID tenant (directory)" defaultValue={mail.tenantId} fullWidth required />
-                <TextField name="clientId" label="ID applicazione (client)" defaultValue={mail.clientId} fullWidth required />
-                <TextField
-                  name="clientSecret"
-                  type="password"
-                  label="Valore del segreto client"
-                  autoComplete="new-password"
-                  helperText={secretHelp(mail.hasClientSecret)}
-                  required={!mail.hasClientSecret}
-                  fullWidth
-                />
-              </>
-            ) : (
-              <>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  {HELP[preset]}
-                </Typography>
-                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                  <TextField
-                    name="host"
-                    label="Server SMTP"
-                    value={host}
-                    onChange={(e) => setHost(e.target.value)}
-                    slotProps={{ input: { readOnly: preset !== 'smtp' } }}
-                    fullWidth
-                    required
-                  />
-                  <TextField
-                    name="port"
-                    label="Porta"
-                    type="number"
-                    value={port}
-                    onChange={(e) => setPort(Number(e.target.value))}
-                    sx={{ width: { sm: 160 } }}
-                    helperText="587 o 465"
-                  />
-                </Stack>
-                {preset !== 'google-relay' && (
-                  <>
-                    <TextField name="user" label="Utente (indirizzo email completo)" defaultValue={mail.user} fullWidth required />
-                    <TextField
-                      name="pass"
-                      type="password"
-                      label={preset === 'google' ? 'Password per app (16 lettere)' : 'Password'}
-                      autoComplete="new-password"
-                      helperText={secretHelp(mail.hasPass)}
-                      required={!mail.hasPass}
-                      fullWidth
-                    />
-                  </>
-                )}
-              </>
+        <Box sx={{ minWidth: 0, '& > * + *': { mt: 3 } }}>
+          {section === 'stato' && (
+            <>
+            {system && (
+              <Box sx={{ mb: 3 }}>
+                <SystemCard checks={system.checks} backups={system.backups} backupDir={system.backupDir} />
+              </Box>
             )}
-
-            <Stack direction="row" spacing={1.5}>
-              <Button type="submit" variant="contained" loading={pending}>
-                Salva
-              </Button>
-              <Button
-                variant="outlined"
-                loading={testing}
-                onClick={() =>
-                  startTest(async () => {
-                    const r = await testMail();
-                    setResult(r);
-                    if (r?.error) toast.error('Invio non riuscito');
-                    else toast.success(`Email di prova inviata a ${r.to}`);
+            </>
+          )}
+          {section === 'funzioni' && (
+            <>
+            {features && (
+              <Box sx={{ mb: 3 }}>
+                <FeatureSwitches
+                  id="funzioni"
+                  title="Funzioni"
+                  subheader="Spegni quello che non usi: sparisce dai menu di tutti. Si può riaccendere quando serve, senza perdere dati."
+                  features={features}
+                  onSave={saveFeatures}
+                />
+              </Box>
+            )}
+            </>
+          )}
+          {section === 'email' && (
+            <>
+            <Card>
+              <CardHeader
+                title="Invio email"
+                subheader="Serve per i codici di accesso. Le password e i segreti si salvano cifrati."
+                action={status}
+              />
+              <Box
+                component="form"
+                action={(fd) =>
+                  start(async () => {
+                    const r = await saveMail(fd);
+                    if (r?.error) toast.error(r.error);
+                    else {
+                      setSavedNow(r.savedAt);
+                      setResult(null);
+                      toast.success('Impostazioni salvate');
+                    }
                   })
                 }
+                sx={{ p: 3 }}
               >
-                Invia email di prova
-              </Button>
-            </Stack>
+                <Stack spacing={2.5} sx={{ maxWidth: 640 }}>
+                  <TextField select name="preset" label="Servizio di posta" value={preset} onChange={(e) => choose(e.target.value)}>
+                    {Object.entries(PRESETS).map(([value, p]) => (
+                      <MenuItem key={value} value={value}>
+                        {p.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
 
-            {savedNow && !result && (
-              <Alert severity="info">
-                Impostazioni salvate alle {when(savedNow)}. Ora premi <b>Invia email di prova</b> per verificare che l&apos;invio funzioni.
-              </Alert>
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                    <TextField
+                      name="from"
+                      label="Casella mittente"
+                      placeholder={preset.startsWith('google') ? 'developer@golduck.eu' : 'noreply@golduck.it'}
+                      defaultValue={mail.from}
+                      helperText={provider === 'smtp' && preset !== 'google-relay' ? "Se vuota si usa l'utente" : undefined}
+                      fullWidth
+                      required={provider === 'microsoft' || preset === 'google-relay'}
+                    />
+                    <TextField name="fromName" label="Nome visualizzato" defaultValue={mail.fromName} fullWidth />
+                  </Stack>
+
+                  {provider === 'microsoft' ? (
+                    <>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        Da <Link href="https://entra.microsoft.com" target="_blank" rel="noopener">Microsoft Entra</Link> → Registrazioni app:
+                        ID tenant (directory), ID applicazione (client) e un segreto client. L&apos;app deve avere il permesso{' '}
+                        <b>Mail.Send</b> (applicazione) con consenso dell&apos;amministratore. La casella mittente deve esistere in Microsoft 365.
+                      </Typography>
+                      <TextField name="tenantId" label="ID tenant (directory)" defaultValue={mail.tenantId} fullWidth required />
+                      <TextField name="clientId" label="ID applicazione (client)" defaultValue={mail.clientId} fullWidth required />
+                      <TextField
+                        name="clientSecret"
+                        type="password"
+                        label="Valore del segreto client"
+                        autoComplete="new-password"
+                        helperText={secretHelp(mail.hasClientSecret)}
+                        required={!mail.hasClientSecret}
+                        fullWidth
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                        {HELP[preset]}
+                      </Typography>
+                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                        <TextField
+                          name="host"
+                          label="Server SMTP"
+                          value={host}
+                          onChange={(e) => setHost(e.target.value)}
+                          slotProps={{ input: { readOnly: preset !== 'smtp' } }}
+                          fullWidth
+                          required
+                        />
+                        <TextField
+                          name="port"
+                          label="Porta"
+                          type="number"
+                          value={port}
+                          onChange={(e) => setPort(Number(e.target.value))}
+                          sx={{ width: { sm: 160 } }}
+                          helperText="587 o 465"
+                        />
+                      </Stack>
+                      {preset !== 'google-relay' && (
+                        <>
+                          <TextField name="user" label="Utente (indirizzo email completo)" defaultValue={mail.user} fullWidth required />
+                          <TextField
+                            name="pass"
+                            type="password"
+                            label={preset === 'google' ? 'Password per app (16 lettere)' : 'Password'}
+                            autoComplete="new-password"
+                            helperText={secretHelp(mail.hasPass)}
+                            required={!mail.hasPass}
+                            fullWidth
+                          />
+                        </>
+                      )}
+                    </>
+                  )}
+
+                  <Stack direction="row" spacing={1.5}>
+                    <Button type="submit" variant="contained" loading={pending}>
+                      Salva
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      loading={testing}
+                      onClick={() =>
+                        startTest(async () => {
+                          const r = await testMail();
+                          setResult(r);
+                          if (r?.error) toast.error('Invio non riuscito');
+                          else toast.success(`Email di prova inviata a ${r.to}`);
+                        })
+                      }
+                    >
+                      Invia email di prova
+                    </Button>
+                  </Stack>
+
+                  {savedNow && !result && (
+                    <Alert severity="info">
+                      Impostazioni salvate alle {when(savedNow)}. Ora premi <b>Invia email di prova</b> per verificare che l&apos;invio funzioni.
+                    </Alert>
+                  )}
+
+                  {result ? (
+                    <Alert severity={result.error ? 'error' : 'success'}>
+                      {result.error ?? `Email di prova inviata a ${result.to}: l'invio funziona. Controlla la posta (anche lo spam).`}
+                    </Alert>
+                  ) : (
+                    !savedNow &&
+                    testValid && (
+                      <Alert severity={lastTest.ok ? 'success' : 'error'}>
+                        Ultima prova del {when(lastTest.at)}:{' '}
+                        {lastTest.ok ? `riuscita, inviata a ${lastTest.to}.` : `non riuscita. ${lastTest.error}`}
+                      </Alert>
+                    )
+                  )}
+                </Stack>
+              </Box>
+              <Divider />
+              <Typography variant="caption" sx={{ display: 'block', p: 3, color: 'text.secondary' }}>
+                Il primo accesso senza codice si chiude da solo dopo il primo ingresso. Da quel momento tutti entrano con il codice via email.
+              </Typography>
+            </Card>
+            </>
+          )}
+          {section === 'integrazioni' && (
+            <>
+            {integrations && (
+              <Box id="integrazioni" sx={{ mt: 3, scrollMarginTop: 96 }}>
+                <IntegrationsCard status={integrations.status} appUrl={integrations.appUrl} />
+              </Box>
+            )}
+            </>
+          )}
+          {section === 'ai' && (
+            <>
+            <Box sx={{ mt: 3, maxWidth: 720 }}>
+              <AiLimitsCard limits={limits} fx={fx} />
+            </Box>
+            </>
+          )}
+          {section === 'metodo' && (
+            <>
+            {method && (
+              <Box sx={{ mt: 3 }}>
+                <MethodCard method={method} />
+              </Box>
             )}
 
-            {result ? (
-              <Alert severity={result.error ? 'error' : 'success'}>
-                {result.error ?? `Email di prova inviata a ${result.to}: l'invio funziona. Controlla la posta (anche lo spam).`}
-              </Alert>
-            ) : (
-              !savedNow &&
-              testValid && (
-                <Alert severity={lastTest.ok ? 'success' : 'error'}>
-                  Ultima prova del {when(lastTest.at)}:{' '}
-                  {lastTest.ok ? `riuscita, inviata a ${lastTest.to}.` : `non riuscita. ${lastTest.error}`}
-                </Alert>
-              )
+            {planMethod && (
+              <Box sx={{ mt: 3 }}>
+                <MethodCard method={planMethod} kind="piano" />
+              </Box>
             )}
-          </Stack>
+            </>
+          )}
         </Box>
-        <Divider />
-        <Typography variant="caption" sx={{ display: 'block', p: 3, color: 'text.secondary' }}>
-          Il primo accesso senza codice si chiude da solo dopo il primo ingresso. Da quel momento tutti entrano con il codice via email.
-        </Typography>
-      </Card>
-
-      {integrations && (
-        <Box id="integrazioni" sx={{ mt: 3, scrollMarginTop: 96 }}>
-          <IntegrationsCard status={integrations.status} appUrl={integrations.appUrl} />
-        </Box>
-      )}
-
-      <Box sx={{ mt: 3, maxWidth: 720 }}>
-        <AiLimitsCard limits={limits} fx={fx} />
       </Box>
-
-      {method && (
-        <Box sx={{ mt: 3 }}>
-          <MethodCard method={method} />
-        </Box>
-      )}
-
-      {planMethod && (
-        <Box sx={{ mt: 3 }}>
-          <MethodCard method={planMethod} kind="piano" />
-        </Box>
-      )}
     </DashboardContent>
   );
 }
