@@ -43,6 +43,15 @@ export function licenseFromUrl(url: string | null | undefined) {
   return code === "zero" ? "cc0" : code === "mark" ? "pdm" : code;
 }
 
+/**
+ * Crediti per il testo del post, in italiano e brevi: titolo, autore e licenza con il suo indirizzo (i tre dati
+ * che la licenza CC BY chiede di citare).
+ */
+export function creditLine(title: string, artist: string, license: string, version?: string | null, url?: string | null) {
+  const name = license === "cc0" || license === "pdm" ? "CC0" : `CC ${license.toUpperCase()}${version ? ` ${version}` : ""}`;
+  return `Musica: «${title}» di ${artist} · ${name}${url ? ` (${url.replace(/^https?:\/\//, "")})` : ""}`;
+}
+
 /** Etichetta breve da mostrare accanto al brano. */
 export function licenseLabel(license: string) {
   const l = license.toLowerCase();
@@ -58,6 +67,7 @@ type OpenverseResult = {
   url?: string;
   license?: string;
   license_url?: string;
+  license_version?: string;
   attribution?: string;
   foreign_landing_url?: string;
   duration?: number | null;
@@ -69,8 +79,8 @@ type OpenverseResult = {
 export function fromOpenverse(r: OpenverseResult): MusicTrack | null {
   const license = (r.license ?? "").toLowerCase();
   if (!r.id || !r.url || !isUsableLicense(license)) return null;
-  // Il montaggio usa MP3 (o M4A): altri formati non si caricano
-  if (r.filetype && !["mp3", "m4a"].includes(r.filetype.toLowerCase())) return null;
+  // Il montaggio usa MP3 (Jamendo lo indica come «mp32»): altri formati non si caricano
+  if (r.filetype && !/^mp3/i.test(r.filetype)) return null;
   const title = (r.title ?? "Brano senza titolo").replace(/\.(mp3|wav|ogg|flac)$/i, "");
   return {
     provider: "openverse",
@@ -82,7 +92,7 @@ export function fromOpenverse(r: OpenverseResult): MusicTrack | null {
     downloadUrl: r.url,
     license,
     licenseUrl: r.license_url ?? null,
-    credit: r.attribution ?? `«${title}» di ${r.creator ?? "autore sconosciuto"}`,
+    credit: creditLine(title, r.creator ?? "autore sconosciuto", license, r.license_version, r.license_url),
     sourceUrl: r.foreign_landing_url ?? null,
     source: r.source ?? "openverse",
   };
@@ -116,7 +126,7 @@ export function fromJamendo(t: JamendoTrack): MusicTrack | null {
     downloadUrl: t.audiodownload,
     license,
     licenseUrl: t.license_ccurl ?? null,
-    credit: `«${title}» di ${artist} (Jamendo), licenza CC ${license.toUpperCase()}${t.license_ccurl ? ` ${t.license_ccurl}` : ""}`,
+    credit: creditLine(title, artist, license, t.license_ccurl?.match(/\/(\d\.\d)\//)?.[1], t.license_ccurl),
     sourceUrl: t.shareurl ?? null,
     source: "jamendo",
   };

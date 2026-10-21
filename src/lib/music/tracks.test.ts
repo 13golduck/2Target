@@ -20,11 +20,18 @@ describe("licenze", () => {
 describe("fromOpenverse", () => {
   const base = { id: "a1", title: "Calm piano.mp3", creator: "Anna", url: "https://cdn.example/a1.mp3", license: "by", license_url: "https://creativecommons.org/licenses/by/4.0/", attribution: "«Calm piano» by Anna is licensed under CC BY 4.0.", duration: 125400, source: "jamendo", filetype: "mp3" };
   it("converte un brano utilizzabile, con durata in secondi e crediti", () => {
-    expect(fromOpenverse(base)).toMatchObject({ provider: "openverse", title: "Calm piano", durationSec: 125.4, license: "by", credit: base.attribution });
+    expect(fromOpenverse({ ...base, license_version: "4.0" })).toMatchObject({
+      provider: "openverse",
+      title: "Calm piano",
+      durationSec: 125.4,
+      license: "by",
+      credit: "Musica: «Calm piano» di Anna · CC BY 4.0 (creativecommons.org/licenses/by/4.0/)",
+    });
   });
   it("scarta licenze non commerciali e formati non MP3", () => {
     expect(fromOpenverse({ ...base, license: "by-nc" })).toBeNull();
     expect(fromOpenverse({ ...base, filetype: "wav" })).toBeNull();
+    expect(fromOpenverse({ ...base, filetype: "mp32" })).not.toBeNull();
   });
 });
 
