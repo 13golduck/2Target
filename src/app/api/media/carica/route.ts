@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { editorialItems, mediaAssets } from "@/db/schema";
 import { requireClientAccess, requireWriter } from "@/lib/auth";
 import { audit } from "@/lib/audit";
-import { prepareVideoAsset } from "@/lib/media-video";
+import { prepareVideoAsset, probeVideo } from "@/lib/media-video";
 import { syncPendingPublications } from "@/lib/publishing/sync";
 import { AUDIO_TYPES, ensureMediaDir, IMAGE_TYPES, MEDIA_LIMITS, mediaPath, newStorageKey, removeMediaFile, VIDEO_TYPES } from "@/lib/media";
 
@@ -88,5 +88,10 @@ export async function POST(request: Request) {
   if (!material) await syncPendingPublications(itemId, me.id);
   // Controllo e conversione del video in sottofondo: la risposta al browser non aspetta FFmpeg
   if (kind === "video") void prepareVideoAsset(r.insertId);
+  // Brani: serve la durata per tagliarli nella timeline del montaggio (lettura rapida, senza conversione)
+  if (kind === "audio") {
+    const probe = await probeVideo(mediaPath(storageKey)).catch(() => null);
+    if (probe?.durationSec) await db.update(mediaAssets).set({ durationSec: probe.durationSec }).where(eq(mediaAssets.id, r.insertId));
+  }
   return Response.json({ ok: true, id: r.insertId, processing: kind === "video" });
 }
