@@ -47,6 +47,8 @@ import { saveStudioEdit, moveStudioMedia, publishFromStudio, sendStudioMessage, 
 
 // L'editor usa il canvas del browser: si carica solo lato client
 const DesignEditor = dynamic(() => import('./design-editor'), { ssr: false, loading: () => <LinearProgress /> });
+import { MusicLibraryDialog } from './music-library';
+
 const VideoEditor = dynamic(() => import('./video-editor'), { ssr: false, loading: () => <LinearProgress /> });
 
 // ----------------------------------------------------------------------
@@ -354,6 +356,9 @@ export function StudioView({ item, client, brand, platforms, state, versionN, ve
                 onUploadMusic={uploadMusic}
                 uploadingMusic={uploadingMusic}
                 onSkip={() => setStep('quando')}
+                itemId={item.id}
+                // I crediti in fondo al testo, ognuno su una riga
+                onAddCredits={(list) => setDraft({ ...draft, caption: `${draft.caption.trimEnd()}\n\n${list.map((c) => `🎵 ${c}`).join('\n')}` })}
                 material={<StudioMaterial itemId={item.id} media={media} toMaterial={!!draft.video} imagesAvailable={ai.images} defaultAspect={aspect} />}
               />
             )}
@@ -975,7 +980,16 @@ function NewDesign({ format, onCreate }) {
 // ----------------------------------------------------------------------
 
 /** Passo «Video»: montaggio dei video del progetto, con lo stato dell'ultimo video creato. */
-function VideoStep({ draft, state, dirty, videos, tracks, output, exported, onChange, onUploadMusic, uploadingMusic, onSkip, material }) {
+/** Crediti della musica CC BY usata nel montaggio: vanno citati nel testo del post (lo chiede la licenza). */
+function creditsFor(video, tracks) {
+  const ids = new Set((video?.audio ?? []).map((a) => a.mediaId));
+  return tracks.filter((t) => ids.has(t.id) && t.license === 'by' && t.credit).map((t) => t.credit);
+}
+
+function VideoStep({ draft, state, dirty, videos, tracks, output, exported, onChange, onUploadMusic, uploadingMusic, onSkip, material, itemId, onAddCredits }) {
+  const [library, setLibrary] = useState(null); // funzione che mette il brano scelto nella traccia audio
+  const credits = draft.video ? creditsFor(draft.video, tracks) : [];
+  const missingCredits = credits.filter((c) => !draft.caption.includes(c));
   if (!draft.video) {
     const starter = starterVideo(videos, draft.format === 'post' ? 'verticale' : 'storia');
     return (
@@ -1016,7 +1030,13 @@ function VideoStep({ draft, state, dirty, videos, tracks, output, exported, onCh
                 : 'Il video non è ancora nel post: premi «Crea il video» in alto.'}
         </Alert>
       )}
-      <VideoEditor video={draft.video} onChange={onChange} videos={videos} tracks={tracks} onUploadMusic={onUploadMusic} uploading={uploadingMusic} />
+      {!!missingCredits.length && (
+        <Alert severity="warning" action={<Button color="inherit" size="small" onClick={() => onAddCredits(missingCredits)}>Aggiungi al testo</Button>}>
+          La musica con licenza CC BY va citata nel testo del post: {missingCredits.join(' · ')}
+        </Alert>
+      )}
+      <VideoEditor video={draft.video} onChange={onChange} videos={videos} tracks={tracks} onUploadMusic={onUploadMusic} uploading={uploadingMusic} onOpenLibrary={(add) => setLibrary(() => add)} />
+      {library && <MusicLibraryDialog itemId={itemId} onClose={() => setLibrary(null)} onPicked={(track) => library(track)} />}
       <Button color="inherit" size="small" onClick={() => onChange(null)} sx={{ alignSelf: 'flex-start' }} startIcon={<Iconify icon="solar:trash-bin-trash-bold" />}>
         Togli il montaggio
       </Button>

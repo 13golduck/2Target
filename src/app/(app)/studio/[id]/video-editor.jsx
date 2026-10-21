@@ -202,7 +202,7 @@ export default function VideoEditor({ video, onChange, videos, tracks, onUploadM
             </MenuItem>
           )),
           onOpenLibrary && (
-            <MenuItem key="libreria" onClick={() => (setMenu(null), onOpenLibrary())}>
+            <MenuItem key="libreria" onClick={() => (setMenu(null), onOpenLibrary(addMusic))}>
               <Iconify icon="solar:library-bold" width={18} sx={{ mr: 1 }} />
               Cerca nelle librerie musicali…
             </MenuItem>
