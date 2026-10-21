@@ -16,7 +16,10 @@ misurazione (KPI, lead, SEO) → report al cliente.
 - «Riprova» TikTok con la possibilità di cambiare le impostazioni (oggi: annulla e riprogramma).
 
 ## Studio (creazione dei post con l'AI)
-- **Musica da librerie con licenza (ricerca del 21/10/2026):** oggi si caricano brani propri (MP3, M4A). Candidata
+- **Musica dell'app (Instagram/TikTok):** le API non permettono di scegliere la musica delle app. Proposta: video
+  senza musica, poi bozza nell'app TikTok (permesso `video.upload`) e invio al telefono per Instagram, dove si aggiunge
+  il brano dalla libreria dell'app. In attesa di decisione.
+- **Librerie a pagamento (ricerca del 21/10/2026):** oggi ci sono Openverse e Jamendo (gratuite, CC0/CC BY). Candidata
   principale **Epidemic Sound** (Partner API pubblica con prova gratuita per prototipi, licenza Business che copre il
   lavoro per i clienti e le sponsorizzate online, catalogo senza collecting quindi senza SIAE, safelisting contro i
   reclami). Da chiedere al commerciale: prezzo del contratto Partner API e limite di 1 canale «safelisted» per
@@ -40,6 +43,11 @@ misurazione (KPI, lead, SEO) → report al cliente.
   (montaggio, sottotitoli, voce, musica) da revisionare e pubblicare dal piano editoriale.
 
 ## Fatto
+- **Timeline del montaggio e librerie musicali gratuite** (ottobre 2026). Tracce video, scritte e audio con trascinamento,
+  bordi da tirare, aggancio, dividi e duplica; più spezzoni audio posizionabili. Libreria musicale con Openverse (senza
+  chiave) e Jamendo, solo CC0/CC BY, crediti in italiano da aggiungere al testo. Codice: `video-timeline.jsx`,
+  `video-editor.jsx`, `music-library.jsx`, `src/lib/music/`.
+- **Impostazioni riordinate** (ottobre 2026). Menu delle sezioni con stato accanto; integrazioni in gruppi chiusi.
 - **2Target Studio: video** (ottobre 2026). Montaggio di clip con inizio e fine, scritte a tempo (disegnate nel browser,
   uguali all'anteprima), musica caricata e volumi; il server compone con FFmpeg un MP4 1080×1920 adatto ai social.
   L'AI propone il montaggio dai video del progetto. Il post esce con l'ultima cosa esportata (grafica o video).

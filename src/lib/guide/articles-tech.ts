@@ -68,7 +68,17 @@ export const TECH_ARTICLES: GuideArticle[] = [
         ],
       },
       { tip: "Il post esce con l'ultima cosa esportata: la grafica oppure il video, mai entrambi. Le foto e i video usati restano nel **materiale** e non escono da soli." },
-      { warn: "Per la musica usa solo brani con licenza per i social (libreria acquistata o brani tuoi): quella di Instagram e TikTok non si può usare da strumenti esterni." },
+      { h: "Il montaggio video" },
+      {
+        list: [
+          "**Timeline** con tre tracce: **Video** (le clip in fila), **Scritte** e **Audio**. Il cursore rosso segna il punto: clicca sul righello per spostarlo.",
+          "**Trascina** un blocco per spostarlo (una clip cambia posto nella fila); **tira i bordi** per accorciarlo o allungarlo. I blocchi si agganciano ai bordi degli altri e al cursore.",
+          "**Dividi** (tasto S) taglia la clip o il brano selezionato al cursore; **Duplica** lo copia; **Elimina** (Canc) lo toglie. Spazio fa partire e fermare l'anteprima.",
+          "**Musica**: carica un tuo brano (MP3, M4A) oppure **Cerca nelle librerie musicali**. Il brano entra nella traccia audio al cursore, con il suo volume.",
+        ],
+      },
+      { p: "Le librerie gratuite (Openverse, che raccoglie Jamendo, Freesound, ccMixter e Wikimedia; Jamendo con il client ID in Impostazioni) mostrano solo brani utilizzabili per i clienti: **CC0** (liberi) e **CC BY**. Con CC BY lo Studio ti chiede di aggiungere i crediti al testo del post: è la condizione della licenza." },
+      { warn: "La musica di Instagram e TikTok non si può aggiungere da strumenti esterni: si sceglie nell'app al momento di pubblicare. Per i brani tuoi, usa solo quelli di cui hai i diritti per i social." },
       { p: "La spesa dell'AI di ogni progetto compare sotto il titolo; le immagini AI hanno un loro tetto mensile in Impostazioni → Limiti AI." },
     ],
     related: ["pubblicare", "approvazione-cliente"],
