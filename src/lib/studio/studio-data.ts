@@ -78,6 +78,8 @@ export async function mediaOf(itemId: number) {
       height: mediaAssets.height,
       durationSec: mediaAssets.durationSec,
       processState: mediaAssets.processState,
+      license: mediaAssets.license,
+      credit: mediaAssets.credit,
     })
     .from(mediaAssets)
     .where(or(eq(mediaAssets.itemId, itemId), eq(mediaAssets.studioItemId, itemId)))

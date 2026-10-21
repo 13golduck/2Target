@@ -1,6 +1,7 @@
 "use server";
 
 import { and, eq, inArray, notInArray } from "drizzle-orm";
+import { writeFile } from "node:fs/promises";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -13,7 +14,10 @@ import { studioTurn } from "@/lib/ai/studio-agent";
 import { audit } from "@/lib/audit";
 import { requireClientAccess, requireWriter, userCanPublish } from "@/lib/auth";
 import { featureOn } from "@/lib/features-data";
-import { removeMediaFile } from "@/lib/media";
+import { ensureMediaDir, mediaPath, newStorageKey, removeMediaFile } from "@/lib/media";
+import { probeVideo } from "@/lib/media-video";
+import { availableProviders, downloadTrack, MusicLibraryError, searchTracks, trackById } from "@/lib/music/library";
+import { MUSIC_PROVIDERS } from "@/lib/music/tracks";
 import { syncPendingPublications } from "@/lib/publishing/sync";
 import { initialStatus, planFor } from "@/lib/quick-post";
 import { placeAsBackground, sanitizeDesign } from "@/lib/studio/design";
@@ -300,4 +304,67 @@ export async function publishFromStudio(input: z.infer<typeof Publish>) {
   const r = await schedulePublication(item.id, p.data.channelIds, p.data.when === "ora" ? "ora" : "programmata");
   revalidatePath(path(item.id));
   return "error" in r ? { error: r.error } : { ok: true, pending: false, dryRun: r.dryRun };
+}
+
+const MusicSearch = z.object({ itemId: z.number().int().positive(), provider: z.enum(MUSIC_PROVIDERS), query: z.string().trim().min(2, "Scrivi almeno due lettere").max(100), page: z.number().int().min(1).max(20) });
+
+/** Ricerca nelle librerie musicali: solo brani con licenza adatta ai clienti. */
+export async function searchMusic(input: z.infer<typeof MusicSearch>) {
+  const p = MusicSearch.safeParse(input);
+  if (!p.success) return { error: p.error.issues[0]?.message ?? "Ricerca non valida" };
+  const ctx = await itemFor(p.data.itemId);
+  if ("error" in ctx) return { error: ctx.error };
+  try {
+    return { ok: true, tracks: await searchTracks(p.data.provider, p.data.query, p.data.page) };
+  } catch (e) {
+    if (e instanceof MusicLibraryError) return { error: e.message };
+    console.error("[studio] ricerca musica non riuscita", e);
+    return { error: "La libreria non ha risposto: riprova tra poco" };
+  }
+}
+
+const MusicImport = z.object({ itemId: z.number().int().positive(), provider: z.enum(MUSIC_PROVIDERS), trackId: z.string().min(1).max(60) });
+
+/** Porta un brano della libreria nel materiale del progetto, con licenza e crediti. */
+export async function importMusic(input: z.infer<typeof MusicImport>) {
+  const p = MusicImport.safeParse(input);
+  if (!p.success) return { error: "Brano non valido" };
+  const ctx = await itemFor(p.data.itemId);
+  if ("error" in ctx) return { error: ctx.error };
+  try {
+    const track = await trackById(p.data.provider, p.data.trackId);
+    const bytes = await downloadTrack(track);
+    await ensureMediaDir();
+    const storageKey = newStorageKey("mp3");
+    await writeFile(mediaPath(storageKey), bytes);
+    const probe = await probeVideo(mediaPath(storageKey)).catch(() => null);
+    const [r] = await db.insert(mediaAssets).values({
+      clientId: ctx.item.clientId,
+      itemId: null,
+      studioItemId: ctx.item.id,
+      kind: "audio",
+      mime: "audio/mpeg",
+      fileName: `${track.title} – ${track.artist}`.slice(0, 190) + ".mp3",
+      storageKey,
+      size: bytes.length,
+      durationSec: probe?.durationSec ?? track.durationSec,
+      license: track.license,
+      credit: track.credit.slice(0, 500),
+      sourceUrl: track.sourceUrl?.slice(0, 500) ?? null,
+      createdBy: ctx.me.id,
+    });
+    await audit({ userId: ctx.me.id, category: "contenuti", action: "studio.musica_libreria", description: `Brano «${track.title}» di ${track.artist} da ${track.source} (licenza ${track.license})`, clientId: ctx.item.clientId, target: `pubblicazione:${ctx.item.id}` });
+    revalidatePath(path(ctx.item.id));
+    return { ok: true, mediaId: r.insertId, durationSec: probe?.durationSec ?? track.durationSec, title: track.title };
+  } catch (e) {
+    if (e instanceof MusicLibraryError) return { error: e.message };
+    console.error("[studio] importazione musica non riuscita", e);
+    return { error: "Il brano non si è potuto scaricare: riprova tra poco" };
+  }
+}
+
+/** Librerie disponibili e se sono pronte (Jamendo chiede il client ID). */
+export async function musicProviders() {
+  await requireWriter();
+  return availableProviders();
 }
