@@ -162,6 +162,15 @@ const GROUPS = [
     ],
   },
   {
+    key: 'jamendo',
+    category: 'musica',
+    title: 'Jamendo (musica Creative Commons)',
+    icon: 'solar:music-note-bold',
+    where: 'devportal.jamendo.com → registrati → My Applications → crea un\'app (gratuita) e copia il client ID. Lo Studio mostra solo brani utilizzabili per i clienti: CC BY (con i crediti nel post) e CC0.',
+    callback: null,
+    fields: [{ name: 'jamendoClientId', label: 'Client ID' }],
+  },
+  {
     key: 'google',
     category: 'google',
     title: 'Google (Search Console, Analytics, scheda Google, Google Ads, YouTube, PageSpeed)',
@@ -192,6 +201,7 @@ const CATEGORIES = [
   { key: 'social', title: 'Social', hint: 'App di Golduck su Meta, TikTok, LinkedIn, Threads, Pinterest' },
   { key: 'google', title: 'Google', hint: 'Search Console, Analytics, scheda Google, Ads, YouTube' },
   { key: 'ai', title: 'Intelligenza artificiale', hint: 'Testi, check-up e immagini' },
+  { key: 'musica', title: 'Musica', hint: 'Librerie con licenza per i video dello Studio. Openverse è già attiva, senza chiave' },
   { key: 'accesso', title: 'Accesso del team', hint: 'Entrare con l’account Golduck' },
 ];
 

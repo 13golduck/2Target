@@ -57,6 +57,8 @@ export type IntegrationKeys = {
   geminiApiKey: string;
   /** Modello Gemini per le immagini (vuoto = predefinito). */
   geminiImageModel: string;
+  /** Jamendo (musica con licenza Creative Commons): client ID gratuito da devportal.jamendo.com. */
+  jamendoClientId: string;
 };
 
 export const SECRET_FIELDS = ["metaAppSecret", "metaSystemUserToken", "googleClientSecret", "googlePageSpeedKey", "anthropicApiKey", "msClientSecret", "tiktokClientSecret", "instagramAppSecret", "googleAdsDeveloperToken", "linkedinClientSecret", "threadsAppSecret", "pinterestAppSecret", "geminiApiKey"] as const;
@@ -90,6 +92,7 @@ const ENV: Record<keyof IntegrationKeys, string> = {
   googleYoutubeUpload: "GOOGLE_YOUTUBE_UPLOAD",
   geminiApiKey: "GEMINI_API_KEY",
   geminiImageModel: "GEMINI_IMAGE_MODEL",
+  jamendoClientId: "JAMENDO_CLIENT_ID",
 };
 export const FIELDS = Object.keys(ENV) as (keyof IntegrationKeys)[];
 
