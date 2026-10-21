@@ -18,277 +18,226 @@ import Typography from '@mui/material/Typography';
 import ToggleButton from '@mui/material/ToggleButton';
 
 import { newId } from 'src/lib/studio/design';
-import { timeline, TEXT_SIZES, VIDEO_SIZES, VIDEO_LIMITS, totalDuration, TEXT_POSITIONS } from 'src/lib/studio/video';
+import { splitAt, timeline, duplicate, TEXT_SIZES, audioLength, VIDEO_SIZES, VIDEO_LIMITS, totalDuration, TEXT_POSITIONS } from 'src/lib/studio/video';
 
 import { Iconify } from 'src/components/iconify';
 
 import { drawTextOverlay } from './text-overlay';
+import { VideoTimeline } from './video-timeline';
 
 // ----------------------------------------------------------------------
-// Montaggio dello Studio: clip in fila (pezzi dei video caricati), scritte a tempo, musica e volumi.
-// L'anteprima riproduce le clip una dopo l'altra con le scritte sopra; il video vero lo compone il server.
-
-/** Intervallo da uno slider a due maniglie, con una distanza minima tra le due (lo slider non la impone). */
-function withGap([a, b], gap, max) {
-  if (b - a >= gap) return [a, b];
-  return a + gap <= max ? [a, a + gap] : [Math.max(0, b - gap), b];
-}
+// Montaggio dello Studio come in un programma di montaggio: anteprima e proprietà dell'elemento scelto in alto,
+// timeline con tracce video, scritte e audio in basso. Tasti: spazio riproduce, S divide al cursore, Canc elimina.
 
 const sec = (n) => `${n.toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} s`;
-const PREVIEW_WIDTH = 260;
+const PREVIEW_WIDTH = 240;
 const POSITION_LABEL = { alto: 'In alto', centro: 'Al centro', basso: 'In basso' };
 const SIZE_LABEL = { piccolo: 'Piccola', medio: 'Media', grande: 'Grande' };
+const allIds = (v) => [...v.clips, ...v.texts, ...v.audio].map((x) => x.id);
 
-export default function VideoEditor({ video, onChange, videos, tracks, onUploadMusic, uploading }) {
-  const [selected, setSelected] = useState(video.clips[0]?.id ?? null);
-  const [addAnchor, setAddAnchor] = useState(null);
+export default function VideoEditor({ video, onChange, videos, tracks, onUploadMusic, uploading, onOpenLibrary }) {
+  const [now, setNow] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const [selected, setSelected] = useState(null); // { kind: 'video' | 'testi' | 'audio', id }
+  const [zoom, setZoom] = useState(1);
+  const [menu, setMenu] = useState(null); // { kind: 'clip' | 'musica', anchor }
   const total = totalDuration(video);
-  const items = timeline(video);
-  const urlOf = (id) => videos.find((v) => v.id === id)?.url;
-  const durationOf = (id) => videos.find((v) => v.id === id)?.durationSec ?? 0;
+  const at = Math.min(now, total);
 
-  const setClips = (clips) => onChange({ ...video, clips });
-  const updateClip = (id, changes) => setClips(video.clips.map((c) => (c.id === id ? { ...c, ...changes } : c)));
-  const moveClip = (id, dir) => {
-    const i = video.clips.findIndex((c) => c.id === id);
-    const j = i + dir;
-    if (j < 0 || j >= video.clips.length) return;
-    const clips = [...video.clips];
-    [clips[i], clips[j]] = [clips[j], clips[i]];
-    setClips(clips);
+  const item = !selected
+    ? null
+    : selected.kind === 'video'
+      ? video.clips.find((c) => c.id === selected.id)
+      : selected.kind === 'testi'
+        ? video.texts.find((t) => t.id === selected.id)
+        : video.audio.find((a) => a.id === selected.id);
+
+  // ── Azioni ─────────────────────────────────────────────────────────
+  const split = () => {
+    if (!item || selected.kind === 'testi') return;
+    const id = newId(selected.kind === 'video' ? 'c' : 'a', allIds(video));
+    const next = splitAt(video, item.id, at, id);
+    if (next !== video) onChange(next);
   };
-  const removeClip = (id) => {
-    if (video.clips.length <= 1) return;
-    setClips(video.clips.filter((c) => c.id !== id));
+  const dup = () => {
+    if (!item) return;
+    if (selected.kind === 'testi') {
+      const id = newId('t', allIds(video));
+      const len = item.to - item.from;
+      onChange({ ...video, texts: [...video.texts, { ...item, id, from: Math.min(item.to, total - len), to: Math.min(item.to + len, total) }] });
+      return;
+    }
+    onChange(duplicate(video, item.id, newId(selected.kind === 'video' ? 'c' : 'a', allIds(video))));
+  };
+  const remove = () => {
+    if (!item) return;
+    if (selected.kind === 'video' && video.clips.length <= 1) return;
+    const key = { video: 'clips', testi: 'texts', audio: 'audio' }[selected.kind];
+    onChange({ ...video, [key]: video[key].filter((x) => x.id !== item.id) });
     setSelected(null);
   };
-  const addClip = (v) => {
-    setAddAnchor(null);
-    if (video.clips.length >= VIDEO_LIMITS.clips) return;
-    const id = newId('c', video.clips.map((c) => c.id));
-    setClips([...video.clips, { id, mediaId: v.id, start: 0, end: Math.min(v.durationSec ?? 5, VIDEO_LIMITS.maxTotalSec - total) }]);
-    setSelected(id);
+  const update = (changes) => {
+    const key = { video: 'clips', testi: 'texts', audio: 'audio' }[selected.kind];
+    onChange({ ...video, [key]: video[key].map((x) => (x.id === item.id ? { ...x, ...changes } : x)) });
   };
 
-  const setTexts = (texts) => onChange({ ...video, texts });
+  const addClip = (v) => {
+    setMenu(null);
+    if (video.clips.length >= VIDEO_LIMITS.clips) return;
+    const id = newId('c', allIds(video));
+    onChange({ ...video, clips: [...video.clips, { id, mediaId: v.id, start: 0, end: Math.min(v.durationSec ?? 5, VIDEO_LIMITS.maxTotalSec - total) }] });
+    setSelected({ kind: 'video', id });
+  };
   const addText = () => {
     if (video.texts.length >= VIDEO_LIMITS.texts) return;
-    const id = newId('t', video.texts.map((t) => t.id));
-    setTexts([...video.texts, { id, text: 'Nuova scritta', from: 0, to: Math.min(3, total), position: 'basso', size: 'medio', color: '#FFFFFF', background: null }]);
+    const id = newId('t', allIds(video));
+    const from = Math.min(at, Math.max(0, total - 1));
+    onChange({ ...video, texts: [...video.texts, { id, text: 'Nuova scritta', from, to: Math.min(from + 3, total), position: 'basso', size: 'medio', color: '#FFFFFF', background: null }] });
+    setSelected({ kind: 'testi', id });
   };
-  const updateText = (id, changes) => setTexts(video.texts.map((t) => (t.id === id ? { ...t, ...changes } : t)));
+  const addMusic = (t) => {
+    setMenu(null);
+    if (video.audio.length >= VIDEO_LIMITS.audio) return;
+    const id = newId('a', allIds(video));
+    const start = Math.min(at, Math.max(0, total - 0.5));
+    onChange({ ...video, audio: [...video.audio, { id, mediaId: t.id, start: 0, end: Math.min(t.durationSec ?? total, total - start), at: start, volume: 0.6 }] });
+    setSelected({ kind: 'audio', id });
+  };
 
-  const clip = video.clips.find((c) => c.id === selected);
+  const onKeyDown = (e) => {
+    if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+    if (e.key === ' ') {
+      e.preventDefault();
+      setPlaying((p) => !p);
+    } else if (e.key.toLowerCase() === 's') split();
+    else if (['Delete', 'Backspace'].includes(e.key)) {
+      e.preventDefault();
+      remove();
+    }
+  };
 
   return (
-    <Box sx={{ display: 'grid', gap: 2.5, gridTemplateColumns: { xs: '1fr', md: `${PREVIEW_WIDTH}px minmax(0, 1fr)` }, alignItems: 'start' }}>
-      <Stack spacing={1}>
-        <VideoPreview video={video} items={items} urlOf={urlOf} musicUrl={tracks.find((t) => t.id === video.music?.mediaId)?.url} />
-        <TextField select size="small" label="Misura" value={video.size} onChange={(e) => onChange({ ...video, size: e.target.value })}>
-          {Object.entries(VIDEO_SIZES).map(([k, v]) => (
-            <MenuItem key={k} value={k}>
-              {v.label}
+    <Stack spacing={1.5} tabIndex={0} onKeyDown={onKeyDown} sx={{ outline: 'none' }}>
+      <Box sx={{ display: 'grid', gap: 2.5, gridTemplateColumns: { xs: '1fr', md: `${PREVIEW_WIDTH}px minmax(0, 1fr)` }, alignItems: 'start' }}>
+        <VideoPreview video={video} videos={videos} tracks={tracks} now={at} playing={playing} onTime={setNow} onEnd={() => setPlaying(false)} />
+
+        {/* Proprietà dell'elemento scelto; senza selezione, quelle del video */}
+        <Stack spacing={1.5} sx={{ minWidth: 0 }}>
+          {!item && (
+            <>
+              <Typography variant="subtitle2">Video · {sec(total)}</Typography>
+              <TextField select size="small" label="Misura" value={video.size} onChange={(e) => onChange({ ...video, size: e.target.value })} sx={{ maxWidth: 320 }}>
+                {Object.entries(VIDEO_SIZES).map(([k, v]) => (
+                  <MenuItem key={k} value={k}>
+                    {v.label}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <VolumeSlider label="Audio dei video" value={video.originalVolume} onChange={(v) => onChange({ ...video, originalVolume: v })} />
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                Tocca un blocco nella timeline per modificarlo. Trascina il centro per spostarlo, i bordi per accorciarlo o allungarlo. Tasti: spazio riproduce, S divide al cursore, Canc elimina.
+              </Typography>
+            </>
+          )}
+          {item && selected.kind === 'video' && (
+            <>
+              <Typography variant="subtitle2">Clip · {videos.find((v) => v.id === item.mediaId)?.fileName}</Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Dal secondo {sec(item.start)} al {sec(item.end)} del video originale ({sec(item.end - item.start)}). Trascina i bordi del blocco per cambiarli.
+              </Typography>
+            </>
+          )}
+          {item && selected.kind === 'audio' && (
+            <>
+              <Typography variant="subtitle2">Musica · {tracks.find((t) => t.id === item.mediaId)?.fileName}</Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Entra al secondo {sec(item.at)} e usa il brano da {sec(item.start)} a {sec(item.end)} ({sec(audioLength(item))}).
+              </Typography>
+              <VolumeSlider label="Volume del brano" value={item.volume} onChange={(v) => update({ volume: v })} />
+            </>
+          )}
+          {item && selected.kind === 'testi' && <TextProps text={item} onChange={update} />}
+        </Stack>
+      </Box>
+
+      {/* Strumenti */}
+      <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 1 }}>
+        <IconButton onClick={() => setPlaying((p) => !p)} aria-label={playing ? 'Pausa' : 'Riproduci'}>
+          <Iconify icon={playing ? 'solar:pause-bold' : 'solar:play-bold'} />
+        </IconButton>
+        <Typography variant="caption" sx={{ color: 'text.secondary', minWidth: 96 }}>
+          {sec(at)} / {sec(total)}
+        </Typography>
+        <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+        <ToolButton title="Dividi al cursore (S)" icon="solar:scissors-bold" onClick={split} disabled={!item || selected?.kind === 'testi'} />
+        <ToolButton title="Duplica" icon="solar:copy-bold" onClick={dup} disabled={!item} />
+        <ToolButton title="Elimina (Canc)" icon="solar:trash-bin-trash-bold" onClick={remove} disabled={!item || (selected?.kind === 'video' && video.clips.length <= 1)} />
+        <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+        <Button size="small" startIcon={<Iconify icon="solar:videocamera-add-bold" />} onClick={(e) => setMenu({ kind: 'clip', anchor: e.currentTarget })} disabled={video.clips.length >= VIDEO_LIMITS.clips}>
+          Clip
+        </Button>
+        <Button size="small" startIcon={<Iconify icon="solar:text-bold" />} onClick={addText} disabled={video.texts.length >= VIDEO_LIMITS.texts}>
+          Scritta
+        </Button>
+        <Button size="small" startIcon={<Iconify icon="solar:music-note-bold" />} onClick={(e) => setMenu({ kind: 'musica', anchor: e.currentTarget })} disabled={video.audio.length >= VIDEO_LIMITS.audio}>
+          Musica
+        </Button>
+        <Box sx={{ flex: 1 }} />
+        <Iconify icon="solar:magnifer-zoom-out-linear" width={18} sx={{ color: 'text.secondary' }} />
+        <Slider size="small" value={zoom} min={1} max={6} step={0.25} onChange={(_, v) => setZoom(v)} sx={{ width: 110, mx: 1 }} aria-label="Zoom della timeline" />
+        <Iconify icon="solar:magnifer-zoom-in-linear" width={18} sx={{ color: 'text.secondary' }} />
+      </Stack>
+      <Menu anchorEl={menu?.anchor} open={!!menu} onClose={() => setMenu(null)}>
+        {menu?.kind === 'clip' &&
+          videos.map((v) => (
+            <MenuItem key={v.id} onClick={() => addClip(v)}>
+              {v.fileName} · {sec(v.durationSec ?? 0)}
             </MenuItem>
           ))}
-        </TextField>
-      </Stack>
+        {menu?.kind === 'musica' && [
+          ...tracks.map((t) => (
+            <MenuItem key={t.id} onClick={() => addMusic(t)}>
+              {t.fileName}
+              {t.durationSec ? ` · ${sec(t.durationSec)}` : ''}
+            </MenuItem>
+          )),
+          onOpenLibrary && (
+            <MenuItem key="libreria" onClick={() => (setMenu(null), onOpenLibrary())}>
+              <Iconify icon="solar:library-bold" width={18} sx={{ mr: 1 }} />
+              Cerca nelle librerie musicali…
+            </MenuItem>
+          ),
+          <MenuItem key="carica" component="label" disabled={uploading}>
+            <Iconify icon="eva:cloud-upload-fill" width={18} sx={{ mr: 1 }} />
+            Carica un brano (MP3, M4A)…
+            <input hidden type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,.mp3,.m4a" onChange={(e) => e.target.files?.[0] && onUploadMusic(e.target.files[0]).finally(() => (e.target.value = '', setMenu(null)))} />
+          </MenuItem>,
+        ]}
+      </Menu>
 
-      <Stack spacing={2} sx={{ minWidth: 0 }}>
-        {/* Clip */}
-        <Box>
-          <Stack direction="row" sx={{ alignItems: 'center', mb: 1 }}>
-            <Typography variant="subtitle2" sx={{ flex: 1 }}>
-              Clip · {sec(total)} {total >= VIDEO_LIMITS.maxTotalSec && `(massimo ${VIDEO_LIMITS.maxTotalSec} s)`}
-            </Typography>
-            <Button size="small" variant="outlined" startIcon={<Iconify icon="mingcute:add-line" />} onClick={(e) => setAddAnchor(e.currentTarget)} disabled={video.clips.length >= VIDEO_LIMITS.clips || total >= VIDEO_LIMITS.maxTotalSec}>
-              Aggiungi clip
-            </Button>
-            <Menu anchorEl={addAnchor} open={!!addAnchor} onClose={() => setAddAnchor(null)}>
-              {videos.map((v) => (
-                <MenuItem key={v.id} onClick={() => addClip(v)}>
-                  {v.fileName} · {sec(v.durationSec ?? 0)}
-                </MenuItem>
-              ))}
-            </Menu>
-          </Stack>
-          {/* Fila delle clip, larghe in proporzione alla durata */}
-          <Stack direction="row" spacing={0.5} sx={{ overflowX: 'auto', pb: 0.5 }}>
-            {items.map((c, i) => (
-              <Box
-                key={c.id}
-                component="button"
-                type="button"
-                onClick={() => setSelected(c.id)}
-                sx={{
-                  flex: `${Math.max(c.length, 1)} 0 64px`,
-                  minWidth: 64,
-                  p: 1,
-                  textAlign: 'left',
-                  font: 'inherit',
-                  color: 'common.white',
-                  cursor: 'pointer',
-                  borderRadius: 1,
-                  border: 2,
-                  borderColor: c.id === selected ? 'primary.main' : 'transparent',
-                  bgcolor: 'grey.800',
-                }}
-              >
-                <Typography variant="caption" sx={{ display: 'block', fontWeight: 700 }} noWrap>
-                  {i + 1}. {videos.find((v) => v.id === c.mediaId)?.fileName ?? 'video'}
-                </Typography>
-                <Typography variant="caption">{sec(c.length)}</Typography>
-              </Box>
-            ))}
-          </Stack>
-          {clip && (
-            <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', mt: 1.5 }}>
-              <Box sx={{ flex: 1, px: 1 }}>
-                <Slider
-                  size="small"
-                  value={[clip.start, clip.end]}
-                  min={0}
-                  max={Math.max(durationOf(clip.mediaId), clip.end)}
-                  step={0.1}
-                  disableSwap
-                  onChange={(_, value) => {
-                    const [start, end] = withGap(value, VIDEO_LIMITS.minClipSec, Math.max(durationOf(clip.mediaId), clip.end));
-                    updateClip(clip.id, { start, end });
-                  }}
-                  valueLabelDisplay="auto"
-                  valueLabelFormat={sec}
-                  getAriaLabel={(i) => (i === 0 ? 'Inizio della clip' : 'Fine della clip')}
-                />
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  Dal secondo {sec(clip.start)} al {sec(clip.end)} del video originale
-                </Typography>
-              </Box>
-              <Tooltip title="Sposta prima">
-                <IconButton size="small" onClick={() => moveClip(clip.id, -1)} aria-label="Sposta la clip prima">
-                  <Iconify icon="eva:arrow-back-fill" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Sposta dopo">
-                <IconButton size="small" onClick={() => moveClip(clip.id, 1)} aria-label="Sposta la clip dopo">
-                  <Iconify icon="eva:arrow-forward-fill" />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Togli la clip">
-                <span>
-                  <IconButton size="small" color="error" onClick={() => removeClip(clip.id)} disabled={video.clips.length <= 1} aria-label="Togli la clip">
-                    <Iconify icon="solar:trash-bin-trash-bold" />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </Stack>
-          )}
-        </Box>
+      <VideoTimeline video={video} onChange={onChange} videos={videos} tracks={tracks} now={at} onSeek={(t) => (setPlaying(false), setNow(t))} selected={selected} onSelect={setSelected} zoom={zoom} />
+      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+        Usa solo musica con licenza per i social: brani tuoi, librerie con licenza d&apos;uso o la musica delle app (aggiunta nell&apos;app al momento di pubblicare).
+      </Typography>
+    </Stack>
+  );
+}
 
-        <Divider />
-
-        {/* Scritte */}
-        <Box>
-          <Stack direction="row" sx={{ alignItems: 'center', mb: 1 }}>
-            <Typography variant="subtitle2" sx={{ flex: 1 }}>
-              Scritte
-            </Typography>
-            <Button size="small" variant="outlined" startIcon={<Iconify icon="mingcute:add-line" />} onClick={addText} disabled={video.texts.length >= VIDEO_LIMITS.texts}>
-              Aggiungi scritta
-            </Button>
-          </Stack>
-          <Stack spacing={1.5}>
-            {video.texts.map((t) => (
-              <Box key={t.id} sx={{ p: 1.5, borderRadius: 1, border: 1, borderColor: 'divider' }}>
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-                  <TextField size="small" value={t.text} onChange={(e) => updateText(t.id, { text: e.target.value })} slotProps={{ htmlInput: { maxLength: 200, 'aria-label': 'Testo della scritta' } }} fullWidth />
-                  <IconButton size="small" color="error" onClick={() => setTexts(video.texts.filter((x) => x.id !== t.id))} aria-label="Togli la scritta">
-                    <Iconify icon="solar:trash-bin-trash-bold" />
-                  </IconButton>
-                </Stack>
-                <Box sx={{ px: 1, mt: 1 }}>
-                  <Slider
-                    size="small"
-                    value={[Math.min(t.from, total), Math.min(t.to, total)]}
-                    min={0}
-                    max={total}
-                    step={0.1}
-                    disableSwap
-                    onChange={(_, value) => {
-                      const [from, to] = withGap(value, 0.3, total);
-                      updateText(t.id, { from, to });
-                    }}
-                    valueLabelDisplay="auto"
-                    valueLabelFormat={sec}
-                    getAriaLabel={(i) => (i === 0 ? 'Compare al secondo' : 'Sparisce al secondo')}
-                  />
-                </Box>
-                <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1, alignItems: 'center' }}>
-                  <TextField select size="small" value={t.position} onChange={(e) => updateText(t.id, { position: e.target.value })} sx={{ minWidth: 120 }} slotProps={{ htmlInput: { 'aria-label': 'Posizione' } }}>
-                    {TEXT_POSITIONS.map((p) => (
-                      <MenuItem key={p} value={p}>
-                        {POSITION_LABEL[p]}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                  <TextField select size="small" value={t.size} onChange={(e) => updateText(t.id, { size: e.target.value })} sx={{ minWidth: 110 }} slotProps={{ htmlInput: { 'aria-label': 'Dimensione' } }}>
-                    {Object.keys(TEXT_SIZES).map((s) => (
-                      <MenuItem key={s} value={s}>
-                        {SIZE_LABEL[s]}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                  <TextField type="color" size="small" value={t.color} onChange={(e) => updateText(t.id, { color: e.target.value.toUpperCase() })} sx={{ width: 70 }} slotProps={{ htmlInput: { 'aria-label': 'Colore del testo' } }} />
-                  <ToggleButton size="small" value="box" selected={!!t.background} onChange={() => updateText(t.id, { background: t.background ? null : '#000000' })}>
-                    Riquadro
-                  </ToggleButton>
-                  {t.background && <TextField type="color" size="small" value={t.background} onChange={(e) => updateText(t.id, { background: e.target.value.toUpperCase() })} sx={{ width: 70 }} slotProps={{ htmlInput: { 'aria-label': 'Colore del riquadro' } }} />}
-                </Stack>
-              </Box>
-            ))}
-            {!video.texts.length && (
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                Titoli, sottotitoli o un invito finale: compaiono sopra il video negli intervalli scelti.
-              </Typography>
-            )}
-          </Stack>
-        </Box>
-
-        <Divider />
-
-        {/* Audio */}
-        <Box>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Audio
-          </Typography>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ alignItems: { sm: 'center' } }}>
-            <TextField select size="small" label="Musica" value={video.music?.mediaId ?? ''} onChange={(e) => onChange({ ...video, music: e.target.value ? { mediaId: Number(e.target.value), volume: video.music?.volume ?? 0.6 } : null })} sx={{ minWidth: 220 }}>
-              <MenuItem value="">Nessuna</MenuItem>
-              {tracks.map((t) => (
-                <MenuItem key={t.id} value={t.id}>
-                  {t.fileName}
-                </MenuItem>
-              ))}
-            </TextField>
-            <Button component="label" size="small" variant="outlined" color="inherit" loading={uploading} startIcon={<Iconify icon="solar:music-note-bold" />}>
-              Carica musica
-              <input hidden type="file" accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,.mp3,.m4a" onChange={(e) => e.target.files?.[0] && onUploadMusic(e.target.files[0]).finally(() => (e.target.value = ''))} />
-            </Button>
-          </Stack>
-          <Stack direction="row" spacing={3} sx={{ mt: 1.5, flexWrap: 'wrap', rowGap: 1 }}>
-            <VolumeSlider label="Audio dei video" value={video.originalVolume} onChange={(v) => onChange({ ...video, originalVolume: v })} />
-            {video.music && <VolumeSlider label="Musica" value={video.music.volume} onChange={(v) => onChange({ ...video, music: { ...video.music, volume: v } })} />}
-          </Stack>
-          <Typography variant="caption" sx={{ display: 'block', mt: 1, color: 'text.secondary' }}>
-            Usa solo musica con licenza per i social (libreria acquistata o brani tuoi). Quella di Instagram e TikTok non si può usare da strumenti esterni.
-          </Typography>
-        </Box>
-      </Stack>
-    </Box>
+function ToolButton({ title, icon, onClick, disabled }) {
+  return (
+    <Tooltip title={title}>
+      <span>
+        <IconButton size="small" onClick={onClick} disabled={disabled} aria-label={title}>
+          <Iconify icon={icon} />
+        </IconButton>
+      </span>
+    </Tooltip>
   );
 }
 
 function VolumeSlider({ label, value, onChange }) {
   return (
-    <Box sx={{ width: 200 }}>
+    <Box sx={{ maxWidth: 320 }}>
       <Typography variant="caption" sx={{ color: 'text.secondary' }}>
         {label}: {Math.round(value * 100)}%
       </Typography>
@@ -297,20 +246,55 @@ function VolumeSlider({ label, value, onChange }) {
   );
 }
 
+function TextProps({ text: t, onChange }) {
+  return (
+    <Stack spacing={1}>
+      <Typography variant="subtitle2">
+        Scritta · da {sec(t.from)} a {sec(t.to)}
+      </Typography>
+      <TextField size="small" value={t.text} onChange={(e) => onChange({ text: e.target.value })} slotProps={{ htmlInput: { maxLength: 200, 'aria-label': 'Testo della scritta' } }} fullWidth />
+      <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1, alignItems: 'center' }}>
+        <TextField select size="small" value={t.position} onChange={(e) => onChange({ position: e.target.value })} sx={{ minWidth: 120 }} slotProps={{ htmlInput: { 'aria-label': 'Posizione' } }}>
+          {TEXT_POSITIONS.map((p) => (
+            <MenuItem key={p} value={p}>
+              {POSITION_LABEL[p]}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField select size="small" value={t.size} onChange={(e) => onChange({ size: e.target.value })} sx={{ minWidth: 110 }} slotProps={{ htmlInput: { 'aria-label': 'Dimensione' } }}>
+          {Object.keys(TEXT_SIZES).map((s) => (
+            <MenuItem key={s} value={s}>
+              {SIZE_LABEL[s]}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField type="color" size="small" value={t.color} onChange={(e) => onChange({ color: e.target.value.toUpperCase() })} sx={{ width: 70 }} slotProps={{ htmlInput: { 'aria-label': 'Colore del testo' } }} />
+        <ToggleButton size="small" value="box" selected={!!t.background} onChange={() => onChange({ background: t.background ? null : '#000000' })}>
+          Riquadro
+        </ToggleButton>
+        {t.background && <TextField type="color" size="small" value={t.background} onChange={(e) => onChange({ background: e.target.value.toUpperCase() })} sx={{ width: 70 }} slotProps={{ htmlInput: { 'aria-label': 'Colore del riquadro' } }} />}
+      </Stack>
+    </Stack>
+  );
+}
+
 // ----------------------------------------------------------------------
 
-/** Anteprima: le clip una dopo l'altra, con le scritte (le stesse immagini del video finale) e la musica. */
-function VideoPreview({ video, items, urlOf, musicUrl }) {
+/**
+ * Anteprima comandata dal cursore: da fermo mostra il fotogramma al punto scelto; in riproduzione fa avanzare il
+ * cursore, passa da una clip all'altra e fa partire ogni spezzone audio quando il cursore ci entra.
+ */
+function VideoPreview({ video, videos, tracks, now, playing, onTime, onEnd }) {
   const videoRef = useRef(null);
-  const audioRef = useRef(null);
-  const [index, setIndex] = useState(0);
-  const [now, setNow] = useState(0);
-  const [playing, setPlaying] = useState(false);
+  const audioRefs = useRef(new Map());
   const [overlays, setOverlays] = useState({});
   const { width, height } = VIDEO_SIZES[video.size];
-  const clip = items[Math.min(index, items.length - 1)];
+  const items = timeline(video);
+  const total = totalDuration(video);
+  const clip = items.find((c) => now >= c.offset && now < c.offset + c.length) ?? items.at(-1);
+  const urlOf = (list, id) => list.find((m) => m.id === id)?.url;
 
-  // Le scritte si ridisegnano quando cambiano (stessa funzione dell'esportazione)
+  // Scritte disegnate con la stessa funzione dell'esportazione
   const textsKey = JSON.stringify([video.size, video.texts]);
   useEffect(() => {
     let alive = true;
@@ -321,57 +305,75 @@ function VideoPreview({ video, items, urlOf, musicUrl }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- si ridisegna solo se cambiano testi o misura
   }, [textsKey]);
 
+  // Da fermo (o al cambio di clip) il video si porta al punto del cursore
   useEffect(() => {
     const el = videoRef.current;
     if (!el || !clip) return;
-    el.currentTime = clip.start;
+    const target = clip.start + (now - clip.offset);
+    if (!playing || Math.abs(el.currentTime - target) > 0.3) el.currentTime = target;
     el.volume = video.originalVolume;
-    if (playing) el.play().catch(() => setPlaying(false));
-  }, [clip?.id, clip?.start]); // eslint-disable-line react-hooks/exhaustive-deps -- si riposiziona solo al cambio di clip
+  }, [clip?.id, now, playing]); // eslint-disable-line react-hooks/exhaustive-deps -- segue cursore e clip
 
-  const onTime = () => {
+  // Riproduzione: il video comanda il tempo; gli spezzoni audio si accendono e spengono intorno al cursore
+  const latest = useRef({ clip, items, total, audio: video.audio });
+  useEffect(() => {
+    latest.current = { clip, items, total, audio: video.audio };
+  });
+  useEffect(() => {
     const el = videoRef.current;
-    if (!el || !clip) return;
-    setNow(clip.offset + Math.max(0, el.currentTime - clip.start));
-    if (el.currentTime >= clip.end - 0.05) {
-      if (index < items.length - 1) setIndex(index + 1);
-      else stop();
+    if (!playing || !el) {
+      el?.pause();
+      audioRefs.current.forEach((a) => a.pause());
+      return undefined;
     }
-  };
-
-  const play = () => {
-    if (index >= items.length - 1 && now >= totalDuration(video) - 0.1) setIndex(0);
-    setPlaying(true);
-    videoRef.current?.play().catch(() => setPlaying(false));
-    if (audioRef.current && video.music) {
-      audioRef.current.volume = video.music.volume;
-      audioRef.current.currentTime = now % (audioRef.current.duration || Infinity);
-      audioRef.current.play().catch(() => undefined);
-    }
-  };
-  const stop = () => {
-    setPlaying(false);
-    videoRef.current?.pause();
-    audioRef.current?.pause();
-  };
+    el.play().catch(() => onEnd());
+    let frame;
+    const tick = () => {
+      const { clip: c, items: list, total: tot, audio } = latest.current;
+      if (!c) return;
+      const t = c.offset + (el.currentTime - c.start);
+      if (el.currentTime >= c.end - 0.03) {
+        const next = list[list.findIndex((x) => x.id === c.id) + 1];
+        if (!next) {
+          onTime(tot);
+          onEnd();
+          return;
+        }
+        onTime(next.offset);
+        el.currentTime = next.start;
+      } else onTime(Math.min(t, tot));
+      for (const a of audio) {
+        const node = audioRefs.current.get(a.id);
+        if (!node) continue;
+        const inside = t >= a.at && t < a.at + audioLength(a);
+        const want = a.start + (t - a.at);
+        node.volume = a.volume;
+        if (inside && node.paused) {
+          node.currentTime = want;
+          node.play().catch(() => undefined);
+        } else if (inside && Math.abs(node.currentTime - want) > 0.3) node.currentTime = want;
+        else if (!inside && !node.paused) node.pause();
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [playing]); // eslint-disable-line react-hooks/exhaustive-deps -- il ciclo legge i valori aggiornati da latest
 
   const visible = video.texts.filter((t) => now >= t.from && now <= t.to);
 
   return (
-    <Box>
-      <Box sx={{ position: 'relative', width: PREVIEW_WIDTH, maxWidth: 1, aspectRatio: `${width} / ${height}`, bgcolor: 'common.black', borderRadius: 1, overflow: 'hidden' }}>
-        {clip && <Box component="video" ref={videoRef} src={urlOf(clip.mediaId)} muted={false} playsInline onTimeUpdate={onTime} sx={{ width: 1, height: 1, objectFit: 'cover' }} />}
-        {visible.map((t) => overlays[t.id] && <Box key={t.id} component="img" src={overlays[t.id]} alt="" sx={{ position: 'absolute', inset: 0, width: 1, height: 1, pointerEvents: 'none' }} />)}
-        {musicUrl && <audio ref={audioRef} src={musicUrl} loop preload="auto" />}
-      </Box>
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mt: 0.5 }}>
-        <IconButton size="small" onClick={playing ? stop : play} aria-label={playing ? 'Pausa' : 'Riproduci'}>
-          <Iconify icon={playing ? 'solar:pause-bold' : 'solar:play-bold'} />
-        </IconButton>
-        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          {sec(now)} / {sec(totalDuration(video))} · clip {index + 1} di {items.length}
-        </Typography>
-      </Stack>
+    <Box sx={{ position: 'relative', width: PREVIEW_WIDTH, maxWidth: 1, aspectRatio: `${width} / ${height}`, bgcolor: 'common.black', borderRadius: 1, overflow: 'hidden' }}>
+      {clip && <Box component="video" ref={videoRef} src={urlOf(videos, clip.mediaId)} playsInline preload="auto" sx={{ width: 1, height: 1, objectFit: 'cover' }} />}
+      {visible.map((t) => overlays[t.id] && <Box key={t.id} component="img" src={overlays[t.id]} alt="" sx={{ position: 'absolute', inset: 0, width: 1, height: 1, pointerEvents: 'none' }} />)}
+      {video.audio.map((a) => (
+        <audio
+          key={a.id}
+          ref={(node) => (node ? audioRefs.current.set(a.id, node) : audioRefs.current.delete(a.id))}
+          src={urlOf(tracks, a.mediaId)}
+          preload="auto"
+        />
+      ))}
     </Box>
   );
 }
