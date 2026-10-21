@@ -61,7 +61,9 @@ Montaggio video (operazione «video», sostituisce l'intero montaggio; «video_r
   quali sono i momenti migliori, usa pezzi brevi e regolari e dillo, così il consulente li sistema.
 - Scritte brevi (massimo 8 parole), leggibili: un titolo nei primi 2 secondi e un invito all'azione alla fine.
   Bianche con riquadro scuro se il video è chiaro o non lo conosci.
-- Musica solo da un audio del materiale (mediaId); senza audio nel materiale lascia music a null.
+- Musica solo da un audio del materiale (mediaId), come spezzoni della traccia audio: "at" è quando entra nel
+  montaggio, "start"/"end" il pezzo del brano. Di solito uno spezzone da 0 per tutta la durata; senza audio nel
+  materiale lascia "audio" vuoto.
 - Con la musica, originalVolume basso (0-0,3) se i video non hanno parlato importante.
 
 Grafica (operazione «grafica», sostituisce l'intera grafica; «grafica_rimuovi» la toglie):

@@ -24,12 +24,13 @@ const renderTimeout = (seconds: number) => Math.max(3 * 60_000, seconds * 20_000
  * Restituisce l'id del file del post, che diventa «pronto» (o «errore») quando FFmpeg ha finito.
  */
 export async function startVideoRender(o: { itemId: number; clientId: number; userId: number; edit: VideoEdit; overlays: Buffer[]; tag: string }) {
-  const ids = [...new Set([...o.edit.clips.map((c) => c.mediaId), ...(o.edit.music ? [o.edit.music.mediaId] : [])])];
+  const ids = [...new Set([...o.edit.clips.map((c) => c.mediaId), ...o.edit.audio.map((a) => a.mediaId)])];
   const files = await db.select({ id: mediaAssets.id, storageKey: mediaAssets.storageKey, kind: mediaAssets.kind }).from(mediaAssets).where(inArray(mediaAssets.id, ids));
   const byId = new Map(files.map((f) => [f.id, f]));
   const clipFiles = o.edit.clips.map((c) => byId.get(c.mediaId));
   if (clipFiles.some((f) => !f || f.kind !== "video")) throw new Error("Uno dei video del montaggio non c'è più: ricaricalo");
-  const music = o.edit.music ? byId.get(o.edit.music.mediaId) : null;
+  const audioFiles = o.edit.audio.map((a) => byId.get(a.mediaId));
+  if (audioFiles.some((f) => !f || f.kind !== "audio")) throw new Error("Uno dei brani del montaggio non c'è più: ricaricalo");
 
   const { width, height } = VIDEO_SIZES[o.edit.size];
   await ensureMediaDir();
@@ -70,7 +71,7 @@ export async function startVideoRender(o: { itemId: number; clientId: number; us
         clips.push({ path: mediaPath(f!.storageKey), hasAudio: !!probe.audioCodec });
       }
       const output = mediaPath(storageKey);
-      await renderWithFfmpeg(videoRenderArgs({ edit: o.edit, clips, overlays: overlayPaths, musicPath: music ? mediaPath(music.storageKey) : null, output }), renderTimeout(totalDuration(o.edit)));
+      await renderWithFfmpeg(videoRenderArgs({ edit: o.edit, clips, overlays: overlayPaths, audio: audioFiles.map((f) => mediaPath(f!.storageKey)), output }), renderTimeout(totalDuration(o.edit)));
       const probe = await probeVideo(output);
       const size = (await stat(output)).size;
       await db.update(mediaAssets).set({ size, durationSec: probe.durationSec, videoCodec: probe.videoCodec, width: probe.width ?? width, height: probe.height ?? height, processState: "pronto", processNote: null }).where(eq(mediaAssets.id, mediaId));

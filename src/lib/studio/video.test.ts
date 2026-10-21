@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { sanitizeVideo, starterVideo, timeline, totalDuration, VIDEO_LIMITS, videoRenderArgs, type VideoEdit } from "./video";
+import { duplicate, sanitizeVideo, splitAt, starterVideo, timeline, totalDuration, VIDEO_LIMITS, VideoEditSchema, videoRenderArgs, type VideoEdit } from "./video";
 
 const media = [
   { id: 1, kind: "video", durationSec: 10 },
@@ -16,7 +16,7 @@ const edit = (over: Partial<VideoEdit> = {}): VideoEdit => ({
     { id: "c2", mediaId: 2, start: 0, end: 4 },
   ],
   texts: [],
-  music: null,
+  audio: [],
   originalVolume: 1,
   ...over,
 });
@@ -42,19 +42,19 @@ describe("sanitizeVideo", () => {
     const many = Array.from({ length: 12 }, (_, i) => ({ id: `c${i}`, mediaId: 1, start: 0, end: 10 }));
     expect(totalDuration(sanitizeVideo(edit({ clips: many }), media)!)).toBeLessThanOrEqual(VIDEO_LIMITS.maxTotalSec);
   });
-  it("taglia le scritte che escono dal montaggio e scarta musica che non è audio", () => {
+  it("taglia le scritte che escono dal montaggio e scarta l'audio che non è un file audio", () => {
     const e = sanitizeVideo(
       edit({
         texts: [
           { id: "t1", text: " Ciao ", from: 6, to: 30, position: "basso", size: "medio", color: "#FFFFFF", background: null },
           { id: "t2", text: "fuori", from: 20, to: 25, position: "alto", size: "medio", color: "#FFFFFF", background: null },
         ],
-        music: { mediaId: 3, volume: 0.5 },
+        audio: [{ id: "a1", mediaId: 3, start: 0, end: 5, at: 0, volume: 0.5 }],
       }),
       media,
     )!;
     expect(e.texts).toEqual([{ id: "t1", text: "Ciao", from: 6, to: 8, position: "basso", size: "medio", color: "#FFFFFF", background: null }]);
-    expect(e.music).toBeNull();
+    expect(e.audio).toEqual([]);
   });
   it("null se non resta nessuna clip", () => {
     expect(sanitizeVideo(edit({ clips: [{ id: "a", mediaId: 3, start: 0, end: 1 }] }), media)).toBeNull();
@@ -74,7 +74,7 @@ describe("starterVideo", () => {
 });
 
 describe("videoRenderArgs", () => {
-  const base = { clips: [{ path: "/a.mp4", hasAudio: true }, { path: "/b.mp4", hasAudio: false }], overlays: [], musicPath: null, output: "/out.mp4" };
+  const base = { clips: [{ path: "/a.mp4", hasAudio: true }, { path: "/b.mp4", hasAudio: false }], overlays: [], audio: [], output: "/out.mp4" };
 
   it("taglia le clip prima dell'ingresso e dà un silenzio a quelle senza audio", () => {
     const args = videoRenderArgs({ ...base, edit: edit() });
@@ -88,22 +88,64 @@ describe("videoRenderArgs", () => {
     expect(args).toContain("+faststart");
   });
 
-  it("sovrappone le scritte nei loro intervalli e mixa la musica, senza -stream_loop", () => {
+  it("sovrappone le scritte e mette ogni spezzone audio al suo secondo, senza -stream_loop", () => {
     const e = edit({
       texts: [{ id: "t1", text: "Ciao", from: 1, to: 3, position: "basso", size: "medio", color: "#FFFFFF", background: null }],
-      music: { mediaId: 9, volume: 0.4 },
+      audio: [
+        { id: "a1", mediaId: 9, start: 10, end: 14, at: 0, volume: 0.4 },
+        { id: "a2", mediaId: 9, start: 0, end: 2, at: 5.5, volume: 1 },
+      ],
       originalVolume: 0.2,
     });
-    const args = videoRenderArgs({ ...base, edit: e, overlays: ["/t1.png"], musicPath: "/m.mp3" });
+    const args = videoRenderArgs({ ...base, edit: e, overlays: ["/t1.png"], audio: ["/m.mp3", "/m.mp3"] });
     const graph = args[args.indexOf("-filter_complex") + 1];
     expect(graph).toContain("[vcat][3:v]overlay=0:0:enable='between(t,1,3)'[o0]");
-    expect(graph).toContain("[4:a]aresample=48000");
-    expect(graph).toContain("aloop=loop=-1");
-    expect(graph).toContain("atrim=0:8");
-    expect(graph).toContain("volume=0.4,afade=t=out:st=7:d=1[mus]");
+    expect(args.join(" ")).toContain("-ss 10 -t 4 -i /m.mp3");
+    expect(graph).toContain("volume=0.4,afade=t=in:d=0.15,afade=t=out:st=3.85:d=0.15,adelay=0|0[m0]");
+    expect(graph).toContain("adelay=5500|5500[m1]");
     expect(graph).toContain("[acat]volume=0.2[orig]");
+    expect(graph).toContain("[orig][m0][m1]amix=inputs=3:duration=first:normalize=0[aout]");
     expect(args).not.toContain("-stream_loop");
-    expect(args.join(" ")).toContain("-t 8 -i /m.mp3");
     expect(args).toEqual(expect.arrayContaining(["-map", "[o0]", "-map", "[aout]"]));
+  });
+
+});
+
+describe("traccia audio", () => {
+  it("converte i montaggi salvati con un solo brano", () => {
+    const old = { size: "storia", clips: [{ id: "c1", mediaId: 1, start: 0, end: 6 }], texts: [], music: { mediaId: 9, volume: 0.3 }, originalVolume: 1 };
+    expect(VideoEditSchema.parse(old).audio).toEqual([{ id: "a1", mediaId: 9, start: 0, end: 6, at: 0, volume: 0.3 }]);
+  });
+  it("taglia lo spezzone alla fine del montaggio e del brano", () => {
+    const e = sanitizeVideo(edit({ audio: [{ id: "a1", mediaId: 9, start: 115, end: 200, at: 6, volume: 1 }] }), media)!;
+    expect(e.audio[0]).toMatchObject({ at: 6, start: 115, end: 117 });
+  });
+});
+
+describe("dividi e duplica", () => {
+  it("divide una clip al cursore in due parti consecutive", () => {
+    const e = splitAt(edit(), "c2", 6, "c3");
+    expect(e.clips.map((c) => [c.id, c.start, c.end])).toEqual([
+      ["c1", 2, 6],
+      ["c2", 0, 2],
+      ["c3", 2, 4],
+    ]);
+  });
+  it("non divide troppo vicino ai bordi", () => {
+    expect(splitAt(edit(), "c1", 0.2, "x")).toEqual(edit());
+  });
+  it("divide uno spezzone audio mantenendo la posizione nel tempo", () => {
+    const e = splitAt(edit({ audio: [{ id: "a1", mediaId: 9, start: 10, end: 16, at: 1, volume: 1 }] }), "a1", 4, "a2");
+    expect(e.audio).toEqual([
+      { id: "a1", mediaId: 9, start: 10, end: 13, at: 1, volume: 1 },
+      { id: "a2", mediaId: 9, start: 13, end: 16, at: 4, volume: 1 },
+    ]);
+  });
+  it("duplica uno spezzone audio subito dopo sé stesso", () => {
+    const e = duplicate(edit({ audio: [{ id: "a1", mediaId: 9, start: 0, end: 3, at: 2, volume: 1 }] }), "a1", "a2");
+    expect(e.audio[1]).toEqual({ id: "a2", mediaId: 9, start: 0, end: 3, at: 5, volume: 1 });
+  });
+  it("duplica una clip subito dopo", () => {
+    expect(duplicate(edit(), "c1", "c9").clips.map((c) => c.id)).toEqual(["c1", "c9", "c2"]);
   });
 });

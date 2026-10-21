@@ -42,7 +42,8 @@ export const VIDEO_FORMAT = `{ "size": "storia" | "verticale" | "quadrato",
   "clips": [ { "id": "c1", "mediaId": <id di un video>, "start": <secondo di inizio nel video>, "end": <secondo di fine> } ],
   "texts": [ { "id": "t1", "text": "...", "from": <secondo del montaggio>, "to": <secondo>, "position": "alto"|"centro"|"basso",
                "size": "piccolo"|"medio"|"grande", "color": "#RRGGBB", "background": "#RRGGBB" o null } ],
-  "music": { "mediaId": <id di un audio>, "volume": 0-1 } o null,
+  "audio": [ { "id": "a1", "mediaId": <id di un audio>, "start": <secondo del brano>, "end": <secondo del brano>,
+               "at": <secondo del montaggio in cui entra>, "volume": 0-1 } ],
   "originalVolume": 0-1 }`;
 
 /** Immagini per turno: ognuna costa, e più di due in una risposta sono quasi sempre un eccesso. */

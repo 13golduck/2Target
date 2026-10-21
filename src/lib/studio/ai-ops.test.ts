@@ -20,7 +20,7 @@ describe("toStudioOps", () => {
     expect(toStudioOps([{ op: "grafica", designJson: "{non json" }]).rejected).toBe(true);
   });
   it("converte il montaggio da JSON e scarta quello non valido", () => {
-    const video = { size: "storia", clips: [{ id: "c1", mediaId: 4, start: 0, end: 3 }], texts: [], music: null, originalVolume: 1 };
+    const video = { size: "storia", clips: [{ id: "c1", mediaId: 4, start: 0, end: 3 }], texts: [], audio: [], originalVolume: 1 };
     expect(toStudioOps([{ op: "video", videoJson: JSON.stringify(video) }]).ops).toEqual([{ op: "video", video }]);
     expect(toStudioOps([{ op: "video", videoJson: '{"clips":[]}' }]).rejected).toBe(true);
   });
