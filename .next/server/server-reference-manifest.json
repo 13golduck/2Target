@@ -1,0 +1,3252 @@
+{
+  "node": {
+    "00121f6ce2af12ee46869871f4f3b86002d7d52201": {
+      "workers": {
+        "app/(app)/audit/page": {
+          "moduleId": 288111,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/calendario/page": {
+          "moduleId": 877617,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/concorrenti/page": {
+          "moduleId": 545545,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 233955,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 551953,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/consumi-ai/page": {
+          "moduleId": 208062,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/errori/page": {
+          "moduleId": 652844,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/guida/[slug]/page": {
+          "moduleId": 384908,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/guida/page": {
+          "moduleId": 835961,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/page": {
+          "moduleId": 511457,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "filename": "src/app/login/actions.ts",
+      "exportedName": "logout"
+    },
+    "60d95fb4f180be624aaf227e27b648c8b76c0ac6b1": {
+      "workers": {
+        "app/(app)/audit/page": {
+          "moduleId": 288111,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/calendario/page": {
+          "moduleId": 877617,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/concorrenti/page": {
+          "moduleId": 545545,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 233955,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 551953,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/consumi-ai/page": {
+          "moduleId": 208062,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/errori/page": {
+          "moduleId": 652844,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/guida/[slug]/page": {
+          "moduleId": 384908,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/guida/page": {
+          "moduleId": 835961,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/page": {
+          "moduleId": 511457,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        },
+        "app/login/page": {
+          "moduleId": 540246,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "filename": "src/app/login/actions.ts",
+      "exportedName": "loginStep"
+    },
+    "789c570b4b826081f7eee0fa6437b04f244e802632": {
+      "workers": {
+        "app/(app)/audit/page": {
+          "moduleId": 288111,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/calendario/page": {
+          "moduleId": 877617,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/clienti/[id]/concorrenti/page": {
+          "moduleId": 545545,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 233955,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 551953,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/consumi-ai/page": {
+          "moduleId": 208062,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/errori/page": {
+          "moduleId": 652844,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/guida/[slug]/page": {
+          "moduleId": 384908,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/guida/page": {
+          "moduleId": 835961,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/page": {
+          "moduleId": 511457,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        },
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/error-actions.ts",
+      "exportedName": "reportClientError"
+    },
+    "002aec5d0e6d402594797d463f90c57f36d567d4bf": {
+      "workers": {
+        "app/(app)/audit/page": {
+          "moduleId": 288111,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/calendario/page": {
+          "moduleId": 877617,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/clienti/[id]/concorrenti/page": {
+          "moduleId": 545545,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 233955,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 551953,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/consumi-ai/page": {
+          "moduleId": 208062,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/errori/page": {
+          "moduleId": 652844,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/guida/[slug]/page": {
+          "moduleId": 384908,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/guida/page": {
+          "moduleId": 835961,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/page": {
+          "moduleId": 511457,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        },
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/tour-actions.ts",
+      "exportedName": "markTourDone"
+    },
+    "40e084295aea71bb16194fa9123a44f5eaa1d424e3": {
+      "workers": {
+        "app/(app)/audit/page": {
+          "moduleId": 288111,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/calendario/page": {
+          "moduleId": 877617,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/clienti/[id]/concorrenti/page": {
+          "moduleId": 545545,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 233955,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 551953,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/consumi-ai/page": {
+          "moduleId": 208062,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/errori/page": {
+          "moduleId": 652844,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/guida/[slug]/page": {
+          "moduleId": 384908,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/guida/page": {
+          "moduleId": 835961,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/page": {
+          "moduleId": 511457,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        },
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/studio-actions.ts",
+      "exportedName": "createStudioProject"
+    },
+    "400299a983e405f16ef91d2e2b316d91994df54e43": {
+      "workers": {
+        "app/(app)/audit/page": {
+          "moduleId": 288111,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/calendario/page": {
+          "moduleId": 877617,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/concorrenti/page": {
+          "moduleId": 545545,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 233955,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 551953,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/consumi-ai/page": {
+          "moduleId": 208062,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/errori/page": {
+          "moduleId": 652844,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/guida/[slug]/page": {
+          "moduleId": 384908,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/guida/page": {
+          "moduleId": 835961,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/page": {
+          "moduleId": 511457,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/create-post-actions.ts",
+      "exportedName": "mediaState"
+    },
+    "40c8b7257dff87f3a54c9a7726f66f2ed9ccd48724": {
+      "workers": {
+        "app/(app)/audit/page": {
+          "moduleId": 288111,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/calendario/page": {
+          "moduleId": 877617,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/concorrenti/page": {
+          "moduleId": 545545,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 233955,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 551953,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/consumi-ai/page": {
+          "moduleId": 208062,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/errori/page": {
+          "moduleId": 652844,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/guida/[slug]/page": {
+          "moduleId": 384908,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/guida/page": {
+          "moduleId": 835961,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/page": {
+          "moduleId": 511457,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/create-post-actions.ts",
+      "exportedName": "postTargets"
+    },
+    "40da5ce26bd313edb18dbaca95a5822cd895d62911": {
+      "workers": {
+        "app/(app)/audit/page": {
+          "moduleId": 288111,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/calendario/page": {
+          "moduleId": 877617,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/concorrenti/page": {
+          "moduleId": 545545,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 233955,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 551953,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/consumi-ai/page": {
+          "moduleId": 208062,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/errori/page": {
+          "moduleId": 652844,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/guida/[slug]/page": {
+          "moduleId": 384908,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/guida/page": {
+          "moduleId": 835961,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/page": {
+          "moduleId": 511457,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/create-post-actions.ts",
+      "exportedName": "writeCaption"
+    },
+    "4032958eadea6beff1bb54564998145cf33b4cd8f5": {
+      "workers": {
+        "app/(app)/audit/page": {
+          "moduleId": 288111,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/calendario/page": {
+          "moduleId": 877617,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/concorrenti/page": {
+          "moduleId": 545545,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 233955,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 551953,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/consumi-ai/page": {
+          "moduleId": 208062,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/errori/page": {
+          "moduleId": 652844,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/guida/[slug]/page": {
+          "moduleId": 384908,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/guida/page": {
+          "moduleId": 835961,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/page": {
+          "moduleId": 511457,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/create-post-actions.ts",
+      "exportedName": "createBlankItem"
+    },
+    "403ce8b808d954c55d15d90d868bc752148fb676ea": {
+      "workers": {
+        "app/(app)/audit/page": {
+          "moduleId": 288111,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/calendario/page": {
+          "moduleId": 877617,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/concorrenti/page": {
+          "moduleId": 545545,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 233955,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 551953,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/consumi-ai/page": {
+          "moduleId": 208062,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/errori/page": {
+          "moduleId": 652844,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/guida/[slug]/page": {
+          "moduleId": 384908,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/guida/page": {
+          "moduleId": 835961,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/page": {
+          "moduleId": 511457,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/create-post-actions.ts",
+      "exportedName": "createQuickPost"
+    },
+    "402cd5bd6dfa76e6f935b743048750993710640850": {
+      "workers": {
+        "app/(app)/audit/page": {
+          "moduleId": 288111,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/calendario/page": {
+          "moduleId": 877617,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/concorrenti/page": {
+          "moduleId": 545545,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 233955,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 551953,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/consumi-ai/page": {
+          "moduleId": 208062,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/errori/page": {
+          "moduleId": 652844,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/guida/[slug]/page": {
+          "moduleId": 384908,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/guida/page": {
+          "moduleId": 835961,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/page": {
+          "moduleId": 511457,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        },
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/create-post-actions.ts",
+      "exportedName": "finishQuickPost"
+    },
+    "408201c0001c4c8cd88a915b6ae755e672676594aa": {
+      "workers": {
+        "app/(app)/page": {
+          "moduleId": 511457,
+          "async": false,
+          "exportedName": "createClient",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "createClient"
+    },
+    "6005090a3dedee6ad4da55d5d8d09e41061d57c968": {
+      "workers": {
+        "app/(app)/calendario/page": {
+          "moduleId": 877617,
+          "async": false,
+          "exportedName": "rescheduleItem",
+          "filename": "src/app/(app)/actions.ts"
+        },
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "rescheduleItem",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "rescheduleItem"
+    },
+    "607a34b1a19154db6904635ff958df9243268593db": {
+      "workers": {
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "setApproval",
+          "filename": "src/app/(app)/client-settings-actions.ts"
+        },
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "setApproval",
+          "filename": "src/app/(app)/client-settings-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/client-settings-actions.ts",
+      "exportedName": "setApproval"
+    },
+    "60cfd84cfc97815eabb476a9a8f25ea4f320bffb1f": {
+      "workers": {
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "previewReport",
+          "filename": "src/app/(app)/client-settings-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/client-settings-actions.ts",
+      "exportedName": "previewReport"
+    },
+    "40e4b017391676af8685f59b1c88444b90089802d8": {
+      "workers": {
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "saveReportSettings",
+          "filename": "src/app/(app)/client-settings-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/client-settings-actions.ts",
+      "exportedName": "saveReportSettings"
+    },
+    "60703be702dfff9db785285c138d7f5290658a90b6": {
+      "workers": {
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "monthlyReportLinkAction",
+          "filename": "src/app/(app)/client-settings-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/client-settings-actions.ts",
+      "exportedName": "monthlyReportLinkAction"
+    },
+    "60fd32df9336c025d7499d066e654ab6f6ffcd8bec": {
+      "workers": {
+        "app/(app)/clienti/[id]/page": {
+          "moduleId": 288480,
+          "async": false,
+          "exportedName": "saveClientFeatures",
+          "filename": "src/app/(app)/client-settings-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/client-settings-actions.ts",
+      "exportedName": "saveClientFeatures"
+    },
+    "407bb9b9a77f205c5387b3d9a2a55785400e21bd84": {
+      "workers": {
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "deleteReview",
+          "filename": "src/app/(app)/design-actions.ts"
+        },
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "deleteReview",
+          "filename": "src/app/(app)/design-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/design-actions.ts",
+      "exportedName": "deleteReview"
+    },
+    "4079c303920b514f939dc788be0fb42c023b777aae": {
+      "workers": {
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "reviewUpload",
+          "filename": "src/app/(app)/design-actions.ts"
+        },
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "reviewUpload",
+          "filename": "src/app/(app)/design-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/design-actions.ts",
+      "exportedName": "reviewUpload"
+    },
+    "406ec1922c037c4f07e15bc65ce9c37fa82c52d665": {
+      "workers": {
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "saveBrandKit",
+          "filename": "src/app/(app)/design-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/design-actions.ts",
+      "exportedName": "saveBrandKit"
+    },
+    "605753e6193efd49afe374c2c20c79a45da1afd7e3": {
+      "workers": {
+        "app/(app)/clienti/[id]/brand/page": {
+          "moduleId": 155544,
+          "async": false,
+          "exportedName": "proposeBrandKit",
+          "filename": "src/app/(app)/design-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/design-actions.ts",
+      "exportedName": "proposeBrandKit"
+    },
+    "40051625fbf4f8936f2eef6478bc42900f8e2f8d5b": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "connectMetaSystemUser",
+          "filename": "src/app/(app)/channel-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "connectMetaSystemUser",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/channel-actions.ts",
+      "exportedName": "connectMetaSystemUser"
+    },
+    "401608ca1743e2aa33dc67a0b94c54807a6d3c8c81": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "quickPost",
+          "filename": "src/app/(app)/channel-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "quickPost",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/channel-actions.ts",
+      "exportedName": "quickPost"
+    },
+    "4041e1eb92a4bf3df31fcea733c644bb7a352737ba": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "addManualChannel",
+          "filename": "src/app/(app)/channel-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "addManualChannel",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/channel-actions.ts",
+      "exportedName": "addManualChannel"
+    },
+    "404239c640a6e2243032a1576ed0a08e2f9ceda7b2": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "removeChannel",
+          "filename": "src/app/(app)/channel-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "removeChannel",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/channel-actions.ts",
+      "exportedName": "removeChannel"
+    },
+    "40905c80b84a018794d2d7d99f9c2dd95cd5b346d1": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "assetsFor",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/channel-actions.ts",
+      "exportedName": "assetsFor"
+    },
+    "40921513cab0180d375d3b2e700ad35c65a29c3020": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "syncChannelNow",
+          "filename": "src/app/(app)/channel-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "syncChannelNow",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/channel-actions.ts",
+      "exportedName": "syncChannelNow"
+    },
+    "40c048360b3849a21df37d63ecccd08e1e46451f26": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "attachChannels",
+          "filename": "src/app/(app)/channel-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "attachChannels",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/channel-actions.ts",
+      "exportedName": "attachChannels"
+    },
+    "40e1c65c774126095788bb032509dc1c221c73cabc": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "syncClientNow",
+          "filename": "src/app/(app)/channel-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "syncClientNow",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/channel-actions.ts",
+      "exportedName": "syncClientNow"
+    },
+    "40ecf6df00b90cb6e7f0fa699fbe349105027ae969": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "removeConnection",
+          "filename": "src/app/(app)/channel-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "removeConnection",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/channel-actions.ts",
+      "exportedName": "removeConnection"
+    },
+    "40d740f8818c511f6ca2e42f5d2e50e77c5ec12a0b": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "loadAdAccounts",
+          "filename": "src/app/(app)/ads-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "loadAdAccounts",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/ads-actions.ts",
+      "exportedName": "loadAdAccounts"
+    },
+    "40b594a9e8168dd3808fc7123590573b306dfb5899": {
+      "workers": {
+        "app/(app)/clienti/[id]/canali/page": {
+          "moduleId": 754213,
+          "async": false,
+          "exportedName": "saveAdsSettings",
+          "filename": "src/app/(app)/ads-actions.ts"
+        },
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "saveAdsSettings",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/ads-actions.ts",
+      "exportedName": "saveAdsSettings"
+    },
+    "401abd9ccce470c7cc1f4d7f9927fc7fa8a0fda232": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "createCheckup",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "createCheckup"
+    },
+    "409dc93c30b4cd8d630f09f726635d501d1fe13bdf": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "setCheckupStatus",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "setCheckupStatus"
+    },
+    "406cc8eb50f1d0d61c1291c4bd715e2b3f8961329f": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "saveCheckupSection",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "saveCheckupSection"
+    },
+    "40b0f5fcfbd9ed26b8ba2633d9a3e246ad871fcbea": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "saveAnswers",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/checkup-ai-actions.ts",
+      "exportedName": "saveAnswers"
+    },
+    "40a0bc92a6d87203b29795c6f8e183a0c4a2ea04c2": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "reviseSection",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/checkup-ai-actions.ts",
+      "exportedName": "reviseSection"
+    },
+    "4047662f4d25ded512646c584efa9e466462737479": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "stopAiCheckup",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/checkup-ai-actions.ts",
+      "exportedName": "stopAiCheckup"
+    },
+    "6046d56c4a17906aefed9db3727493f34721a5d3fb": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "archiveCheckup",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/checkup-ai-actions.ts",
+      "exportedName": "archiveCheckup"
+    },
+    "40f7ecd26f600f3b6b71d7bc2f5995531db81702fc": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "startAiCheckup",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/checkup-ai-actions.ts",
+      "exportedName": "startAiCheckup"
+    },
+    "40af869e6925ba15da97e471163b4b0c170e02d2df": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "resumeAiCheckup",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/checkup-ai-actions.ts",
+      "exportedName": "resumeAiCheckup"
+    },
+    "40ad7be9b58a9a6177136ab615d8dcce91ac0a0c73": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "continueAiCheckup",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/checkup-ai-actions.ts",
+      "exportedName": "continueAiCheckup"
+    },
+    "40bc5d3449530523218447cc1e1cf1229920ca9f4d": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "prepareFoundation",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/checkup-ai-actions.ts",
+      "exportedName": "prepareFoundation"
+    },
+    "40437672af3fa44211e78484b7b80105ac736df6f5": {
+      "workers": {
+        "app/(app)/clienti/[id]/concorrenti/page": {
+          "moduleId": 545545,
+          "async": false,
+          "exportedName": "saveCompetitor",
+          "filename": "src/app/(app)/competitor-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/competitor-actions.ts",
+      "exportedName": "saveCompetitor"
+    },
+    "40c8357712a9145f43a45f58ebaac8a99aaecd1fa2": {
+      "workers": {
+        "app/(app)/clienti/[id]/concorrenti/page": {
+          "moduleId": 545545,
+          "async": false,
+          "exportedName": "removeCompetitor",
+          "filename": "src/app/(app)/competitor-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/competitor-actions.ts",
+      "exportedName": "removeCompetitor"
+    },
+    "408a79c69d9be7e668e8e552ad28bf175f5b36218d": {
+      "workers": {
+        "app/(app)/clienti/[id]/concorrenti/page": {
+          "moduleId": 545545,
+          "async": false,
+          "exportedName": "refreshCompetitorsNow",
+          "filename": "src/app/(app)/competitor-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/competitor-actions.ts",
+      "exportedName": "refreshCompetitorsNow"
+    },
+    "40ae28945171d86162c456e6fe584b5480b2334925": {
+      "workers": {
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "addIdea",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "addIdea"
+    },
+    "605c774e3bf57f82e264245186fa8157767358c47d": {
+      "workers": {
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "moveIdea",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "moveIdea"
+    },
+    "4050dc622a57d7aea7a62847de039059baad104664": {
+      "workers": {
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "planIdea",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "planIdea"
+    },
+    "40c012ca28adb9c514b7f0dd0a9c3b6f961877d241": {
+      "workers": {
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "voteIdea",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "voteIdea"
+    },
+    "40c15d1ce12205e262cb79e9f031b20923297d8aaa": {
+      "workers": {
+        "app/(app)/clienti/[id]/idee/page": {
+          "moduleId": 972325,
+          "async": false,
+          "exportedName": "setIdeaStatus",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "setIdeaStatus"
+    },
+    "40433deb07fdbe9ab03b207519c8cb46645ea5a84b": {
+      "workers": {
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 233955,
+          "async": false,
+          "exportedName": "addKpi",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "addKpi"
+    },
+    "4093a7d74a6be881859d083497bd21383ae938ef02": {
+      "workers": {
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 233955,
+          "async": false,
+          "exportedName": "deleteKpi",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "deleteKpi"
+    },
+    "40990021dde6609c5d74a7ea0d09f8b44e85cc223c": {
+      "workers": {
+        "app/(app)/clienti/[id]/kpi/page": {
+          "moduleId": 233955,
+          "async": false,
+          "exportedName": "addMeasurement",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "addMeasurement"
+    },
+    "405d75548983e39972be6578a92252d26254813ac9": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "addCost",
+          "filename": "src/app/(app)/lead-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/lead-actions.ts",
+      "exportedName": "addCost"
+    },
+    "60ffdb27981f5132c10acb0941c986ba9db83726e5": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "moveLead",
+          "filename": "src/app/(app)/lead-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/lead-actions.ts",
+      "exportedName": "moveLead"
+    },
+    "40def9fd78c936d238997ce531ff304746407e307b": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "saveLead",
+          "filename": "src/app/(app)/lead-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/lead-actions.ts",
+      "exportedName": "saveLead"
+    },
+    "40d5af0f7be46962f8e12bc3748ce48cdb2a4cbea6": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "deleteCost",
+          "filename": "src/app/(app)/lead-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/lead-actions.ts",
+      "exportedName": "deleteCost"
+    },
+    "40cdf1e65f57348dab8e9af07b35c5689e1f567153": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "deleteLead",
+          "filename": "src/app/(app)/lead-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/lead-actions.ts",
+      "exportedName": "deleteLead"
+    },
+    "4069168c6b803732ee32ed783bcef319f54098a34b": {
+      "workers": {
+        "app/(app)/clienti/[id]/lead/page": {
+          "moduleId": 560387,
+          "async": false,
+          "exportedName": "regenerateLeadToken",
+          "filename": "src/app/(app)/lead-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/lead-actions.ts",
+      "exportedName": "regenerateLeadToken"
+    },
+    "404a5772356978283d4f1dadd3a5a8e4953852c64c": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "createItem",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "createItem"
+    },
+    "408f4217be68a1c9b4eb172263a1b9b70a5f3c550b": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "createPlan",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "createPlan"
+    },
+    "40178289d1ff006ce27d23a19abe472f8e12953e97": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "planAiStatus",
+          "filename": "src/app/(app)/plan-ai-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/plan-ai-actions.ts",
+      "exportedName": "planAiStatus"
+    },
+    "401e34de02b3d87d1f6cbe8ff3f9a027dba5316816": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "startPlanQuestions",
+          "filename": "src/app/(app)/plan-ai-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/plan-ai-actions.ts",
+      "exportedName": "startPlanQuestions"
+    },
+    "6035db0e05bbf095ee0ab7f487b2bb28e09f275d0a": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "startPlanGeneration",
+          "filename": "src/app/(app)/plan-ai-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/plan-ai-actions.ts",
+      "exportedName": "startPlanGeneration"
+    },
+    "409a8dfcefeae5251a3b929e6526daf53905f8936d": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "getApprovalLink",
+          "filename": "src/app/(app)/client-settings-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/client-settings-actions.ts",
+      "exportedName": "getApprovalLink"
+    },
+    "408047fdb14ce687ad6ae4b3dfe042783bd9ac0a25": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "sendForApproval",
+          "filename": "src/app/(app)/client-settings-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/client-settings-actions.ts",
+      "exportedName": "sendForApproval"
+    },
+    "408f9be56d620e4994d85ad786a4066d14d8abe203": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "recycleItem",
+          "filename": "src/app/(app)/recycle-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/recycle-actions.ts",
+      "exportedName": "recycleItem"
+    },
+    "60d3a5fb9a9ff2524a82fc04f536de266632f6091b": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "schedulePlan",
+          "filename": "src/app/(app)/publish-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/publish-actions.ts",
+      "exportedName": "schedulePlan"
+    },
+    "40a269b22292a8a6323cf9bcb5b6557911b3376c6f": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "planScheduleOverview",
+          "filename": "src/app/(app)/publish-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/publish-actions.ts",
+      "exportedName": "planScheduleOverview"
+    },
+    "40958405ff022a2b1e64057f5eaae695a931d90354": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "importPlanItems",
+          "filename": "src/app/(app)/plan-import-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/plan-import-actions.ts",
+      "exportedName": "importPlanItems"
+    },
+    "40f89b6a3e39a3ffcfcc8076f89eb92cd7f1b5c81a": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "planImportStatus",
+          "filename": "src/app/(app)/plan-import-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/plan-import-actions.ts",
+      "exportedName": "planImportStatus"
+    },
+    "40b6471dbd16dc5a50da2569ac830a6ac86a1703ea": {
+      "workers": {
+        "app/(app)/clienti/[id]/piano/page": {
+          "moduleId": 183203,
+          "async": false,
+          "exportedName": "analyzePlanDocument",
+          "filename": "src/app/(app)/plan-import-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/plan-import-actions.ts",
+      "exportedName": "analyzePlanDocument"
+    },
+    "408837f36e8a9d9e8cfb90b511d6bcea04490f76c9": {
+      "workers": {
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "checkProfiles",
+          "filename": "src/app/(app)/profile-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/profile-actions.ts",
+      "exportedName": "checkProfiles"
+    },
+    "406005b3eb9b1fbdfbc5610efb7c50de9ee78f431f": {
+      "workers": {
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "fixFacebookField",
+          "filename": "src/app/(app)/profile-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/profile-actions.ts",
+      "exportedName": "fixFacebookField"
+    },
+    "60153b0d83beb02ad4480fb104d92f820a417fdc16": {
+      "workers": {
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "prepareProfileKit",
+          "filename": "src/app/(app)/profile-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/profile-actions.ts",
+      "exportedName": "prepareProfileKit"
+    },
+    "40d8a31d5d06e596ee2259f1fa2c96919a25b1cc43": {
+      "workers": {
+        "app/(app)/clienti/[id]/profili/page": {
+          "moduleId": 401277,
+          "async": false,
+          "exportedName": "saveProfileSetup",
+          "filename": "src/app/(app)/profile-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/profile-actions.ts",
+      "exportedName": "saveProfileSetup"
+    },
+    "60bc9799befe3925949847b3aaa5211992ed9a9240": {
+      "workers": {
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 551953,
+          "async": false,
+          "exportedName": "saveBrandTerms",
+          "filename": "src/app/(app)/client-settings-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/client-settings-actions.ts",
+      "exportedName": "saveBrandTerms"
+    },
+    "60b96ef778d82dc3d7a38bf546ecd12d1af1e1d7f4": {
+      "workers": {
+        "app/(app)/clienti/[id]/seo/page": {
+          "moduleId": 551953,
+          "async": false,
+          "exportedName": "startSeoAnalysis",
+          "filename": "src/app/(app)/seo-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/seo-actions.ts",
+      "exportedName": "startSeoAnalysis"
+    },
+    "00612e8c9f19a526fd1e496738eb9e48bd6a9f6e76": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "requestSettingsCode",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/impostazioni/actions.ts",
+      "exportedName": "requestSettingsCode"
+    },
+    "4090becb6db8526b12ac5d6cdf6636d9491fa399a0": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "verifySettingsCode",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/impostazioni/actions.ts",
+      "exportedName": "verifySettingsCode"
+    },
+    "4001e60b050ee98b404ea5e0c5a014b259f6d5a707": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "updateMethodology",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/impostazioni/actions.ts",
+      "exportedName": "updateMethodology"
+    },
+    "402a3882a7c45660a898e9cede6bcf06e6cdc359be": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "updateLimits",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/impostazioni/actions.ts",
+      "exportedName": "updateLimits"
+    },
+    "00f858740e91f914209fdc60f803ea123effef18f5": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "runBackupNow",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/impostazioni/actions.ts",
+      "exportedName": "runBackupNow"
+    },
+    "40256eab8c3b488b2df8a0b6aec6bd9d42eabf2e13": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "saveIntegrations",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/impostazioni/actions.ts",
+      "exportedName": "saveIntegrations"
+    },
+    "404b78e074ffe0fefc003dd0f3bce583a7fbb505a8": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "setPublishingLive",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/impostazioni/actions.ts",
+      "exportedName": "setPublishingLive"
+    },
+    "40a797438634962e0bec997db681d4d2b183067229": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "saveMail",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/impostazioni/actions.ts",
+      "exportedName": "saveMail"
+    },
+    "00524859513408acc5eb8be95efe364e6e24e0acda": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "testMail",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/impostazioni/actions.ts",
+      "exportedName": "testMail"
+    },
+    "40fe034fa22fc705de79b429571d90aa3241295197": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "saveFeatures",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/impostazioni/actions.ts",
+      "exportedName": "saveFeatures"
+    },
+    "002de16a217b9e78be47c59cf58f2e810732ca96fb": {
+      "workers": {
+        "app/(app)/impostazioni/page": {
+          "moduleId": 833022,
+          "async": false,
+          "exportedName": "lockSettings",
+          "filename": "src/app/(app)/impostazioni/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/impostazioni/actions.ts",
+      "exportedName": "lockSettings"
+    },
+    "4064210145a300cc04c3c241c5ac3dc066a218285e": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "confirmTotp",
+          "filename": "src/app/(app)/profilo/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/profilo/actions.ts",
+      "exportedName": "confirmTotp"
+    },
+    "40dce3ab0e779a254ee35c9bf61dd69e26c763503c": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "disableTotp",
+          "filename": "src/app/(app)/profilo/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/profilo/actions.ts",
+      "exportedName": "disableTotp"
+    },
+    "0036a0508571562c007e947d6191986a2772f2605f": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "startTotpSetup",
+          "filename": "src/app/(app)/profilo/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/profilo/actions.ts",
+      "exportedName": "startTotpSetup"
+    },
+    "405ca0b5dfa2946a3df333055d294be328bfe7993a": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "setWeeklyDigest",
+          "filename": "src/app/(app)/profilo/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/profilo/actions.ts",
+      "exportedName": "setWeeklyDigest"
+    },
+    "4003e8493cf56a35e63199533e575659d8c4f32ce1": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "regenerateRecovery",
+          "filename": "src/app/(app)/profilo/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/profilo/actions.ts",
+      "exportedName": "regenerateRecovery"
+    },
+    "00ee27d6d8ea9cd675e5dcbd9c345907451322fd33": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "sendWeeklyDigestPreview",
+          "filename": "src/app/(app)/profilo/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/profilo/actions.ts",
+      "exportedName": "sendWeeklyDigestPreview"
+    },
+    "00bf8b81f1cf37a049aab0511f7d62e4b3ca9246db": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "testPush",
+          "filename": "src/app/(app)/profilo/push-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/profilo/push-actions.ts",
+      "exportedName": "testPush"
+    },
+    "00a6478986c826a4710345f23a7e9a1af4227bc642": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "pushPublicKey",
+          "filename": "src/app/(app)/profilo/push-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/profilo/push-actions.ts",
+      "exportedName": "pushPublicKey"
+    },
+    "60cc78ee9bea0a445cad25a20a384228f758dffb27": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "subscribePush",
+          "filename": "src/app/(app)/profilo/push-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/profilo/push-actions.ts",
+      "exportedName": "subscribePush"
+    },
+    "4010b3ec3541c508b343ee912e5d7213d507ea3d64": {
+      "workers": {
+        "app/(app)/profilo/page": {
+          "moduleId": 406794,
+          "async": false,
+          "exportedName": "unsubscribePush",
+          "filename": "src/app/(app)/profilo/push-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/profilo/push-actions.ts",
+      "exportedName": "unsubscribePush"
+    },
+    "60fd6e7517427f66db76d2eb6dd661e20321ee00da": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "createBrief",
+          "filename": "src/app/(app)/design-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/design-actions.ts",
+      "exportedName": "createBrief"
+    },
+    "407e9b5b71091a9188e4b15fdb94042cb699eb7f3c": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "cancelPublication",
+          "filename": "src/app/(app)/publish-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/publish-actions.ts",
+      "exportedName": "cancelPublication"
+    },
+    "403714c2f4d0dfba0db4d64bfc6148c0c55e00d175": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "deleteMedia",
+          "filename": "src/app/(app)/publish-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/publish-actions.ts",
+      "exportedName": "deleteMedia"
+    },
+    "60ab4d92c69bc493a46802b2477d8b881814f9c488": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "reorderMedia",
+          "filename": "src/app/(app)/publish-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/publish-actions.ts",
+      "exportedName": "reorderMedia"
+    },
+    "40fcdecf4d073d72576559864d8126513df2b71973": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "retryPublication",
+          "filename": "src/app/(app)/publish-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/publish-actions.ts",
+      "exportedName": "retryPublication"
+    },
+    "78497736dc2f53cf6e532407d653e3c28c04237946": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "schedulePublication",
+          "filename": "src/app/(app)/publish-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/publish-actions.ts",
+      "exportedName": "schedulePublication"
+    },
+    "4077ed983c27243358b17e30fbea8d59aff606c83b": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "tiktokCreator",
+          "filename": "src/app/(app)/publish-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/publish-actions.ts",
+      "exportedName": "tiktokCreator"
+    },
+    "602afc25f02d0b51411574fa2e95cde5064a2a123d": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "findCities",
+          "filename": "src/app/(app)/ads-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "findCities",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/ads-actions.ts",
+      "exportedName": "findCities"
+    },
+    "403bfdead77e4adfdb57825977d5628ab91dd4a4f5": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "startSponsorship",
+          "filename": "src/app/(app)/ads-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "startSponsorship",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/ads-actions.ts",
+      "exportedName": "startSponsorship"
+    },
+    "6097706d9f16d7101f7d6b5f9e2a6c7d79641fcbcb": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "changeSponsorship",
+          "filename": "src/app/(app)/ads-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "changeSponsorship",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/ads-actions.ts",
+      "exportedName": "changeSponsorship"
+    },
+    "405d77dfc62bf7ea68cf15322fe75469397d50b3f2": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "refreshSponsorships",
+          "filename": "src/app/(app)/ads-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "refreshSponsorships",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/ads-actions.ts",
+      "exportedName": "refreshSponsorships"
+    },
+    "40c8df7006df2c2c70547fff18f586d9fd9eea6d4c": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "startCampaign",
+          "filename": "src/app/(app)/ads-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "startCampaign",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/ads-actions.ts",
+      "exportedName": "startCampaign"
+    },
+    "403a2598b18e82478eee1c89acb28b8140ea8bf7f6": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "loadCampaignSources",
+          "filename": "src/app/(app)/ads-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "loadCampaignSources",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/ads-actions.ts",
+      "exportedName": "loadCampaignSources"
+    },
+    "4037026d251fbc2b0e08fa740f9ed116175953f768": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "createLeadFormAction",
+          "filename": "src/app/(app)/ads-actions.ts"
+        },
+        "app/(app)/sponsorizzate/page": {
+          "moduleId": 49277,
+          "async": false,
+          "exportedName": "createLeadFormAction",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/ads-actions.ts",
+      "exportedName": "createLeadFormAction"
+    },
+    "40e1288f3ba2d1377ec45680d6f9718d9b38dad634": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "saveItem",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "saveItem"
+    },
+    "408eded4011552530df611df1885f708c35c60d5c1": {
+      "workers": {
+        "app/(app)/pubblicazioni/[id]/page": {
+          "moduleId": 839393,
+          "async": false,
+          "exportedName": "deleteItem",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/actions.ts",
+      "exportedName": "deleteItem"
+    },
+    "4047eb0262efecc91eafc4c4f4fa93d328c8161a61": {
+      "workers": {
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "saveStudioEdit",
+          "filename": "src/app/(app)/studio-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/studio-actions.ts",
+      "exportedName": "saveStudioEdit"
+    },
+    "40ff56d95685bafb0e2c4ac03bfa06407d0fa1ed91": {
+      "workers": {
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "moveStudioMedia",
+          "filename": "src/app/(app)/studio-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/studio-actions.ts",
+      "exportedName": "moveStudioMedia"
+    },
+    "40feaa8338dc362c055a6cc01ff19ffbd870966502": {
+      "workers": {
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "publishFromStudio",
+          "filename": "src/app/(app)/studio-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/studio-actions.ts",
+      "exportedName": "publishFromStudio"
+    },
+    "40a62bf1e18dd0748118b4902e16432d4d08433464": {
+      "workers": {
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "sendStudioMessage",
+          "filename": "src/app/(app)/studio-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/studio-actions.ts",
+      "exportedName": "sendStudioMessage"
+    },
+    "403e548cff62ee6096f4ad774f3db6d83ae1090b6c": {
+      "workers": {
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "generateStudioImage",
+          "filename": "src/app/(app)/studio-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/studio-actions.ts",
+      "exportedName": "generateStudioImage"
+    },
+    "40fda9f3728967660b22aa67ac17b3f46d834500aa": {
+      "workers": {
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "restoreStudioVersion",
+          "filename": "src/app/(app)/studio-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/studio-actions.ts",
+      "exportedName": "restoreStudioVersion"
+    },
+    "409cfdee739eb3534df21050d6395b862f7afb7e09": {
+      "workers": {
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "replaceDesignOutputs",
+          "filename": "src/app/(app)/studio-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/studio-actions.ts",
+      "exportedName": "replaceDesignOutputs"
+    },
+    "400ba013daa36bef7f744bffe6e6171a02dcc03db8": {
+      "workers": {
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "importMusic",
+          "filename": "src/app/(app)/studio-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/studio-actions.ts",
+      "exportedName": "importMusic"
+    },
+    "40564d1db64502462d76edf09ab2f0e1a3b294ec78": {
+      "workers": {
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "searchMusic",
+          "filename": "src/app/(app)/studio-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/studio-actions.ts",
+      "exportedName": "searchMusic"
+    },
+    "00b26e1029cccfab5e4e5ba0941b812ffbaffca045": {
+      "workers": {
+        "app/(app)/studio/[id]/page": {
+          "moduleId": 575934,
+          "async": false,
+          "exportedName": "musicProviders",
+          "filename": "src/app/(app)/studio-actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/studio-actions.ts",
+      "exportedName": "musicProviders"
+    },
+    "4078cac1a4467085b3325ab960bfa1d9d2465b3f66": {
+      "workers": {
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "addUser",
+          "filename": "src/app/(app)/utenti/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/utenti/actions.ts",
+      "exportedName": "addUser"
+    },
+    "40a30bc3651ee95f5b646e0d8e936c66a728033cb3": {
+      "workers": {
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "updateUser",
+          "filename": "src/app/(app)/utenti/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/utenti/actions.ts",
+      "exportedName": "updateUser"
+    },
+    "4099b37baf63505a22b9bcdc46b2ddc6f0d27a8fdd": {
+      "workers": {
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "resendInvite",
+          "filename": "src/app/(app)/utenti/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/utenti/actions.ts",
+      "exportedName": "resendInvite"
+    },
+    "40dd959930e2a201492a5ff0129523907180d94937": {
+      "workers": {
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "resetUserTotp",
+          "filename": "src/app/(app)/utenti/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/utenti/actions.ts",
+      "exportedName": "resetUserTotp"
+    },
+    "60606f33db4af4672063440c5c1c893c611dec6782": {
+      "workers": {
+        "app/(app)/utenti/page": {
+          "moduleId": 943381,
+          "async": false,
+          "exportedName": "setCanPublish",
+          "filename": "src/app/(app)/utenti/actions.ts"
+        }
+      },
+      "filename": "src/app/(app)/utenti/actions.ts",
+      "exportedName": "setCanPublish"
+    },
+    "40e7d7b6b5d29bf0c527bec2097feb65b05d9a1e26": {
+      "workers": {
+        "app/approva/[token]/page": {
+          "moduleId": 2884,
+          "async": false,
+          "exportedName": "sendFeedback",
+          "filename": "src/app/approva/actions.ts"
+        }
+      },
+      "filename": "src/app/approva/actions.ts",
+      "exportedName": "sendFeedback"
+    }
+  },
+  "edge": {},
+  "encryptionKey": "nB2IT07KSjnXDlIzPjNQtcjMxsnYHeDF1/T9oRr0DG4="
+}

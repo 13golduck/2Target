@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `tour_done_at` datetime;

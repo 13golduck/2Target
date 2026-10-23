@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "functions": {
+    "/_middleware": {
+      "runtime": "nodejs",
+      "matchers": [
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!_next\\/static|_next\\/image|favicon.ico|logo|.*\\.(?:svg|png|jpg|webp)$).*))(\\.json|\\.rsc|\\.segments\\/.+\\.segment\\.rsc)?[\\/#\\?]?$",
+          "originalSource": "/((?!_next/static|_next/image|favicon.ico|logo|.*\\.(?:svg|png|jpg|webp)$).*)"
+        }
+      ]
+    },
+    "/api/cron/publish": {
+      "maxDuration": 300
+    },
+    "/api/cron/sync": {
+      "maxDuration": 300
+    },
+    "/api/media/carica": {
+      "maxDuration": 300
+    },
+    "/api/report-video/[token]": {
+      "maxDuration": 300
+    }
+  }
+}

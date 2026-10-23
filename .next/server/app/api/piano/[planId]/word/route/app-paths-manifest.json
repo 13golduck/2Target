@@ -1,0 +1,3 @@
+{
+  "/api/piano/[planId]/word/route": "app/api/piano/[planId]/word/route.js"
+}

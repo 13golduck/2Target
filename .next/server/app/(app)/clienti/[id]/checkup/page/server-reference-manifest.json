@@ -1,0 +1,389 @@
+{
+  "node": {
+    "00121f6ce2af12ee46869871f4f3b86002d7d52201": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "logout",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "logout",
+      "filename": "src/app/login/actions.ts"
+    },
+    "60d95fb4f180be624aaf227e27b648c8b76c0ac6b1": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "loginStep",
+          "filename": "src/app/login/actions.ts"
+        }
+      },
+      "exportedName": "loginStep",
+      "filename": "src/app/login/actions.ts"
+    },
+    "789c570b4b826081f7eee0fa6437b04f244e802632": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "reportClientError",
+          "filename": "src/app/(app)/error-actions.ts"
+        }
+      },
+      "exportedName": "reportClientError",
+      "filename": "src/app/(app)/error-actions.ts"
+    },
+    "002aec5d0e6d402594797d463f90c57f36d567d4bf": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "markTourDone",
+          "filename": "src/app/(app)/tour-actions.ts"
+        }
+      },
+      "exportedName": "markTourDone",
+      "filename": "src/app/(app)/tour-actions.ts"
+    },
+    "40e084295aea71bb16194fa9123a44f5eaa1d424e3": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "createStudioProject",
+          "filename": "src/app/(app)/studio-actions.ts"
+        }
+      },
+      "exportedName": "createStudioProject",
+      "filename": "src/app/(app)/studio-actions.ts"
+    },
+    "400299a983e405f16ef91d2e2b316d91994df54e43": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "mediaState",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        }
+      },
+      "exportedName": "mediaState",
+      "filename": "src/app/(app)/create-post-actions.ts"
+    },
+    "40c8b7257dff87f3a54c9a7726f66f2ed9ccd48724": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "postTargets",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        }
+      },
+      "exportedName": "postTargets",
+      "filename": "src/app/(app)/create-post-actions.ts"
+    },
+    "40da5ce26bd313edb18dbaca95a5822cd895d62911": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "writeCaption",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        }
+      },
+      "exportedName": "writeCaption",
+      "filename": "src/app/(app)/create-post-actions.ts"
+    },
+    "4032958eadea6beff1bb54564998145cf33b4cd8f5": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "createBlankItem",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        }
+      },
+      "exportedName": "createBlankItem",
+      "filename": "src/app/(app)/create-post-actions.ts"
+    },
+    "403ce8b808d954c55d15d90d868bc752148fb676ea": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "createQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        }
+      },
+      "exportedName": "createQuickPost",
+      "filename": "src/app/(app)/create-post-actions.ts"
+    },
+    "402cd5bd6dfa76e6f935b743048750993710640850": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "finishQuickPost",
+          "filename": "src/app/(app)/create-post-actions.ts"
+        }
+      },
+      "exportedName": "finishQuickPost",
+      "filename": "src/app/(app)/create-post-actions.ts"
+    },
+    "401abd9ccce470c7cc1f4d7f9927fc7fa8a0fda232": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "createCheckup",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "exportedName": "createCheckup",
+      "filename": "src/app/(app)/actions.ts"
+    },
+    "409dc93c30b4cd8d630f09f726635d501d1fe13bdf": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "setCheckupStatus",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "exportedName": "setCheckupStatus",
+      "filename": "src/app/(app)/actions.ts"
+    },
+    "406cc8eb50f1d0d61c1291c4bd715e2b3f8961329f": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "saveCheckupSection",
+          "filename": "src/app/(app)/actions.ts"
+        }
+      },
+      "exportedName": "saveCheckupSection",
+      "filename": "src/app/(app)/actions.ts"
+    },
+    "40b0f5fcfbd9ed26b8ba2633d9a3e246ad871fcbea": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "saveAnswers",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "exportedName": "saveAnswers",
+      "filename": "src/app/(app)/checkup-ai-actions.ts"
+    },
+    "40a0bc92a6d87203b29795c6f8e183a0c4a2ea04c2": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "reviseSection",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "exportedName": "reviseSection",
+      "filename": "src/app/(app)/checkup-ai-actions.ts"
+    },
+    "4047662f4d25ded512646c584efa9e466462737479": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "stopAiCheckup",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "exportedName": "stopAiCheckup",
+      "filename": "src/app/(app)/checkup-ai-actions.ts"
+    },
+    "6046d56c4a17906aefed9db3727493f34721a5d3fb": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "archiveCheckup",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "exportedName": "archiveCheckup",
+      "filename": "src/app/(app)/checkup-ai-actions.ts"
+    },
+    "40f7ecd26f600f3b6b71d7bc2f5995531db81702fc": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "startAiCheckup",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "exportedName": "startAiCheckup",
+      "filename": "src/app/(app)/checkup-ai-actions.ts"
+    },
+    "40af869e6925ba15da97e471163b4b0c170e02d2df": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "resumeAiCheckup",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "exportedName": "resumeAiCheckup",
+      "filename": "src/app/(app)/checkup-ai-actions.ts"
+    },
+    "40ad7be9b58a9a6177136ab615d8dcce91ac0a0c73": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "continueAiCheckup",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "exportedName": "continueAiCheckup",
+      "filename": "src/app/(app)/checkup-ai-actions.ts"
+    },
+    "40d740f8818c511f6ca2e42f5d2e50e77c5ec12a0b": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "loadAdAccounts",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "exportedName": "loadAdAccounts",
+      "filename": "src/app/(app)/ads-actions.ts"
+    },
+    "40b594a9e8168dd3808fc7123590573b306dfb5899": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "saveAdsSettings",
+          "filename": "src/app/(app)/ads-actions.ts"
+        }
+      },
+      "exportedName": "saveAdsSettings",
+      "filename": "src/app/(app)/ads-actions.ts"
+    },
+    "404239c640a6e2243032a1576ed0a08e2f9ceda7b2": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "removeChannel",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "removeChannel",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "40e1c65c774126095788bb032509dc1c221c73cabc": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "syncClientNow",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "syncClientNow",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "40c048360b3849a21df37d63ecccd08e1e46451f26": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "attachChannels",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "attachChannels",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "40921513cab0180d375d3b2e700ad35c65a29c3020": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "syncChannelNow",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "syncChannelNow",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "4041e1eb92a4bf3df31fcea733c644bb7a352737ba": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "addManualChannel",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "addManualChannel",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "401608ca1743e2aa33dc67a0b94c54807a6d3c8c81": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "quickPost",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "quickPost",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "40ecf6df00b90cb6e7f0fa699fbe349105027ae969": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "removeConnection",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "removeConnection",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "40051625fbf4f8936f2eef6478bc42900f8e2f8d5b": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "connectMetaSystemUser",
+          "filename": "src/app/(app)/channel-actions.ts"
+        }
+      },
+      "exportedName": "connectMetaSystemUser",
+      "filename": "src/app/(app)/channel-actions.ts"
+    },
+    "40bc5d3449530523218447cc1e1cf1229920ca9f4d": {
+      "workers": {
+        "app/(app)/clienti/[id]/checkup/page": {
+          "moduleId": 233913,
+          "async": false,
+          "exportedName": "prepareFoundation",
+          "filename": "src/app/(app)/checkup-ai-actions.ts"
+        }
+      },
+      "exportedName": "prepareFoundation",
+      "filename": "src/app/(app)/checkup-ai-actions.ts"
+    }
+  },
+  "edge": {}
+}

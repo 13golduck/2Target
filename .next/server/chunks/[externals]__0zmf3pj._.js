@@ -1,0 +1,3 @@
+module.exports=[727028,(e,o,r)=>{o.exports=e.x("node:zlib",()=>require("node:zlib"))},495879,(e,o,r)=>{o.exports=e.x("node:dns",()=>require("node:dns"))},347299,(e,o,r)=>{o.exports=e.x("node:http",()=>require("node:http"))},743698,(e,o,r)=>{o.exports=e.x("node:https",()=>require("node:https"))},761095,(e,o,r)=>{o.exports=e.x("node:net",()=>require("node:net"))}];
+
+//# sourceMappingURL=%5Bexternals%5D__0zmf3pj._.js.map

@@ -1,0 +1,2 @@
+ALTER TABLE `media_assets` MODIFY COLUMN `kind` enum('image','video','audio') NOT NULL;--> statement-breakpoint
+ALTER TABLE `media_assets` MODIFY COLUMN `origin` enum('caricato','grafica','ai','video') NOT NULL DEFAULT 'caricato';

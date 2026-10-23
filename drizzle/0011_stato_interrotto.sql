@@ -1,0 +1,1 @@
+ALTER TABLE `checkups` MODIFY COLUMN `ai_state` enum('da_avviare','ricognizione','domande','ricerca','scrittura','pronto','errore','interrotto') NOT NULL DEFAULT 'da_avviare';

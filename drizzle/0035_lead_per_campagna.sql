@@ -1,0 +1,2 @@
+ALTER TABLE `leads` ADD `ad_campaign_id` int;--> statement-breakpoint
+ALTER TABLE `leads` ADD CONSTRAINT `leads_ad_campaign_id_ad_campaigns_id_fk` FOREIGN KEY (`ad_campaign_id`) REFERENCES `ad_campaigns`(`id`) ON DELETE set null ON UPDATE no action;
