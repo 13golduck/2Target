@@ -17,7 +17,14 @@ export const metadata = {
   robots: { index: false, follow: false },
   // Installabile come app (schermata Home di iPhone e Android): serve per le notifiche sul telefono
   appleWebApp: { capable: true, title: "2Target", statusBarStyle: "default" },
-  icons: { apple: "/icon-192.png" },
+  // Stessa icona registrata su TikTok, Meta e Google: i revisori la cercano nella scheda del browser
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: "/icon-192.png",
+  },
 };
 
 export const viewport = { width: "device-width", initialScale: 1, themeColor: "#CDA434" };
