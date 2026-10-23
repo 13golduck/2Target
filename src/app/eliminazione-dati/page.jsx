@@ -8,7 +8,7 @@ export default async function DataDeletionPage({ searchParams }) {
   const { codice } = await searchParams;
   const code = /^[A-F0-9]{12}$/.test(codice ?? "") ? codice : null;
   return (
-    <LegalPage title="Eliminazione dei dati" updated="14 ottobre 2026">
+    <LegalPage title="Eliminazione dei dati" updated="14 ottobre 2026" lang="it">
       {code && (
         <p style={{ padding: 16, borderRadius: 8, background: "#F4F6F8" }}>
           <b>Richiesta ricevuta.</b> Codice di conferma: <b>{code}</b>. I token di accesso e i dati ricevuti da Facebook e Instagram per il tuo account sono stati

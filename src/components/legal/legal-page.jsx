@@ -1,27 +1,27 @@
-// Pagine pubbliche (privacy, termini): testo semplice, leggibile anche senza accesso. Le richiedono Google e Meta.
+// Pagine pubbliche (privacy, termini, eliminazione dei dati): testo semplice, leggibile anche senza accesso.
+// Le richiedono Google, Meta e TikTok, che vogliono anche l'icona dell'app in testa alla pagina (SiteHeader).
 
-/** Dati dell'azienda che fornisce 2Target (richiesti da Meta e TikTok sul sito del servizio). */
-export const COMPANY = {
-  name: "Infantino Antonio",
-  vat: "04587910987",
-  address: "Via Zilie Inferiori 37/A, 25013 Calvisano (BS), Italia",
-  email: "a.infantino@golduck.it",
-};
+import { SiteFooter, SiteHeader } from "./site-chrome";
 
-export function LegalPage({ title, updated, children }) {
+export { COMPANY } from "./company";
+
+const UPDATED = { it: "Ultimo aggiornamento", en: "Last updated" };
+
+/** lang: "it" | "en"; alternate: indirizzo della stessa pagina nell'altra lingua. */
+export function LegalPage({ title, updated, lang = "it", alternate, children }) {
   return (
-    <main style={{ maxWidth: 760, margin: "0 auto", padding: "48px 20px 80px", fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif", lineHeight: 1.65, color: "#1C252E" }}>
-      <p style={{ margin: 0, fontWeight: 700, color: "#CDA434", letterSpacing: 0.5 }}>2Target · Golduck</p>
-      <h1 style={{ fontSize: 32, margin: "8px 0 4px" }}>{title}</h1>
-      <p style={{ marginTop: 0, color: "#637381", fontSize: 14 }}>Ultimo aggiornamento: {updated}</p>
-      {children}
-      <hr style={{ margin: "40px 0 16px", border: 0, borderTop: "1px solid #E5E8EB" }} />
-      <p style={{ fontSize: 14, color: "#637381" }}>
-        <a href="/chi-siamo" style={{ color: "inherit" }}>Chi siamo</a> · <a href="/privacy" style={{ color: "inherit" }}>Privacy</a> · <a href="/termini" style={{ color: "inherit" }}>Termini di servizio</a> · Contatti: <a href={`mailto:${COMPANY.email}`} style={{ color: "inherit" }}>{COMPANY.email}</a>
-      </p>
-      <p style={{ fontSize: 13, color: "#919EAB", marginTop: 0 }}>
-        {COMPANY.name} · P.IVA {COMPANY.vat} · {COMPANY.address}
-      </p>
-    </main>
+    <div lang={lang} style={{ fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif", lineHeight: 1.65, color: "#1C252E", background: "#fff", minHeight: "100vh" }}>
+      <header style={{ borderBottom: "1px solid #E5E8EB" }}>
+        <SiteHeader lang={lang} alternate={alternate} />
+      </header>
+      <main style={{ maxWidth: 760, margin: "0 auto", padding: "40px 20px 0" }}>
+        <h1 style={{ fontSize: 32, margin: "0 0 4px" }}>{title}</h1>
+        <p style={{ marginTop: 0, color: "#637381", fontSize: 14 }}>
+          {UPDATED[lang]}: {updated}
+        </p>
+        {children}
+      </main>
+      <SiteFooter lang={lang} />
+    </div>
   );
 }
